@@ -146,8 +146,11 @@ function getPowerBiDatasetId(target?: PowerBiDatasetTarget): string {
 }
 
 function getPowerBiWorkspaceId(target?: PowerBiDatasetTarget): string {
+  if (target && Object.hasOwn(target, "workspaceId")) {
+    return target.workspaceId?.trim() ?? "";
+  }
+
   return (
-    target?.workspaceId?.trim() ||
     process.env.POWERBI_GROUP_ID?.trim() ||
     process.env.POWERBI_WORKSPACE_ID?.trim() ||
     DEFAULT_WORKSPACE_ID
@@ -205,7 +208,7 @@ function getPowerBiErrorMessage(
       : `${operation} failed (${code}, HTTP ${status})`;
 
     if (status === 404 && code === "PowerBIFolderNotFound") {
-      return `${base}. Workspace ${target?.workspaceId || getDefaultPowerBiWorkspaceId()} was not found, or this token cannot access it. Check that the app/service principal is added to the workspace.`;
+      return `${base}. Workspace ${getPowerBiWorkspaceId(target) || "My workspace"} was not found, or this token cannot access it. Check that the app/service principal is added to the workspace.`;
     }
 
     return status === 404 ? `${base}. ${getPowerBi404Hint(target)}` : base;

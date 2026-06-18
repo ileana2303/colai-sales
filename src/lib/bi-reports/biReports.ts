@@ -5,13 +5,24 @@ import type { ApiUserInfo } from "@/types/api/schemas";
 
 const DEFAULT_POWERBI_WORKSPACE_ID = "a279f8cd-3d0e-4362-af29-2e5af5b043d1";
 const MAVROGENIS_SALES_DATASET_ID = "e928997c-ad45-4320-a7d6-b35a8fa8e510";
+const DATASET_ONLY_TARGET_KEYS = new Set<BiReportPowerBiTargetKey>([
+  "covidien_sales_2025",
+  "covidien_sales_2026",
+  "covidien_trend_2026",
+]);
 
 export type BiReportSellerContext = {
   sellerCode: string;
   sellerName: string;
 };
 
-export type BiReportPowerBiTargetKey = "sales" | "sales_year" | "akrateia";
+export type BiReportPowerBiTargetKey =
+  | "sales"
+  | "sales_year"
+  | "akrateia"
+  | "covidien_sales_2025"
+  | "covidien_sales_2026"
+  | "covidien_trend_2026";
 
 export type MonthlySalesRow = {
   sellerCode: string;
@@ -148,20 +159,54 @@ function readPowerBiEnv(name: string): string {
   return process.env[name]?.trim() || "";
 }
 
+function extractPowerBiTarget(value: string): PowerBiDatasetTarget | null {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return null;
+
+  try {
+    const url = new URL(trimmedValue);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const datasetsIndex = segments.indexOf("datasets");
+    const groupsIndex = segments.indexOf("groups");
+    const datasetId = segments[datasetsIndex + 1]?.trim();
+
+    if (!datasetId) return { datasetId: trimmedValue };
+
+    return {
+      datasetId,
+      workspaceId:
+        groupsIndex >= 0 ? segments[groupsIndex + 1]?.trim() || "" : "",
+    };
+  } catch {
+    return { datasetId: trimmedValue };
+  }
+}
+
 export function resolveBiReportPowerBiTarget(
   key: BiReportPowerBiTargetKey,
 ): Required<PowerBiDatasetTarget> {
-  const workspaceId =
+  const datasetOnlyTarget = DATASET_ONLY_TARGET_KEYS.has(key);
+  const keyWorkspaceId =
     readPowerBiEnv(`POWERBI_${key.toUpperCase()}_WORKSPACE_ID`) ||
-    readPowerBiEnv(`POWERBI_${key.toUpperCase()}_GROUP_ID`) ||
-    readPowerBiEnv("POWERBI_WORKSPACE_ID") ||
-    readPowerBiEnv("POWERBI_GROUP_ID") ||
-    DEFAULT_POWERBI_WORKSPACE_ID;
-
-  const datasetId =
+    readPowerBiEnv(`POWERBI_${key.toUpperCase()}_GROUP_ID`);
+  const genericWorkspaceId =
+    readPowerBiEnv("POWERBI_WORKSPACE_ID") || readPowerBiEnv("POWERBI_GROUP_ID");
+  const rawDatasetTarget =
     readPowerBiEnv(`POWERBI_${key.toUpperCase()}_DATASET_ID`) ||
     readPowerBiEnv("POWERBI_DATASET_ID") ||
     MAVROGENIS_SALES_DATASET_ID;
+  const parsedDatasetTarget = extractPowerBiTarget(rawDatasetTarget);
+
+  const datasetId =
+    parsedDatasetTarget?.datasetId ||
+    rawDatasetTarget ||
+    MAVROGENIS_SALES_DATASET_ID;
+  const workspaceId =
+    keyWorkspaceId ||
+    parsedDatasetTarget?.workspaceId ||
+    (datasetOnlyTarget
+      ? ""
+      : genericWorkspaceId || DEFAULT_POWERBI_WORKSPACE_ID);
 
   return { datasetId, workspaceId };
 }
@@ -172,12 +217,18 @@ export function resolveBiReportPowerBiTargetFromRequest(
 ): Required<PowerBiDatasetTarget> {
   const fallback = resolveBiReportPowerBiTarget(key);
   const url = new URL(req.url);
-  const workspaceId = url.searchParams.get("workspaceId")?.trim();
-  const datasetId = url.searchParams.get("datasetId")?.trim();
+  const workspaceParam = url.searchParams.get("workspaceId");
+  const rawDatasetParam = url.searchParams.get("datasetId")?.trim();
+  const parsedDatasetParam = rawDatasetParam
+    ? extractPowerBiTarget(rawDatasetParam)
+    : null;
 
   return {
-    workspaceId: workspaceId || fallback.workspaceId,
-    datasetId: datasetId || fallback.datasetId,
+    workspaceId:
+      workspaceParam != null
+        ? workspaceParam.trim()
+        : parsedDatasetParam?.workspaceId ?? fallback.workspaceId,
+    datasetId: parsedDatasetParam?.datasetId || fallback.datasetId,
   };
 }
 
