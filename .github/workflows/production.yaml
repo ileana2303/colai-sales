@@ -10,12 +10,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: "20.11.1"
+          node-version: "24"
           cache: "npm"
 
       - name: Install
@@ -69,7 +69,7 @@ jobs:
           echo "BUILD_ID + .env.production found ✅"
 
       - name: FTP Deploy (incremental)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        uses: SamKirkland/FTP-Deploy-Action@v4.4.0
         with:
           server: ${{ secrets.ftp_server }}
           username: ${{ secrets.ftp_username }}
