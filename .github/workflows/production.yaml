@@ -1,0 +1,92 @@
+on:
+  push:
+    branches: [main]
+
+name: 🚀 Deploy Production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.11.1"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Set NEXT_PUBLIC_APP_VERSION from package.json
+        run: echo "NEXT_PUBLIC_APP_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      # ✅ NEW: create .env.production from secrets + computed version
+      - name: Create .env.production
+        run: |
+          cat > .env.production <<EOF
+          AMSA_API_BASE_URL=${{ secrets.AMSA_API_BASE_URL }}
+          NEXT_PUBLIC_APP_ENV=production
+          NEXT_PUBLIC_APP_VERSION=${NEXT_PUBLIC_APP_VERSION}
+          EOF
+
+          # sanity checks (no secret printing)
+          test -f .env.production
+          grep -q '^AMSA_API_BASE_URL=' .env.production
+          echo ".env.production created ✅"
+
+      # ✅ CHANGE: remove DOTENV_CONFIG_PATH (Next doesn't use it here). next build loads .env.production automatically.
+      - name: Build
+        run: npm run build
+
+      - name: Prepare deploy folder (standalone)
+        run: |
+          rm -rf deploy
+          mkdir -p deploy
+
+          # copy standalone output
+          cp -R .next/standalone/. deploy/
+
+          # copy static assets needed by standalone
+          mkdir -p deploy/.next
+          cp -R .next/static deploy/.next/static
+
+          # public assets
+          cp -R public deploy/public
+
+          # ✅ NEW: deploy env file so runtime has it too
+          cp .env.production deploy/.env.production
+
+      - name: Debug (must have BUILD_ID)
+        run: |
+          ls -la deploy
+          ls -la deploy/.next || true
+          test -f deploy/.next/BUILD_ID
+          test -f deploy/.env.production
+          echo "BUILD_ID + .env.production found ✅"
+
+      - name: FTP Deploy (incremental)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.ftp_server }}
+          username: ${{ secrets.ftp_username }}
+          password: ${{ secrets.ftp_password }}
+
+          protocol: ftps
+          port: 21
+          security: loose
+          timeout: 120000
+
+          local-dir: deploy/
+          server-dir: ./
+
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github*/**
+            **/.next/cache/**
+            **/tmp/**

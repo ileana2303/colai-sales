@@ -1,0 +1,38 @@
+ΕΟΠΠΥ
+ΝΑ ΦΥΓΕΘ ΥΨΟΣ ΒΑΡΟΣ
+ΟΤΑΝ ΠΑΡΑΛΑΒΕΙ ΑΛΛΟΣ να είναι υποχρεωτικα τα πεδια του παραλήπτη (DONE)
+ΑΝ ΕΧΕΙ 0 % συμεττοχη δεν εμφανιζω το στεπ
+
+
+Αν θα το πάραλαβει άλλος εκτος προσωπου, τότε θέλω έντυπο συνεναισης
+NA ERXETAI TO OTP kai na einai ypoxrewtiko
+an den exei customer_erpgid na einai ypoxrwtiki i sinainesi
+otan einai 0 simmetoxi na yparxei extra checkbox poy na einai ypoxreotiki h 0 symmetoxi
+OTRAN DEN EXEI EKPTOSI NA ERXETAI SAN NULL TO POSODISCOUNTED
+
+Otan exei annoia tha paralavei allos ektos tou astheni
+an η ημρομοηνια γεννηση tou einai mikrotero apo 18 apo to date now ειναι υποχρεωτικο να παραλαβει αλλος και αρα να φορτωσουμε συναινεση
+προσωρινή αποθηκευση προτινόμενο το οχι 
+
+Κατα το login, μου επιστρεφει isSeller (μπορει να κανει insert νεας παραγγελιας)
+isManager κάνει μονο έγκριση σε εκπτώσεις (Έγκριση, Απόρριψη, Αλλαγη ποσού)
+isSeller κανει νεες παραγγελιες
+isSuperAdmin, isSalesAdmin (μόνο βλέπουν) υπερισψυουν και δεν καταχωρουν αν ειναι και σελλερ η μανατζερ
+
+Αιτήματα Επτωσεων
+
+ΝΑ ΞΕΡΩ ΑΝ ΕΙΝΑΙ ΛΙΑΝΙΚΗ Η ΕΟΠΠΥ
+ΝΑ ΦΑΙΝΕΤΑΙ Ο ΠΩΛΗΤΗΣ
+Ο ΠΕΛΑΤΗ
+ISNULL(SYSTINON, IATROS)
+ΚΟΣΤΟΣ - ΤΕΛΙΚΟ - ΠΟΣΟ ΕΚΠΤΩΣΗΣ
+
+
+
+εαν hasAnoia πρεπει αναγκαστικα να παραλάβει άλλος
+εαν δεν εχει customer_erpgid να είναι υποχρεωτική η συναινεση
+εαν η ημ/νία γέννησης δείχνει πως είναι κάτω των 18 ετών, πρέπει να παραλάβει άλλος και να αλλάξει το χρώμα του border σε κόκκινο
+
+Το otp να ειναι 6 κουτακια να ειναι με γραμματοσειρα σαν casio ωηφιακο και να ειναι υποχρεωτικο
+
+όΤαν η γνωμαύεση είοναι πλαφόν είναι μέχρι 400 και μετα τα πληρώνει κανονικά.
