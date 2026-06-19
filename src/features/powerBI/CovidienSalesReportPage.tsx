@@ -4,6 +4,11 @@ import React from "react";
 
 import AppLoader from "@/components/ui/AppLoader";
 import {
+  PowerBiTable,
+  type PowerBiTableColumn,
+  type PowerBiTableFilter,
+} from "@/features/powerBI/PowerBiTable";
+import {
   MetricCard,
   ReportError,
   ReportHeader,
@@ -15,6 +20,7 @@ import type { CovidienSalesRow } from "@/lib/bi-reports/covidien";
 import {
   formatNullableCurrency,
   formatNullableRatioPercent,
+  getMonthIndex,
   sumNullable,
 } from "@/lib/bi-reports/reportUtils";
 import { formatIntGR } from "@/lib/utils/number";
@@ -33,6 +39,7 @@ type CovidienSalesReportPageProps = {
   apiPath:
     | "/api/powerbi/covidien-sales-2025"
     | "/api/powerbi/covidien-sales-2026";
+  showAllDataTable?: boolean;
   year: CovidienSalesYear;
 };
 
@@ -44,6 +51,99 @@ type AggregatedRow = {
   coverage: number | null;
   records: number;
 };
+
+const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
+  {
+    key: "team",
+    header: "Team",
+    exportValue: (row) => row.team,
+    render: (row) => row.team || "-",
+  },
+  {
+    key: "sellerName",
+    header: "Πωλητής",
+    exportValue: (row) =>
+      row.sellerCode
+        ? `${row.sellerName || "Πωλητής"} (${row.sellerCode})`
+        : row.sellerName,
+    render: (row) => (
+      <span className="d-inline-flex align-items-baseline gap-1">
+        <span>{row.sellerName || "-"}</span>
+        {row.sellerCode ? (
+          <span className="small text-secondary">{row.sellerCode}</span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    key: "familyGroup",
+    header: "Family Group",
+    exportValue: (row) => row.familyGroup,
+    render: (row) => row.familyGroup || "-",
+  },
+  {
+    key: "month",
+    header: "Month",
+    exportValue: (row) => row.month,
+    render: (row) => row.month || "-",
+    sortValue: (row) => getMonthIndex(row.month) ?? row.month,
+  },
+  {
+    key: "closedMonthStatus",
+    header: "Status",
+    exportValue: (row) => row.closedMonthStatus,
+    render: (row) => row.closedMonthStatus || "-",
+  },
+  {
+    key: "salesProcon",
+    header: "Sales PROCON",
+    align: "end",
+    exportValue: (row) => row.salesProcon,
+    render: (row) => formatNullableCurrency(row.salesProcon),
+    sortValue: (row) => row.salesProcon,
+  },
+  {
+    key: "covidienSalesTarget",
+    header: "Target",
+    align: "end",
+    exportValue: (row) => row.covidienSalesTarget,
+    render: (row) => formatNullableCurrency(row.covidienSalesTarget),
+    sortValue: (row) => row.covidienSalesTarget,
+  },
+  {
+    key: "proconCover",
+    header: "% Cover",
+    align: "end",
+    exportValue: (row) => formatNullableRatioPercent(row.proconCover),
+    render: (row) => formatNullableRatioPercent(row.proconCover),
+    sortValue: (row) => row.proconCover,
+  },
+];
+
+const covidienSalesFilters: PowerBiTableFilter<CovidienSalesRow>[] = [
+  {
+    key: "familyGroup",
+    label: "Family group",
+    getValue: (row) => row.familyGroup,
+  },
+  {
+    key: "team",
+    label: "Team",
+    getValue: (row) => row.team,
+  },
+  {
+    columnKey: "sellerName",
+    key: "seller",
+    label: "Seller",
+    getValue: (row) =>
+      `${row.sellerName || "Πωλητής"}${row.sellerCode ? ` • ${row.sellerCode}` : ""}`,
+  },
+  {
+    key: "closedMonthStatus",
+    label: "Status",
+    getValue: (row) => row.closedMonthStatus,
+  },
+];
 
 function aggregateRows(
   rows: CovidienSalesRow[],
@@ -240,6 +340,7 @@ function MonthRows({ rows }: { rows: CovidienSalesRow[] }) {
 
 export function CovidienSalesReportPage({
   apiPath,
+  showAllDataTable = false,
   year,
 }: CovidienSalesReportPageProps) {
   const [records, setRecords] = React.useState<CovidienSalesRow[]>([]);
@@ -304,6 +405,20 @@ export function CovidienSalesReportPage({
         <ReportError message={error} onRetry={() => void loadReport()} />
       ) : records.length ? (
         <>
+          {showAllDataTable ? (
+            <PowerBiTable
+              columns={covidienSalesColumns}
+              exportFileName={`covidien-sales-${year}`}
+              filters={covidienSalesFilters}
+              getRowKey={(row, index) =>
+                `${row.area}-${row.team}-${row.sellerCode}-${row.familyGroup}-${row.month}-${index}`
+              }
+              rows={records}
+              title={`Covidien Sales ${year} data`}
+              subtitle="Power BI Data for Covidien Sales 2026"
+            />
+          ) : null}
+
           <section className="row g-3">
             <MetricCard
               label="Sales PROCON"
