@@ -201,52 +201,22 @@ function WcMonthCard() {
 }
 
 export default function HomeStats() {
-  return (
-    <div
-      className="d-flex flex-column h-100"
-      style={{
-        minHeight: 0,
-        overflowX: "hidden",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
-      <div className="row g-3 mb-3">
-        {/* <div className="col-md-6 col-12">
-          <ModuleCard
-            title="Διαδικασία WC"
-            description="Ημερολόγιο και ενέργειες για επόμενες παραγγελίες WC."
-            icon="bi-calendar-check"
-            href="/diadikasia-wc"
-          />
-        </div>
-        <div className="col-md-6 col-12">
-          <ModuleCard
-            title="Πωλήσεις WC"
-            description="Λίστες πωλήσεων, συνεργατών και αποστολών."
-            icon="bi-receipt"
-            href="/salesWC"
-          />
-        </div> */}
-        <div className="col-md-6 col-12">
-          <ModuleCard
-            title="PowerBI . Sellers Reports"
-            description="Αναφορές πωλήσεων και διαθέσιμα datasets."
-            icon="bi-bar-chart"
-            href="/powerbi/seller-reports"
-          />
-        </div>
-        <div className="col-md-6 col-12">
-          <ModuleCard
-            title="PowerBI . Covidien Reports"
-            description="Covidien reports ανά έτος."
-            icon="bi-bar-chart"
-            href="/powerbi/covidien-reports"
-          />
-        </div>
-      </div>
+  const userInfos = useAppSelector((s) => s.auth.userInfos);
+  const hasSellerCode = Boolean(normalizeSellerCode(userInfos?.sellerCode));
 
-      {/* <WcMonthCard /> */}
-    </div>
+  return hasSellerCode ? (
+    <ModuleCard
+      title="PowerBI . Sellers Reports"
+      description="Αναφορές πωλήσεων και διαθέσιμα datasets."
+      icon="bi-bar-chart"
+      href="/powerbi/seller-reports"
+    />
+  ) : (
+    <ModuleCard
+      title="PowerBI . Covidien Reports"
+      description="Covidien reports ανά έτος."
+      icon="bi-bar-chart"
+      href="/powerbi/covidien-reports"
+    />
   );
 }
