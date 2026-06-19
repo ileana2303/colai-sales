@@ -212,11 +212,19 @@ export default function HomeStats() {
       href="/powerbi/seller-reports"
     />
   ) : (
-    <ModuleCard
-      title="PowerBI . Covidien Reports"
-      description="Covidien reports ανά έτος."
-      icon="bi-bar-chart"
-      href="/powerbi/covidien-reports"
-    />
+    <div className="d-flex flex-column gap-3">
+      <ModuleCard
+        title="Covidien Reports"
+        description="PowerBI Reports for Covidien Sales & Trends."
+        icon="bi-bar-chart"
+        href="/powerbi/covidien-reports"
+      />
+      <ModuleCard
+        title="BAUSCH & LOMB TRIPLEX Reports"
+        description="PowerBI Reports for BAUSCH & LOMB TRIPLEX Sales & Trends."
+        icon="bi-bar-chart"
+        href="/powerbi/BBM-reports"
+      />
+    </div>
   );
 }

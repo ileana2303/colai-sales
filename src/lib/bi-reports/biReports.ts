@@ -15,6 +15,9 @@ export type BiReportPowerBiTargetKey =
   | "sales"
   | "sales_year"
   | "akrateia"
+  | "bbm_sales_2025"
+  | "bbm_sales_2026"
+  | "bbm_trends_2026"
   | "covidien_sales_2025"
   | "covidien_sales_2026"
   | "covidien_trend_2026";
@@ -30,6 +33,9 @@ const BI_REPORT_DATASET_IDS: Record<BiReportPowerBiTargetKey, string> = {
   sales: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   sales_year: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   akrateia: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
+  bbm_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
+  bbm_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
+  bbm_trends_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
   covidien_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
   covidien_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
   covidien_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,

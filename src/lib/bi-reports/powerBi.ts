@@ -71,6 +71,10 @@ type PowerBiTokenOptions = {
   amsaAccessToken?: string | null;
 };
 
+type PowerBiExecuteQueryOptions = {
+  includeNulls?: boolean;
+};
+
 type PowerBiErrorResponse = {
   error?: {
     code?: string;
@@ -363,6 +367,7 @@ export async function executePowerBiQuery(
   query: string,
   target?: PowerBiDatasetTarget,
   tokenOptions?: PowerBiTokenOptions,
+  queryOptions?: PowerBiExecuteQueryOptions,
 ): Promise<PowerBiExecuteQueriesResponse> {
   const accessToken = await getPowerBiToken(tokenOptions);
   const endpoint = getPowerBiExecuteQueriesEndpoint(target);
@@ -377,7 +382,9 @@ export async function executePowerBiQuery(
       },
       body: JSON.stringify({
         queries: [{ query }],
-        serializerSettings: { includeNulls: true },
+        serializerSettings: {
+          includeNulls: queryOptions?.includeNulls ?? true,
+        },
       }),
       cache: "no-store",
     });
