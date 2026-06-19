@@ -3,32 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logoutAsync } from "@/features/auth/authSlice";
 
 import Dropdown from "react-bootstrap/Dropdown";
 
-const navItems = [
-  { href: "/diadikasia-wc", icon: "bi-calendar-check", label: "WC" },
-  { href: "/salesWC", icon: "bi-receipt", label: "Πωλήσεις" },
-  {
-    href: "/powerbi/seller-reports",
-    activePath: "/powerbi",
-    icon: "bi-bar-chart",
-    label: "Power BI",
-  },
-] as const;
-
-function isActive(pathname: string, item: (typeof navItems)[number]): boolean {
-  const matchPath = "activePath" in item ? item.activePath : item.href;
-  return pathname === matchPath || pathname.startsWith(`${matchPath}/`);
-}
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const dispatch = useAppDispatch();
 
   const userInfos = useAppSelector((s) => s.auth?.userInfos);
@@ -70,23 +53,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               style={{ height: 28, width: "auto" }}
             />
           </Link>
-
-          <nav className="app-top-nav" aria-label="Primary navigation">
-            {navItems.map((item) => {
-              const active = isActive(pathname, item);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`app-top-nav__link${active ? "app-top-nav__link--active" : ""}`}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <i className={`bi ${item.icon}`} aria-hidden="true" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
 
           <div className="app-header__actions">
             <Dropdown align="end">

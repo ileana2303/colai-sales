@@ -40,6 +40,7 @@ export async function GET() {
       buildCovidienTrendQuery(area),
       resolveBiReportPowerBiTarget("covidien_trend_2026"),
       { amsaAccessToken: token },
+      { includeNulls: false },
     );
   } catch (err) {
     const status = err instanceof PowerBiRequestError ? err.status : 500;

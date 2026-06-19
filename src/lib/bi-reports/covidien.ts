@@ -23,20 +23,27 @@ export type CovidienSalesRow = {
   team: string;
   sellerCode: string;
   sellerName: string;
-  familyGroup: string;
+  group1: string;
+  group2: string;
   month: string;
   closedMonthStatus: string;
-  salesProcon: number | null;
-  covidienSalesTarget: number | null;
+  reportCode: string;
+  reportDesc: string;
+  currency: number | null;
+  vcy: number | null;
+  tcy: number | null;
 };
 
 export type CovidienTrendRow = {
   area: string;
   team: string;
   sellerCode: string;
-  familyGroup: string;
-  salesProcon: number | null;
-  covidienSalesTrend: number | null;
+  group1: string;
+  group2: string;
+  reportCode: string;
+  reportDesc: string;
+  currency: number | null;
+  vTrend: number | null;
 };
 
 function toNullableNumber(value: unknown): number | null {
@@ -50,23 +57,36 @@ function quoteDaxStrings(values: string[]): string {
   return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
 }
 
-function getCovidienCommonFilters(areaName: string): string {
-  const familyGroups = quoteDaxStrings(COVIDIEN_FAMILY_GROUPS);
+function readString(row: Record<string, unknown>, key: string): string {
+  return String(row[`[${key}]`] ?? row[key] ?? "").trim();
+}
+
+function readNumber(row: Record<string, unknown>, key: string): number | null {
+  return toNullableNumber(row[`[${key}]`] ?? row[key]);
+}
+
+function getCovidienSalesQueryContext(areaName: string) {
+  const area = escapeDaxString(areaName);
+  const businessUnit = escapeDaxString(COVIDIEN_BUSINESS_UNIT);
   const excludedDocumentTypes = quoteDaxStrings(
     COVIDIEN_EXCLUDED_DOCUMENT_TYPES,
   );
-  const area = escapeDaxString(areaName);
-  const businessUnit = escapeDaxString(COVIDIEN_BUSINESS_UNIT);
+  const familyGroups = quoteDaxStrings(COVIDIEN_FAMILY_GROUPS);
 
-  return `FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "Sales PROCON", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}}))`;
+  return { area, businessUnit, excludedDocumentTypes, familyGroups };
 }
 
 export function buildCovidienSalesQuery(areaName: string): string {
-  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], ${getCovidienCommonFilters(areaName)}, "Covidien Sales Target", [Covidien Sales Target]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month]`;
+  const { area, businessUnit, excludedDocumentTypes, familyGroups } =
+    getCovidienSalesQueryContext(areaName);
+
+  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VCYTRCY", "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit", "Currency", 1, "VCY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}})), "TCY", [Covidien Sales Target]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY])) || NOT(ISBLANK([TCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "Month", 'U Months'[Month], "ClosedMonthStatus", 'U Months'[Status of Closed Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VCY", [VCY], "TCY", [TCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Month]`;
 }
 
 export function buildCovidienTrendQuery(areaName: string): string {
-  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group], ${getCovidienCommonFilters(areaName)}, "Covidien Sales Trend", [Covidien Sales Trend]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group]`;
+  const { area, familyGroups } = getCovidienSalesQueryContext(areaName);
+
+  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VTREND", "REPORT_DESC", "Covidien Sales Trend by AREA and by GROUP", "Currency", 1, "VTrend", [Covidien Sales Trend]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VTrend]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VTrend", [VTrend]) ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]`;
 }
 
 export function normalizeCovidienSalesRows(
@@ -75,17 +95,19 @@ export function normalizeCovidienSalesRows(
   const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
 
   return rows.map((row) => ({
-    area: String(row["U Sales Person[Area]"] ?? "").trim(),
-    team: String(row["U Sales Person[Team]"] ?? "").trim(),
-    sellerCode: String(row["U Sales Person[SellerCode]"] ?? "").trim(),
-    sellerName: String(row["U Sales Person[Πωλητής]"] ?? "").trim(),
-    familyGroup: String(row["U Family[Family Group]"] ?? "").trim(),
-    month: String(row["U Months[Month]"] ?? "").trim(),
-    closedMonthStatus: String(
-      row["U Months[Status of Closed Month]"] ?? "",
-    ).trim(),
-    salesProcon: toNullableNumber(row["[Sales PROCON]"]),
-    covidienSalesTarget: toNullableNumber(row["[Covidien Sales Target]"]),
+    area: readString(row, "Area"),
+    team: readString(row, "Team"),
+    sellerCode: readString(row, "SellerCode"),
+    sellerName: readString(row, "SellerName"),
+    group1: readString(row, "Group1"),
+    group2: readString(row, "Group2"),
+    month: readString(row, "Month"),
+    closedMonthStatus: readString(row, "ClosedMonthStatus"),
+    reportCode: readString(row, "REPORT_CODE"),
+    reportDesc: readString(row, "REPORT_DESC"),
+    currency: readNumber(row, "Currency"),
+    vcy: readNumber(row, "VCY"),
+    tcy: readNumber(row, "TCY"),
   }));
 }
 
@@ -95,11 +117,14 @@ export function normalizeCovidienTrendRows(
   const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
 
   return rows.map((row) => ({
-    area: String(row["U Sales Person[Area]"] ?? "").trim(),
-    team: String(row["U Sales Person[Team]"] ?? "").trim(),
-    sellerCode: String(row["U Sales Person[SellerCode]"] ?? "").trim(),
-    familyGroup: String(row["U Family[Family Group]"] ?? "").trim(),
-    salesProcon: toNullableNumber(row["[Sales PROCON]"]),
-    covidienSalesTrend: toNullableNumber(row["[Covidien Sales Trend]"]),
+    area: readString(row, "Area"),
+    team: readString(row, "Team"),
+    sellerCode: readString(row, "SellerCode"),
+    group1: readString(row, "Group1"),
+    group2: readString(row, "Group2"),
+    reportCode: readString(row, "REPORT_CODE"),
+    reportDesc: readString(row, "REPORT_DESC"),
+    currency: readNumber(row, "Currency"),
+    vTrend: readNumber(row, "VTrend"),
   }));
 }

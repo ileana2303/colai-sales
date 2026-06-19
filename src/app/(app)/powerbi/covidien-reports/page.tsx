@@ -15,6 +15,13 @@ const reports = [
     icon: "bi-bar-chart-line",
     accent: "#16a34a",
   },
+  {
+    href: "/powerbi/covidien-reports/covidien-trends",
+    title: "Covidien Trends",
+    subtitle: "Mavrogenis Sales Reports 2026CLP",
+    icon: "bi-activity",
+    accent: "#7c3aed",
+  },
 ] as const;
 
 export default function Page() {

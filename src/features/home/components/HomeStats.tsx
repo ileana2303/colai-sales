@@ -67,23 +67,24 @@ function ModuleCard({ title, description, icon, href }: ModuleCardProps) {
         className="app-card app-card-pressable h-100 p-3"
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        <div className="d-flex align-items-start justify-content-between gap-3">
+        <div className="d-flex align-items-center justify-content-between gap-3">
           <div
-            className="d-inline-flex align-items-center justify-content-center rounded-3 bg-body-tertiary flex-shrink-0"
-            style={{ width: 40, height: 40 }}
+            className="d-flex align-items-center flex-grow-1 gap-3"
+            style={{ minWidth: 0 }}
           >
-            <i className={`bi ${icon}`} style={{ fontSize: "1.15rem" }} />
+            <div className="home-module-card__icon">
+              <i className={`bi ${icon}`} style={{ fontSize: "1.15rem" }} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div className="fw-semibold lh-sm">{title}</div>
+              <div className="small text-secondary mt-1">{description}</div>
+            </div>
           </div>
           <i
-            className="bi bi-chevron-right text-secondary"
+            className="bi bi-chevron-right text-secondary flex-shrink-0"
             style={{ fontSize: "1.1rem" }}
             aria-hidden
           />
-        </div>
-
-        <div className="mt-3">
-          <div className="fw-semibold">{title}</div>
-          <div className="small text-secondary mt-1">{description}</div>
         </div>
       </div>
     </Link>

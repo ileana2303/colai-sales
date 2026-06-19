@@ -18,6 +18,7 @@ import { parseProxyJson } from "@/lib/api/client";
 import type { CovidienSalesRow } from "@/lib/bi-reports/covidien";
 import {
   formatNullableCurrency,
+  formatNullableInt,
   getMonthIndex,
   sumNullable,
 } from "@/lib/bi-reports/reportUtils";
@@ -73,10 +74,16 @@ const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
     ),
   },
   {
-    key: "familyGroup",
-    header: "Family Group",
-    exportValue: (row) => row.familyGroup,
-    render: (row) => row.familyGroup || "-",
+    key: "group1",
+    header: "Group1",
+    exportValue: (row) => row.group1,
+    render: (row) => row.group1 || "-",
+  },
+  {
+    key: "group2",
+    header: "Group2",
+    exportValue: (row) => row.group2,
+    render: (row) => row.group2 || "-",
   },
   {
     key: "month",
@@ -92,28 +99,53 @@ const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
     render: (row) => row.closedMonthStatus || "-",
   },
   {
-    key: "salesProcon",
-    header: "Sales PROCON",
-    align: "end",
-    exportValue: (row) => row.salesProcon,
-    render: (row) => formatNullableCurrency(row.salesProcon),
-    sortValue: (row) => row.salesProcon,
+    key: "reportCode",
+    header: "REPORT_CODE",
+    exportValue: (row) => row.reportCode,
+    render: (row) => row.reportCode || "-",
   },
   {
-    key: "covidienSalesTarget",
-    header: "Target",
+    key: "reportDesc",
+    header: "REPORT_DESC",
+    exportValue: (row) => row.reportDesc,
+    render: (row) => row.reportDesc || "-",
+  },
+  {
+    key: "currency",
+    header: "Currency",
     align: "end",
-    exportValue: (row) => row.covidienSalesTarget,
-    render: (row) => formatNullableCurrency(row.covidienSalesTarget),
-    sortValue: (row) => row.covidienSalesTarget,
+    exportValue: (row) => row.currency,
+    render: (row) => formatNullableInt(row.currency),
+    sortValue: (row) => row.currency,
+  },
+  {
+    key: "vcy",
+    header: "VCY",
+    align: "end",
+    exportValue: (row) => row.vcy,
+    render: (row) => formatNullableCurrency(row.vcy),
+    sortValue: (row) => row.vcy,
+  },
+  {
+    key: "tcy",
+    header: "TCY",
+    align: "end",
+    exportValue: (row) => row.tcy,
+    render: (row) => formatNullableCurrency(row.tcy),
+    sortValue: (row) => row.tcy,
   },
 ];
 
 const covidienSalesFilters: PowerBiTableFilter<CovidienSalesRow>[] = [
   {
-    key: "familyGroup",
-    label: "Family group",
-    getValue: (row) => row.familyGroup,
+    key: "group1",
+    label: "Group1",
+    getValue: (row) => row.group1,
+  },
+  {
+    key: "group2",
+    label: "Group2",
+    getValue: (row) => row.group2,
   },
   {
     key: "team",
@@ -153,8 +185,8 @@ function aggregateRows(
         records: 0,
       } satisfies AggregatedRow);
 
-    current.sales = (current.sales ?? 0) + (row.salesProcon ?? 0);
-    current.target = (current.target ?? 0) + (row.covidienSalesTarget ?? 0);
+    current.sales = (current.sales ?? 0) + (row.vcy ?? 0);
+    current.target = (current.target ?? 0) + (row.tcy ?? 0);
     current.records += 1;
     groups.set(key, current);
   });
@@ -176,17 +208,15 @@ function FamilyBreakdown({ rows }: { rows: CovidienSalesRow[] }) {
 
   const familyRows = aggregateRows(
     rows,
-    (row) => row.familyGroup,
-    (row) => row.familyGroup,
+    (row) => row.group1,
+    (row) => row.group1,
   );
 
   return (
     <section className="d-flex flex-column gap-2">
       <div className="app-card p-3">
         <div className="fw-semibold">Family groups</div>
-        <div className="small text-secondary mt-1">
-          Sales PROCON σε σχέση με Covidien Sales Target
-        </div>
+        <div className="small text-secondary mt-1">VCY σε σχέση με TCY</div>
       </div>
 
       {familyRows.map((row) => (
@@ -203,13 +233,13 @@ function FamilyBreakdown({ rows }: { rows: CovidienSalesRow[] }) {
           <div className="row g-2 mt-3">
             <div className="col-6">
               <ValuePill
-                label="Sales PROCON"
+                label="VCY"
                 value={formatNullableCurrency(row.sales)}
               />
             </div>
             <div className="col-6">
               <ValuePill
-                label="Target"
+                label="TCY"
                 value={formatNullableCurrency(row.target)}
               />
             </div>
@@ -247,8 +277,8 @@ function SellerTable({ rows }: { rows: CovidienSalesRow[] }) {
           <thead>
             <tr className="small text-secondary">
               <th>Πωλητής</th>
-              <th className="text-end">Sales PROCON</th>
-              <th className="text-end">Target</th>
+              <th className="text-end">VCY</th>
+              <th className="text-end">TCY</th>
             </tr>
           </thead>
           <tbody>
@@ -290,13 +320,13 @@ function MonthRows({ rows }: { rows: CovidienSalesRow[] }) {
       <div className="d-flex flex-column mt-3 gap-2">
         {rows.slice(0, 80).map((row, index) => (
           <div
-            key={`${row.sellerCode}-${row.familyGroup}-${row.month}-${index}`}
+            key={`${row.sellerCode}-${row.group1}-${row.month}-${index}`}
             className="rounded-4 bg-body-tertiary p-2"
           >
             <div className="d-flex align-items-start justify-content-between gap-3">
               <div className="min-w-0">
                 <div className="fw-semibold text-truncate">
-                  {row.month || "-"} • {row.familyGroup || "-"}
+                  {row.month || "-"} • {row.group1 || "-"}
                 </div>
                 <div className="small text-secondary text-truncate">
                   {row.sellerName || "Πωλητής"}{" "}
@@ -305,7 +335,7 @@ function MonthRows({ rows }: { rows: CovidienSalesRow[] }) {
               </div>
               <div className="flex-shrink-0 text-end">
                 <div className="fw-semibold">
-                  {formatNullableCurrency(row.salesProcon)}
+                  {formatNullableCurrency(row.vcy)}
                 </div>
               </div>
             </div>
@@ -362,10 +392,10 @@ export function CovidienSalesReportPage({
     void loadReport();
   }, [loadReport]);
 
-  const totalSales = sumNullable(records, (row) => row.salesProcon);
-  const totalTarget = sumNullable(records, (row) => row.covidienSalesTarget);
+  const totalSales = sumNullable(records, (row) => row.vcy);
+  const totalTarget = sumNullable(records, (row) => row.tcy);
   const sellerCount = countUnique(records, (row) => row.sellerCode);
-  const familyCount = countUnique(records, (row) => row.familyGroup);
+  const familyCount = countUnique(records, (row) => row.group1);
   const monthCount = countUnique(records, (row) => row.month);
 
   return (
@@ -388,23 +418,23 @@ export function CovidienSalesReportPage({
               exportFileName={`covidien-sales-${year}`}
               filters={covidienSalesFilters}
               getRowKey={(row, index) =>
-                `${row.area}-${row.team}-${row.sellerCode}-${row.familyGroup}-${row.month}-${index}`
+                `${row.area}-${row.team}-${row.sellerCode}-${row.group1}-${row.month}-${index}`
               }
               rows={records}
               title={`Covidien Sales ${year} data`}
-              subtitle="Power BI Data for Covidien Sales 2026"
+              subtitle={`Power BI Data for Covidien Sales ${year}`}
             />
           ) : null}
 
           <section className="row g-3">
             <MetricCard
-              label="Sales PROCON"
+              label="VCY"
               value={formatNullableCurrency(totalSales)}
               icon="bi-cash-stack"
               accent="#2563eb"
             />
             <MetricCard
-              label="Covidien Target"
+              label="TCY"
               value={formatNullableCurrency(totalTarget)}
               icon="bi-bullseye"
               accent="#16a34a"
