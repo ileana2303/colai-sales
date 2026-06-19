@@ -1,8 +1,7 @@
-import { cookieName } from "@/lib/auth";
-import { resolveBiReportPowerBiTargetFromRequest } from "@/lib/bi-reports/biReports";
+import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
+import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
   buildCovidienSalesQuery,
-  getCovidienReportArea,
   normalizeCovidienSalesRows,
 } from "@/lib/bi-reports/covidien";
 import {
@@ -16,7 +15,7 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET() {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
   if (!token) {
@@ -26,11 +25,20 @@ export async function GET(req: Request) {
     );
   }
 
+  const userInfo = decodeUserInfoCookie(jar.get(userCookieName)?.value);
+  const area = userInfo?.area?.trim();
+  if (!area) {
+    return NextResponse.json(
+      { ok: false, message: "Missing area for authenticated user" },
+      { status: 400, headers: POWERBI_NO_CACHE_HEADERS },
+    );
+  }
+
   let data: PowerBiExecuteQueriesResponse;
   try {
     data = await executePowerBiQuery(
-      buildCovidienSalesQuery(),
-      resolveBiReportPowerBiTargetFromRequest(req, "covidien_sales_2026"),
+      buildCovidienSalesQuery(area),
+      resolveBiReportPowerBiTarget("covidien_sales_2026"),
       { amsaAccessToken: token },
     );
   } catch (err) {
@@ -49,7 +57,7 @@ export async function GET(req: Request) {
       ok: true,
       report: "covidien_sales_2026",
       year: 2026,
-      area: getCovidienReportArea(),
+      area,
       records: normalizeCovidienSalesRows(data),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },

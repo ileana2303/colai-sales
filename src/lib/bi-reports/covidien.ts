@@ -3,7 +3,6 @@ import {
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
-const COVIDIEN_AREA = "ΔΙΑΜΑΝΤΟΠΟΥΛΟΣ";
 const COVIDIEN_BUSINESS_UNIT = "COVIDIEN";
 const COVIDIEN_FAMILY_GROUPS = [
   "1.STAPLING",
@@ -52,27 +51,23 @@ function quoteDaxStrings(values: string[]): string {
   return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
 }
 
-function getCovidienCommonFilters(): string {
+function getCovidienCommonFilters(areaName: string): string {
   const familyGroups = quoteDaxStrings(COVIDIEN_FAMILY_GROUPS);
   const excludedDocumentTypes = quoteDaxStrings(
     COVIDIEN_EXCLUDED_DOCUMENT_TYPES,
   );
-  const area = escapeDaxString(COVIDIEN_AREA);
+  const area = escapeDaxString(areaName);
   const businessUnit = escapeDaxString(COVIDIEN_BUSINESS_UNIT);
 
   return `FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "Sales PROCON", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}}))`;
 }
 
-export function getCovidienReportArea(): string {
-  return COVIDIEN_AREA;
+export function buildCovidienSalesQuery(areaName: string): string {
+  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], ${getCovidienCommonFilters(areaName)}, "Covidien Sales Target", [Covidien Sales Target], "% PROCON Cover", [% PROCON Cover]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month]`;
 }
 
-export function buildCovidienSalesQuery(): string {
-  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], ${getCovidienCommonFilters()}, "Covidien Sales Target", [Covidien Sales Target], "% PROCON Cover", [% PROCON Cover]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month]`;
-}
-
-export function buildCovidienTrendQuery(): string {
-  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group], ${getCovidienCommonFilters()}, "Covidien Sales Trend", [Covidien Sales Trend]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group]`;
+export function buildCovidienTrendQuery(areaName: string): string {
+  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group], ${getCovidienCommonFilters(areaName)}, "Covidien Sales Trend", [Covidien Sales Trend]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group]`;
 }
 
 export function normalizeCovidienSalesRows(

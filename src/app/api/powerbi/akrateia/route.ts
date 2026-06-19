@@ -1,6 +1,6 @@
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
 import {
-  resolveBiReportPowerBiTargetFromRequest,
+  resolveBiReportPowerBiTarget,
   resolveBiReportSellerContext,
   type AkrateiaCoverSummary,
   type AkrateiaPermanentRow,
@@ -138,7 +138,7 @@ function normalizeAkrateiaCoverSummary(
   };
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
   if (!token) {
@@ -161,7 +161,7 @@ export async function GET(req: Request) {
   let permanentData: PowerBiExecuteQueriesResponse;
   let coverSummaryData: PowerBiExecuteQueriesResponse;
   try {
-    const target = resolveBiReportPowerBiTargetFromRequest(req, "akrateia");
+    const target = resolveBiReportPowerBiTarget("akrateia");
     const tokenOptions = { amsaAccessToken: token };
 
     [data, permanentData, coverSummaryData] = await Promise.all([

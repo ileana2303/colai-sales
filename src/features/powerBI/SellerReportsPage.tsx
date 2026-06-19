@@ -87,7 +87,7 @@ function ReportSelector({ reports }: { reports: ReportTile[] }) {
 }
 
 export default function SellerReportsPage({
-  subtitle = "Επιλογή αναφοράς πωλητή",
+  subtitle = "Mavrogenis SA Reports",
 }: SellerReportsPageProps) {
   const reports = sellerReportTiles.map((report) => ({
     ...report,

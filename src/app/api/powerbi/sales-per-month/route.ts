@@ -1,6 +1,6 @@
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
 import {
-  resolveBiReportPowerBiTargetFromRequest,
+  resolveBiReportPowerBiTarget,
   resolveBiReportSellerContext,
   type MonthlySalesRow,
 } from "@/lib/bi-reports/biReports";
@@ -47,7 +47,7 @@ function normalizePowerBiRows(
   });
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
   if (!token) {
@@ -70,7 +70,7 @@ export async function GET(req: Request) {
   try {
     data = await executePowerBiQuery(
       buildSalesPerMonthQuery(seller.sellerCode),
-      resolveBiReportPowerBiTargetFromRequest(req, "sales"),
+      resolveBiReportPowerBiTarget("sales"),
       { amsaAccessToken: token },
     );
   } catch (err) {

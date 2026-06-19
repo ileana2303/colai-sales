@@ -1,5 +1,7 @@
-const DEFAULT_WORKSPACE_ID = "a279f8cd-3d0e-4362-af29-2e5af5b043d1";
-const DEFAULT_DATASET_ID = "e928997c-ad45-4320-a7d6-b35a8fa8e510";
+const MAVROGENIS_SA_REPORTS_WORKSPACE_ID =
+  "a279f8cd-3d0e-4362-af29-2e5af5b043d1";
+const MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID =
+  "e928997c-ad45-4320-a7d6-b35a8fa8e510";
 const POWERBI_SCOPE = "https://analysis.windows.net/powerbi/api/.default";
 
 export const POWERBI_NO_CACHE_HEADERS = {
@@ -101,12 +103,15 @@ export function getDefaultPowerBiWorkspaceId(): string {
   return (
     process.env.POWERBI_GROUP_ID?.trim() ||
     process.env.POWERBI_WORKSPACE_ID?.trim() ||
-    DEFAULT_WORKSPACE_ID
+    MAVROGENIS_SA_REPORTS_WORKSPACE_ID
   );
 }
 
 export function getDefaultPowerBiDatasetId(): string {
-  return process.env.POWERBI_DATASET_ID?.trim() || DEFAULT_DATASET_ID;
+  return (
+    process.env.POWERBI_DATASET_ID?.trim() ||
+    MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID
+  );
 }
 
 export function getPowerBiAuthInfo(): PowerBiAuthInfo {
@@ -153,7 +158,7 @@ function getPowerBiWorkspaceId(target?: PowerBiDatasetTarget): string {
   return (
     process.env.POWERBI_GROUP_ID?.trim() ||
     process.env.POWERBI_WORKSPACE_ID?.trim() ||
-    DEFAULT_WORKSPACE_ID
+    MAVROGENIS_SA_REPORTS_WORKSPACE_ID
   );
 }
 
@@ -187,7 +192,7 @@ function getPowerBi404Hint(target?: PowerBiDatasetTarget): string {
     return `Dataset ${datasetId} was not found in workspace ${workspaceId}, or the token cannot access it. Check the dataset ID, workspace access, and dataset Build permission.`;
   }
 
-  return "No POWERBI_GROUP_ID / POWERBI_WORKSPACE_ID is configured, so the request is using My workspace. If the dataset is in a workspace, set the workspace ID and make sure the token has workspace access and dataset Build permission.";
+  return "The request is using the dataset executeQueries route without a workspace ID. Check the dataset ID and dataset Build permission.";
 }
 
 function getPowerBiErrorMessage(

@@ -1,6 +1,6 @@
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
 import {
-  resolveBiReportPowerBiTargetFromRequest,
+  resolveBiReportPowerBiTarget,
   resolveBiReportSellerContext,
   type SalesPerYearCoverSummary,
   type SalesPerYearMonthlyRow,
@@ -116,7 +116,7 @@ function normalizeSalesPerYearCoverSummary(
   };
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
   if (!token) {
@@ -139,7 +139,7 @@ export async function GET(req: Request) {
   let monthlyData: PowerBiExecuteQueriesResponse;
   let coverSummaryData: PowerBiExecuteQueriesResponse;
   try {
-    const target = resolveBiReportPowerBiTargetFromRequest(req, "sales_year");
+    const target = resolveBiReportPowerBiTarget("sales_year");
     const tokenOptions = { amsaAccessToken: token };
 
     [data, monthlyData, coverSummaryData] = await Promise.all([

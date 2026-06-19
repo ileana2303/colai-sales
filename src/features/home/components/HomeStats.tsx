@@ -212,7 +212,7 @@ export default function HomeStats() {
       }}
     >
       <div className="row g-3 mb-3">
-        <div className="col-md-6 col-12">
+        {/* <div className="col-md-6 col-12">
           <ModuleCard
             title="Διαδικασία WC"
             description="Ημερολόγιο και ενέργειες για επόμενες παραγγελίες WC."
@@ -227,10 +227,10 @@ export default function HomeStats() {
             icon="bi-receipt"
             href="/salesWC"
           />
-        </div>
+        </div> */}
         <div className="col-md-6 col-12">
           <ModuleCard
-            title="Power BI"
+            title="PowerBI . Sellers Reports"
             description="Αναφορές πωλήσεων και διαθέσιμα datasets."
             icon="bi-bar-chart"
             href="/powerbi/seller-reports"
@@ -238,15 +238,15 @@ export default function HomeStats() {
         </div>
         <div className="col-md-6 col-12">
           <ModuleCard
-            title="Ρυθμίσεις"
-            description="Προτιμήσεις εμφάνισης και λογαριασμού."
-            icon="bi-gear"
-            href="/settings"
+            title="PowerBI . Covidien Reports"
+            description="Covidien reports ανά έτος."
+            icon="bi-bar-chart"
+            href="/powerbi/covidien-reports"
           />
         </div>
       </div>
 
-      <WcMonthCard />
+      {/* <WcMonthCard /> */}
     </div>
   );
 }
