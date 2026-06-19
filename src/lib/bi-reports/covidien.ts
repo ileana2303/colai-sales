@@ -28,7 +28,6 @@ export type CovidienSalesRow = {
   closedMonthStatus: string;
   salesProcon: number | null;
   covidienSalesTarget: number | null;
-  proconCover: number | null;
 };
 
 export type CovidienTrendRow = {
@@ -63,7 +62,7 @@ function getCovidienCommonFilters(areaName: string): string {
 }
 
 export function buildCovidienSalesQuery(areaName: string): string {
-  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], ${getCovidienCommonFilters(areaName)}, "Covidien Sales Target", [Covidien Sales Target], "% PROCON Cover", [% PROCON Cover]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month]`;
+  return `EVALUATE SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], ${getCovidienCommonFilters(areaName)}, "Covidien Sales Target", [Covidien Sales Target]) ORDER BY 'U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month]`;
 }
 
 export function buildCovidienTrendQuery(areaName: string): string {
@@ -87,7 +86,6 @@ export function normalizeCovidienSalesRows(
     ).trim(),
     salesProcon: toNullableNumber(row["[Sales PROCON]"]),
     covidienSalesTarget: toNullableNumber(row["[Covidien Sales Target]"]),
-    proconCover: toNullableNumber(row["[% PROCON Cover]"]),
   }));
 }
 

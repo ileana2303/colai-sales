@@ -12,14 +12,12 @@ import {
   MetricCard,
   ReportError,
   ReportHeader,
-  TargetBar,
   ValuePill,
 } from "@/features/powerBI/ReportShared";
 import { parseProxyJson } from "@/lib/api/client";
 import type { CovidienSalesRow } from "@/lib/bi-reports/covidien";
 import {
   formatNullableCurrency,
-  formatNullableRatioPercent,
   getMonthIndex,
   sumNullable,
 } from "@/lib/bi-reports/reportUtils";
@@ -48,7 +46,6 @@ type AggregatedRow = {
   label: string;
   sales: number | null;
   target: number | null;
-  coverage: number | null;
   records: number;
 };
 
@@ -110,14 +107,6 @@ const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
     render: (row) => formatNullableCurrency(row.covidienSalesTarget),
     sortValue: (row) => row.covidienSalesTarget,
   },
-  {
-    key: "proconCover",
-    header: "% Cover",
-    align: "end",
-    exportValue: (row) => formatNullableRatioPercent(row.proconCover),
-    render: (row) => formatNullableRatioPercent(row.proconCover),
-    sortValue: (row) => row.proconCover,
-  },
 ];
 
 const covidienSalesFilters: PowerBiTableFilter<CovidienSalesRow>[] = [
@@ -161,17 +150,12 @@ function aggregateRows(
         label: getLabel(row) || key,
         sales: 0,
         target: 0,
-        coverage: null,
         records: 0,
       } satisfies AggregatedRow);
 
     current.sales = (current.sales ?? 0) + (row.salesProcon ?? 0);
     current.target = (current.target ?? 0) + (row.covidienSalesTarget ?? 0);
     current.records += 1;
-    current.coverage =
-      current.target != null && current.target > 0
-        ? (current.sales ?? 0) / current.target
-        : null;
     groups.set(key, current);
   });
 
@@ -214,20 +198,21 @@ function FamilyBreakdown({ rows }: { rows: CovidienSalesRow[] }) {
                 {formatIntGR(row.records)} γραμμές
               </div>
             </div>
-            <span className="badge rounded-pill bg-body-tertiary text-body flex-shrink-0 border">
-              {formatNullableRatioPercent(row.coverage)}
-            </span>
           </div>
 
-          <div className="mt-3">
-            <TargetBar
-              label="Sales PROCON"
-              actual={row.sales}
-              target={row.target}
-              coverage={row.coverage}
-              accent="#2563eb"
-              formatValue={formatNullableCurrency}
-            />
+          <div className="row g-2 mt-3">
+            <div className="col-6">
+              <ValuePill
+                label="Sales PROCON"
+                value={formatNullableCurrency(row.sales)}
+              />
+            </div>
+            <div className="col-6">
+              <ValuePill
+                label="Target"
+                value={formatNullableCurrency(row.target)}
+              />
+            </div>
           </div>
         </div>
       ))}
@@ -264,7 +249,6 @@ function SellerTable({ rows }: { rows: CovidienSalesRow[] }) {
               <th>Πωλητής</th>
               <th className="text-end">Sales PROCON</th>
               <th className="text-end">Target</th>
-              <th className="text-end">% Cover</th>
             </tr>
           </thead>
           <tbody>
@@ -276,9 +260,6 @@ function SellerTable({ rows }: { rows: CovidienSalesRow[] }) {
                 </td>
                 <td className="text-end">
                   {formatNullableCurrency(row.target)}
-                </td>
-                <td className="text-end">
-                  {formatNullableRatioPercent(row.coverage)}
                 </td>
               </tr>
             ))}
@@ -325,9 +306,6 @@ function MonthRows({ rows }: { rows: CovidienSalesRow[] }) {
               <div className="flex-shrink-0 text-end">
                 <div className="fw-semibold">
                   {formatNullableCurrency(row.salesProcon)}
-                </div>
-                <div className="small text-secondary">
-                  {formatNullableRatioPercent(row.proconCover)}
                 </div>
               </div>
             </div>
@@ -386,7 +364,6 @@ export function CovidienSalesReportPage({
 
   const totalSales = sumNullable(records, (row) => row.salesProcon);
   const totalTarget = sumNullable(records, (row) => row.covidienSalesTarget);
-  const totalCover = totalTarget > 0 ? totalSales / totalTarget : null;
   const sellerCount = countUnique(records, (row) => row.sellerCode);
   const familyCount = countUnique(records, (row) => row.familyGroup);
   const monthCount = countUnique(records, (row) => row.month);
@@ -431,12 +408,6 @@ export function CovidienSalesReportPage({
               value={formatNullableCurrency(totalTarget)}
               icon="bi-bullseye"
               accent="#16a34a"
-            />
-            <MetricCard
-              label="% PROCON Cover"
-              value={formatNullableRatioPercent(totalCover)}
-              icon="bi-pie-chart"
-              accent="#7c3aed"
             />
             <MetricCard
               label="Πωλητές"
