@@ -1,0 +1,96 @@
+export type BackRoute = {
+  href: string;
+  label: string;
+};
+
+const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
+  "/settings": { href: "/", label: "Αρχική" },
+  "/powerbi/seller-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/seller-reports/akrateia": {
+    href: "/powerbi/seller-reports",
+    label: "Seller Reports",
+  },
+  "/powerbi/seller-reports/sales-per-month": {
+    href: "/powerbi/seller-reports",
+    label: "Seller Reports",
+  },
+  "/powerbi/seller-reports/sales-per-year": {
+    href: "/powerbi/seller-reports",
+    label: "Seller Reports",
+  },
+  "/powerbi/groups": { href: "/", label: "Αρχική" },
+  "/powerbi/covidien-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/covidien-reports/covidien-sales-2026": {
+    href: "/powerbi/covidien-reports",
+    label: "Covidien Reports",
+  },
+  "/powerbi/covidien-reports/covidien-sales-2025": {
+    href: "/powerbi/covidien-reports",
+    label: "Covidien Reports",
+  },
+  "/powerbi/covidien-reports/covidien-trends": {
+    href: "/powerbi/covidien-reports",
+    label: "Covidien Reports",
+  },
+  "/powerbi/BBM-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/BBM-reports/BBM-sales-2026": {
+    href: "/powerbi/BBM-reports",
+    label: "BAUSCH & LOMB Reports",
+  },
+  "/powerbi/BBM-reports/BBM-sales-2025": {
+    href: "/powerbi/BBM-reports",
+    label: "BAUSCH & LOMB Reports",
+  },
+  "/powerbi/BBM-reports/BBM-trends": {
+    href: "/powerbi/BBM-reports",
+    label: "BAUSCH & LOMB Reports",
+  },
+  "/salesWC": { href: "/", label: "Αρχική" },
+  "/diadikasia-wc": { href: "/", label: "Αρχική" },
+};
+
+const PATTERN_BACK_ROUTES: Array<{
+  pattern: RegExp;
+  route: BackRoute;
+}> = [
+  {
+    pattern: /^\/powerbi\/groups\/[^/]+\/datasets$/,
+    route: { href: "/powerbi/groups", label: "Power BI Groups" },
+  },
+];
+
+const PARENT_LABELS: Record<string, string> = {
+  "/powerbi/seller-reports": "Seller Reports",
+  "/powerbi/covidien-reports": "Covidien Reports",
+  "/powerbi/BBM-reports": "BAUSCH & LOMB Reports",
+  "/powerbi/groups": "Power BI Groups",
+};
+
+function titleCaseSegment(segment: string) {
+  return segment
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export function getBackRoute(pathname: string): BackRoute | null {
+  if (!pathname || pathname === "/") return null;
+
+  const exact = EXACT_BACK_ROUTES[pathname];
+  if (exact) return exact;
+
+  for (const entry of PATTERN_BACK_ROUTES) {
+    if (entry.pattern.test(pathname)) return entry.route;
+  }
+
+  const segments = pathname.split("/").filter(Boolean);
+  if (segments.length <= 1) {
+    return { href: "/", label: "Αρχική" };
+  }
+
+  const parentPath = `/${segments.slice(0, -1).join("/")}`;
+  const label =
+    PARENT_LABELS[parentPath] ??
+    titleCaseSegment(segments[segments.length - 2] ?? "Πίσω");
+
+  return { href: parentPath, label };
+}

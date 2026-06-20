@@ -1,5 +1,8 @@
 "use client";
 
+import { AppIcon } from "@/components/ui/app-icon";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { formatNullableRatioPercent } from "@/lib/bi-reports/reportUtils";
 
 export function ReportHeader({
@@ -14,34 +17,26 @@ export function ReportHeader({
   badgeClassName?: string;
 }) {
   return (
-    <section className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
-        <div className="min-w-0 flex-grow-1">
-          <div className="d-flex align-items-center flex-nowrap gap-2">
-            <h1 className="h4 fw-bold text-truncate mb-0">{title}</h1>
+    <section className="app-card p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 grow">
+          <div className="flex flex-nowrap items-center gap-2">
+            <h1 className="app-report-title mb-0 truncate">{title}</h1>
             <span
-              className={`badge rounded-pill flex-shrink-0 ${badgeClassName}`}
+              className={`inline-flex shrink-0 items-center rounded-full px-2 py-1 text-[11px] leading-none font-medium ${badgeClassName}`}
               style={{
                 backgroundColor: "#f2c811",
                 border: "1px solid #d9b30d",
                 color: "#1f1f1f",
-                fontSize: 10,
-                lineHeight: 1,
-                padding: "4px 7px",
               }}
             >
               PowerBI
             </span>
           </div>
-          <div className="text-secondary mt-1" style={{ fontSize: 13 }}>
-            {subtitle}
-          </div>
+          <div className="app-report-subtitle">{subtitle}</div>
         </div>
-        <div
-          className="d-inline-flex align-items-center justify-content-center rounded-4 bg-body-tertiary flex-shrink-0"
-          style={{ width: 48, height: 48 }}
-        >
-          <i className={`bi ${icon}`} aria-hidden />
+        <div className="app-report-icon inline-flex shrink-0 items-center justify-center rounded-xl bg-muted">
+          <AppIcon name={icon} size={26} />
         </div>
       </div>
     </section>
@@ -60,31 +55,29 @@ export function MetricCard({
   accent: string;
 }) {
   return (
-    <div className="col-6">
-      <div className="app-card h-100 p-3">
-        <div className="d-flex align-items-start justify-content-between gap-2">
-          <div
-            className="d-inline-flex align-items-center justify-content-center rounded-3"
-            style={{
-              width: 38,
-              height: 38,
-              background: `${accent}1f`,
-              color: accent,
-            }}
-          >
-            <i className={`bi ${icon}`} aria-hidden />
-          </div>
+    <div className="app-card h-full p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div
+          className="inline-flex items-center justify-center rounded-lg"
+          style={{
+            width: 44,
+            height: 44,
+            background: `${accent}1f`,
+            color: accent,
+          }}
+        >
+          <AppIcon name={icon} size={24} />
         </div>
-        <div className="mt-3">
-          <div className="small text-secondary" style={{ lineHeight: 1.1 }}>
-            {label}
-          </div>
-          <div
-            className="fw-bold mt-1"
-            style={{ fontSize: "1.05rem", letterSpacing: "-0.01em" }}
-          >
-            {value}
-          </div>
+      </div>
+      <div className="mt-4">
+        <div className="text-sm text-muted-foreground" style={{ lineHeight: 1.1 }}>
+          {label}
+        </div>
+        <div
+          className="mt-1.5 text-lg font-bold"
+          style={{ letterSpacing: "-0.01em" }}
+        >
+          {value}
         </div>
       </div>
     </div>
@@ -93,11 +86,11 @@ export function MetricCard({
 
 export function ValuePill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-4 bg-body-tertiary p-2">
-      <div className="small text-secondary" style={{ lineHeight: 1.1 }}>
+    <div className="rounded-xl bg-muted p-3">
+      <div className="text-sm text-muted-foreground" style={{ lineHeight: 1.1 }}>
         {label}
       </div>
-      <div className="fw-semibold text-truncate mt-1">{value}</div>
+      <div className="mt-1 truncate text-base font-semibold">{value}</div>
     </div>
   );
 }
@@ -124,23 +117,23 @@ export function TargetBar({
 
   return (
     <div>
-      <div className="d-flex align-items-center justify-content-between small gap-2">
-        <span className="fw-semibold">{label}</span>
-        <span className="text-secondary flex-shrink-0">
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="font-semibold">{label}</span>
+        <span className="shrink-0 text-muted-foreground">
           {formatNullableRatioPercent(ratio)}
         </span>
       </div>
-      <div className="d-flex align-items-center justify-content-between small text-secondary mt-1 gap-2">
+      <div className="mt-1 flex items-center justify-between gap-2 text-sm text-muted-foreground">
         <span>{formatValue(actual)}</span>
         <span>στόχος {formatValue(target)}</span>
       </div>
       <div
-        className="rounded-pill bg-body-tertiary mt-2"
-        style={{ height: 8, overflow: "hidden" }}
+        className="mt-2 overflow-hidden rounded-full bg-muted"
+        style={{ height: 10 }}
         role="presentation"
       >
         <div
-          className="rounded-pill h-100"
+          className="h-full rounded-full"
           style={{
             width: `${width}%`,
             background: ratio != null && ratio >= 1 ? "#16a34a" : accent,
@@ -159,15 +152,17 @@ export function ReportError({
   onRetry: () => void;
 }) {
   return (
-    <div className="alert alert-danger mb-0">
-      <div>{message}</div>
-      <button
+    <Alert variant="destructive" className="mb-0">
+      <AlertDescription>{message}</AlertDescription>
+      <Button
         type="button"
-        className="btn btn-sm btn-outline-danger mt-2"
+        variant="outline"
+        size="sm"
+        className="mt-2"
         onClick={onRetry}
       >
         Δοκιμή ξανά
-      </button>
-    </div>
+      </Button>
+    </Alert>
   );
 }

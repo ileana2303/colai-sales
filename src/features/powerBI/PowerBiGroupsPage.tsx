@@ -1,12 +1,11 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
 
-import AppLoader from "@/components/ui/AppLoader";
-import { ReportError, ReportHeader } from "@/features/powerBI/ReportShared";
-import { parseProxyJson } from "@/lib/api/client";
-import type { BiReportGroupsResponse } from "@/lib/bi-reports/biReports";
+import { AppIcon } from "@/components/ui/app-icon";
+import { usePowerBiGroups } from "@/features/powerBI/hooks/usePowerBiReports";
+import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
+import { ReportHeader } from "@/features/powerBI/ReportShared";
 import type { PowerBiGroup } from "@/lib/bi-reports/powerBi";
 
 function boolLabel(value?: boolean) {
@@ -19,24 +18,24 @@ function GroupCard({ group }: { group: PowerBiGroup }) {
     : "";
 
   const card = (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="fw-bold text-truncate">{group.name}</div>
-          <div className="small text-secondary text-truncate">
+          <div className="font-bold truncate">{group.name}</div>
+          <div className="text-sm text-muted-foreground truncate">
             {group.type || "Workspace"}
           </div>
         </div>
         {href ? (
-          <i
-            className="bi bi-chevron-right text-secondary flex-shrink-0"
-            aria-hidden
+          <AppIcon
+            name="bi-chevron-right"
+            className="text-muted-foreground shrink-0"
           />
         ) : null}
       </div>
 
       <div
-        className="rounded-4 bg-body-tertiary small text-secondary mt-3 p-2"
+        className="rounded-xl bg-muted text-sm text-muted-foreground mt-3 p-2"
         style={{
           fontFamily:
             "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
@@ -46,23 +45,23 @@ function GroupCard({ group }: { group: PowerBiGroup }) {
         {group.id}
       </div>
 
-      <div className="row g-2 mt-2">
-        <div className="col-6">
-          <div className="rounded-4 bg-body-tertiary p-2">
-            <div className="small text-secondary" style={{ lineHeight: 1.1 }}>
+      <div className="app-metric-grid app-metric-grid--2 mt-2">
+        <div>
+          <div className="rounded-xl bg-muted p-2">
+            <div className="text-sm text-muted-foreground" style={{ lineHeight: 1.1 }}>
               Dedicated
             </div>
-            <div className="fw-semibold mt-1">
+            <div className="font-semibold mt-1">
               {boolLabel(group.isOnDedicatedCapacity)}
             </div>
           </div>
         </div>
-        <div className="col-6">
-          <div className="rounded-4 bg-body-tertiary p-2">
-            <div className="small text-secondary" style={{ lineHeight: 1.1 }}>
+        <div>
+          <div className="rounded-xl bg-muted p-2">
+            <div className="text-sm text-muted-foreground" style={{ lineHeight: 1.1 }}>
               Read only
             </div>
-            <div className="fw-semibold mt-1">
+            <div className="font-semibold mt-1">
               {boolLabel(group.isReadOnly)}
             </div>
           </div>
@@ -76,8 +75,8 @@ function GroupCard({ group }: { group: PowerBiGroup }) {
   return (
     <Link
       href={href}
-      className="text-decoration-none"
-      style={{ color: "var(--bs-body-color)" }}
+      className="no-underline"
+      style={{ color: "inherit" }}
     >
       {card}
     </Link>
@@ -85,65 +84,37 @@ function GroupCard({ group }: { group: PowerBiGroup }) {
 }
 
 export function PowerBiGroupsPage() {
-  const [groups, setGroups] = React.useState<PowerBiGroup[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  const loadGroups = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/powerbi/groups", {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      });
-      const data = await parseProxyJson<BiReportGroupsResponse>(
-        res,
-        "Failed to load Power BI groups",
-      );
-
-      setGroups(data.groups ?? []);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Failed to load Power BI groups";
-      setError(message);
-      setGroups([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    void loadGroups();
-  }, [loadGroups]);
+  const { data, error, isLoading, isError, refetch } = usePowerBiGroups();
+  const groups = data?.groups ?? [];
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="app-page">
       <ReportHeader
         title="Groups"
         subtitle="Workspaces διαθέσιμα στο Power BI tenant"
         icon="bi-grid-3x3-gap"
       />
 
-      {loading ? (
-        <AppLoader label="Φόρτωση Power BI groups..." />
-      ) : error ? (
-        <ReportError message={error} onRetry={() => void loadGroups()} />
-      ) : groups.length ? (
-        <section className="d-flex flex-column gap-2">
-          {groups.map((group) => (
-            <GroupCard key={group.id} group={group} />
-          ))}
-        </section>
-      ) : (
-        <div className="app-card text-secondary p-3 text-center">
-          Δεν βρέθηκαν Power BI groups.
-        </div>
-      )}
+      <ReportQueryBoundary
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        fallbackError="Failed to load Power BI groups"
+        loadingLabel="Φόρτωση Power BI groups..."
+        onRetry={() => void refetch()}
+      >
+        {groups.length ? (
+          <section className="app-list-grid">
+            {groups.map((group) => (
+              <GroupCard key={group.id} group={group} />
+            ))}
+          </section>
+        ) : (
+          <div className="app-card p-5 text-center text-muted-foreground">
+            Δεν βρέθηκαν Power BI groups.
+          </div>
+        )}
+      </ReportQueryBoundary>
     </div>
   );
 }

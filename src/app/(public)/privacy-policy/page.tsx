@@ -3,7 +3,7 @@ export default function PrivacyPolicyPage() {
     <div className="app-viewport" style={{ minHeight: "100vh" }}>
       <div className="app-content py-4">
         <div className="app-card mx-auto p-4" style={{ maxWidth: 900 }}>
-          <h1 className="h4 mb-3">Πολιτική Απορρήτου</h1>
+          <h1 className="text-xl font-semibold mb-3">Πολιτική Απορρήτου</h1>
           <p>
             Η παρούσα Πολιτική Απορρήτου περιγράφει τον τρόπο με τον οποίο η
             εφαρμογή ColAI συλλέγει, χρησιμοποιεί και προστατεύει προσωπικά

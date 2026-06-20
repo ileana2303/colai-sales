@@ -1,5 +1,8 @@
 import Link from "next/link";
 
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
 type Props = {
   title?: string;
   description?: string;
@@ -14,10 +17,13 @@ export default function NotFoundView({
   actionLabel = "Επιστροφή στην αρχική",
 }: Props) {
   return (
-    <div className="app-card p-3">
-      <h1 className="h5 mb-2">{title}</h1>
-      <p className="text-secondary mb-3">{description}</p>
-      <Link href={actionHref} className="btn btn-primary w-100">
+    <div className="app-card p-5">
+      <h1 className="mb-2 text-lg font-semibold">{title}</h1>
+      <p className="mb-3 text-muted-foreground">{description}</p>
+      <Link
+        href={actionHref}
+        className={cn(buttonVariants(), "w-full")}
+      >
         {actionLabel}
       </Link>
     </div>

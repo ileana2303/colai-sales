@@ -61,7 +61,7 @@ function getBbmSalesQueryContext(areaName: string) {
 export function buildBbmSales2025Query(areaName: string): string {
   const { area, businessUnits } = getBbmSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Item Family Code'[ItemFamilyCode (groups)], 'UBussiness'[BusinessUnit], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}), "REPORT_CODE", "P06VALL-VCY", "REPORT_DESC", "BBM Sales by AREA, GROUP and Business Unit", "VCY", [Sales]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Item Family Code'[ItemFamilyCode (groups)], "Group2", 'UBussiness'[BusinessUnit], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VCY", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]`;
+  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Item Family Code'[ItemFamilyCode (groups)], 'UBussiness'[BusinessUnit], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}), "REPORT_CODE", "P06VALL-VLY", "REPORT_DESC", "BBM Sales by AREA, GROUP and Business Unit", "VCY", [Sales LY]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Item Family Code'[ItemFamilyCode (groups)], "Group2", 'UBussiness'[BusinessUnit], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VLY", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]`;
 }
 
 export function buildBbmSales2026Query(areaName: string): string {
@@ -73,7 +73,7 @@ export function buildBbmSales2026Query(areaName: string): string {
 export function buildBbmTrendQuery(areaName: string): string {
   const { area, businessUnits } = getBbmSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Item Family Code'[ItemFamilyCode (groups)], 'UBussiness'[BusinessUnit], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}), "REPORT_CODE", "P06VALL-VTREND", "REPORT_DESC", "BBM Sales Trend by AREA, GROUP and Business Unit", "VTrend", [Sales Trend]) EVALUATE SELECTCOLUMNS(__Base, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "Group1", 'U Item Family Code'[ItemFamilyCode (groups)], "Group2", 'UBussiness'[BusinessUnit], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VTrend", [VTrend]) ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]`;
+  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Item Family Code'[ItemFamilyCode (groups)], 'UBussiness'[BusinessUnit], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}), "REPORT_CODE", "P06VALL-VTREND", "REPORT_DESC", "BBM Sales Trend by AREA, GROUP and Business Unit", "VTrend", [Sales Trend], "TargetFilter", CALCULATE([Target Triplex BBM API]), "CURRENCY", 1) VAR __Filtered = FILTER(__Base, [VTrend] > 0 && NOT(ISBLANK([VTrend])) && [TargetFilter] > 0 && NOT(ISBLANK([TargetFilter]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "Group1", 'U Item Family Code'[ItemFamilyCode (groups)], "Group2", 'UBussiness'[BusinessUnit], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VTrend", [VTrend], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]`;
 }
 
 export function normalizeBbmSales2025Rows(
@@ -91,7 +91,7 @@ export function normalizeBbmSales2025Rows(
     month: readString(row, "Month"),
     reportCode: readString(row, "REPORT_CODE"),
     reportDesc: readString(row, "REPORT_DESC"),
-    vcy: readNumber(row, "VCY"),
+    vcy: readNumber(row, "VLY") ?? readNumber(row, "VCY"),
   }));
 }
 

@@ -2,10 +2,19 @@
 
 import React from "react";
 
-import AppLoader from "@/components/ui/AppLoader";
+import { AppIcon } from "@/components/ui/app-icon";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useSalesPerYearReport } from "@/features/powerBI/hooks/usePowerBiReports";
+import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
-  ReportError,
   ReportHeader,
   TargetBar,
   ValuePill,
@@ -17,11 +26,9 @@ import {
   getMonthIndex,
   getMonthLabel,
 } from "@/lib/bi-reports/reportUtils";
-import { parseProxyJson } from "@/lib/api/client";
 import type {
   SalesPerYearCoverSummary,
   SalesPerYearMonthlyRow,
-  SalesPerYearResponse,
   SalesPerYearRow,
 } from "@/lib/bi-reports/biReports";
 
@@ -42,9 +49,9 @@ function ReportSectionTitle({
   subtitle: string;
 }) {
   return (
-    <div className="app-card p-3">
-      <div className="fw-semibold">{title}</div>
-      <div className="small text-secondary mt-1">{subtitle}</div>
+    <div className="app-card p-5">
+      <div className="font-semibold">{title}</div>
+      <div className="text-sm text-muted-foreground mt-1">{subtitle}</div>
     </div>
   );
 }
@@ -78,12 +85,12 @@ function SalesPerYearTargetPanel({
   const width = ratio == null ? 0 : Math.min(100, Math.max(0, ratio * 100));
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="d-flex align-items-center gap-2">
+          <div className="flex items-center gap-2">
             <span
-              className="d-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+              className="inline-flex items-center justify-center rounded-lg shrink-0"
               style={{
                 width: 36,
                 height: 36,
@@ -91,18 +98,18 @@ function SalesPerYearTargetPanel({
                 color: accent,
               }}
             >
-              <i className={`bi ${icon}`} aria-hidden />
+              <AppIcon name={icon} size={16} />
             </span>
             <div className="min-w-0">
-              <div className="fw-bold text-truncate">{title}</div>
-              <div className="small text-secondary text-truncate">
+              <div className="font-bold truncate">{title}</div>
+              <div className="text-sm text-muted-foreground truncate">
                 {subtitle}
               </div>
             </div>
           </div>
         </div>
         <span
-          className="badge rounded-pill flex-shrink-0"
+          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
           style={{
             background: `${accent}1f`,
             color: accent,
@@ -113,27 +120,27 @@ function SalesPerYearTargetPanel({
         </span>
       </div>
 
-      <div className="row g-2 mt-3">
-        <div className="col-6">
+      <div className="app-metric-grid app-metric-grid--2 mt-3">
+        <div>
           <ValuePill label={actualLabel} value={formatValue(actual)} />
         </div>
-        <div className="col-6">
+        <div>
           <ValuePill label="Στόχος" value={formatValue(target)} />
         </div>
         {forecast !== undefined ? (
-          <div className="col-12">
+          <div className="col-span-2">
             <ValuePill label="Forecast" value={formatValue(forecast)} />
           </div>
         ) : null}
       </div>
 
       <div
-        className="rounded-pill bg-body-tertiary mt-3"
+        className="rounded-full bg-muted mt-3"
         style={{ height: 9, overflow: "hidden" }}
         role="presentation"
       >
         <div
-          className="rounded-pill h-100"
+          className="rounded-full h-full"
           style={{
             width: `${width}%`,
             background: ratio != null && ratio >= 1 ? "#16a34a" : accent,
@@ -158,14 +165,14 @@ function SalesPerYearProductCard({
   accent: string;
 }) {
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="fw-bold">{title}</div>
-          <div className="small text-secondary">Πωλήσεις vs στόχος</div>
+          <div className="font-bold">{title}</div>
+          <div className="text-sm text-muted-foreground">Πωλήσεις vs στόχος</div>
         </div>
         <span
-          className="badge rounded-pill flex-shrink-0"
+          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
           style={{
             background: `${accent}1f`,
             color: accent,
@@ -176,11 +183,11 @@ function SalesPerYearProductCard({
         </span>
       </div>
 
-      <div className="row g-2 mt-2">
-        <div className="col-6">
+      <div className="app-metric-grid app-metric-grid--2 mt-2">
+        <div>
           <ValuePill label="Πωλήσεις" value={formatNullableCurrency(sales)} />
         </div>
-        <div className="col-6">
+        <div>
           <ValuePill label="Στόχος" value={formatNullableCurrency(target)} />
         </div>
       </div>
@@ -207,7 +214,7 @@ function SalesPerYearCoverSummaryCards({
   if (!summary) return null;
 
   return (
-    <section className="row g-3">
+    <section className="app-metric-grid">
       <MetricCard
         label="Hospital Trend All"
         value={formatNullableRatioPercent(summary.hospitalCoverAll)}
@@ -246,16 +253,16 @@ function SalesPerYearMonthCard({
   const accent = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed"][index % 4];
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="fw-bold">{getMonthLabel(row.month)}</div>
-          <div className="small text-secondary">
+          <div className="font-bold">{getMonthLabel(row.month)}</div>
+          <div className="text-sm text-muted-foreground">
             Νοσοκομειακός & εξωνοσοκομειακός τζίρος
           </div>
         </div>
         <span
-          className="badge rounded-pill flex-shrink-0"
+          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
           style={{
             background: `${accent}1f`,
             color: accent,
@@ -266,7 +273,7 @@ function SalesPerYearMonthCard({
         </span>
       </div>
 
-      <div className="d-flex flex-column mt-3 gap-3">
+      <div className="flex flex-col mt-3 gap-3">
         <TargetBar
           label="Hospital Sales"
           actual={row.hospitalSales}
@@ -328,16 +335,16 @@ function SalesPerYearMonthlyBreakdown({
   if (!rows.length) return null;
 
   return (
-    <section className="d-flex flex-column gap-2">
-      <div className="app-card p-3">
-        <div className="d-flex align-items-start justify-content-between gap-3">
+    <section className="flex flex-col gap-2">
+      <div className="app-card p-5">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="fw-semibold">Μήνες αναφοράς</div>
-            <div className="small text-secondary">
+            <div className="font-semibold">Μήνες αναφοράς</div>
+            <div className="text-sm text-muted-foreground">
               Από Ιανουάριο έως τον τρέχοντα μήνα
             </div>
           </div>
-          <span className="badge rounded-pill bg-body-tertiary text-body border">
+          <span className="inline-flex items-center rounded-full border bg-muted px-2 py-0.5 text-xs text-foreground">
             {rows.length} μήνες
           </span>
         </div>
@@ -405,83 +412,49 @@ function SalesPerYearDetailsTable({ row }: { row: SalesPerYearRow }) {
   ];
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="fw-semibold">Αναλυτικά στοιχεία</div>
-          <div className="small text-secondary">Ετήσιες τιμές από Power BI</div>
+          <div className="font-semibold">Αναλυτικά στοιχεία</div>
+          <div className="text-sm text-muted-foreground">Ετήσιες τιμές από Power BI</div>
         </div>
-        <i className="bi bi-table text-secondary" aria-hidden />
+        <AppIcon name="bi-table" className="text-muted-foreground" size={18} />
       </div>
 
-      <div className="d-flex flex-column mt-3 gap-2">
-        {details.map((item) => (
-          <div
-            key={item.label}
-            className="rounded-4 bg-body-tertiary d-flex align-items-center justify-content-between gap-3 p-2"
-          >
-            <span className="small text-secondary">{item.label}</span>
-            <span className="fw-semibold text-end">{item.value}</span>
-          </div>
-        ))}
+      <div className="mt-3">
+        <Table>
+          <TableHeader>
+            <TableRow className="text-muted-foreground hover:bg-transparent">
+              <TableHead>Μετρική</TableHead>
+              <TableHead className="text-right">Τιμή</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {details.map((item) => (
+              <TableRow key={item.label}>
+                <TableCell className="text-muted-foreground">
+                  {item.label}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  {item.value}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
 }
 
 export function SalesPerYearReportPage() {
-  const [records, setRecords] = React.useState<SalesPerYearRow[]>([]);
-  const [monthlyRecords, setMonthlyRecords] = React.useState<
-    SalesPerYearMonthlyRow[]
-  >([]);
-  const [coverSummary, setCoverSummary] =
-    React.useState<SalesPerYearCoverSummary | null>(null);
-  const [sellerCode, setSellerCode] = React.useState("");
-  const [sellerName, setSellerName] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const { data, error, isLoading, isError, refetch } = useSalesPerYearReport();
 
-  const loadSalesPerYear = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/powerbi/sales-per-year", {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      });
-      const data = await parseProxyJson<SalesPerYearResponse>(
-        res,
-        "Failed to load Power BI sales per year",
-      );
-
-      setRecords(data.records ?? []);
-      setMonthlyRecords(data.monthlyRecords ?? []);
-      setCoverSummary(data.coverSummary ?? null);
-      setSellerCode(data.sellerCode ?? "");
-      setSellerName(data.sellerName ?? "");
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to load Power BI sales per year";
-      setError(message);
-      setRecords([]);
-      setMonthlyRecords([]);
-      setCoverSummary(null);
-      setSellerCode("");
-      setSellerName("");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    void loadSalesPerYear();
-  }, [loadSalesPerYear]);
+  const records = data?.records ?? [];
+  const monthlyRecords = data?.monthlyRecords ?? [];
+  const coverSummary = data?.coverSummary ?? null;
+  const sellerCode = data?.sellerCode ?? "";
+  const sellerName = data?.sellerName ?? "";
 
   const row = records[0] ?? null;
   const visibleMonthlyRecords = React.useMemo(() => {
@@ -498,25 +471,28 @@ export function SalesPerYearReportPage() {
       : "Ετήσια εικόνα πωλήσεων";
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="app-page">
       <ReportHeader
         title="Πωλήσεις ανά έτος"
         subtitle={sellerLabel}
         icon="bi-graph-up-arrow"
       />
 
-      {loading ? (
-        <AppLoader label="Φόρτωση Power BI..." />
-      ) : error ? (
-        <ReportError message={error} onRetry={() => void loadSalesPerYear()} />
-      ) : row ? (
+      <ReportQueryBoundary
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        fallbackError="Failed to load Power BI sales per year"
+        onRetry={() => void refetch()}
+      >
+        {row ? (
         <>
           <ReportSectionTitle
             title="Εικόνα Πωλήσεων"
             subtitle="Σύνολα, στόχοι, forecast και καλύψεις πωλητή"
           />
 
-          <section className="row g-3">
+          <section className="app-metric-grid">
             <MetricCard
               label="Total Coloplast Sales"
               value={formatNullableCurrency(row.totalColoplastSales)}
@@ -581,7 +557,7 @@ export function SalesPerYearReportPage() {
             formatValue={(value) => formatNullableNumber(value)}
           />
 
-          <section className="d-flex flex-column gap-2">
+          <section className="flex flex-col gap-2">
             <SalesPerYearProductCard
               title="Genadyne"
               sales={row.genadyneSales}
@@ -609,11 +585,12 @@ export function SalesPerYearReportPage() {
 
           <SalesPerYearMonthlyBreakdown rows={visibleMonthlyRecords} />
         </>
-      ) : (
-        <div className="app-card text-secondary p-3 text-center">
+        ) : (
+        <div className="app-card p-5 text-center text-muted-foreground">
           Δεν βρέθηκαν ετήσια στοιχεία πωλήσεων.
         </div>
-      )}
+        )}
+      </ReportQueryBoundary>
     </div>
   );
 }

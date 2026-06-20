@@ -2,19 +2,29 @@
 
 import React from "react";
 
-import AppLoader from "@/components/ui/AppLoader";
+import { AppIcon } from "@/components/ui/app-icon";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  useCovidienSalesReport,
+} from "@/features/powerBI/hooks/usePowerBiReports";
 import {
   PowerBiTable,
   type PowerBiTableColumn,
   type PowerBiTableFilter,
 } from "@/features/powerBI/PowerBiTable";
+import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
-  ReportError,
   ReportHeader,
   ValuePill,
 } from "@/features/powerBI/ReportShared";
-import { parseProxyJson } from "@/lib/api/client";
 import type { CovidienSalesRow } from "@/lib/bi-reports/covidien";
 import {
   formatNullableCurrency,
@@ -25,14 +35,6 @@ import {
 import { formatIntGR } from "@/lib/utils/number";
 
 type CovidienSalesYear = 2025 | 2026;
-
-type CovidienSalesResponse = {
-  ok: true;
-  report: "covidien_sales_2025" | "covidien_sales_2026";
-  year: CovidienSalesYear;
-  area: string;
-  records: CovidienSalesRow[];
-};
 
 type CovidienSalesReportPageProps = {
   apiPath:
@@ -65,29 +67,29 @@ const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
         ? `${row.sellerName || "Πωλητής"} (${row.sellerCode})`
         : row.sellerName,
     render: (row) => (
-      <span className="d-inline-flex align-items-baseline gap-1">
+      <span className="inline-flex items-baseline gap-1">
         <span>{row.sellerName || "-"}</span>
         {row.sellerCode ? (
-          <span className="small text-secondary">{row.sellerCode}</span>
+          <span className="text-sm text-muted-foreground">{row.sellerCode}</span>
         ) : null}
       </span>
     ),
   },
   {
     key: "group1",
-    header: "Group1",
+    header: "Family Group",
     exportValue: (row) => row.group1,
     render: (row) => row.group1 || "-",
   },
   {
     key: "group2",
-    header: "Group2",
+    header: "Business Unit",
     exportValue: (row) => row.group2,
     render: (row) => row.group2 || "-",
   },
   {
     key: "month",
-    header: "Month",
+    header: "Μήνας",
     exportValue: (row) => row.month,
     render: (row) => row.month || "-",
     sortValue: (row) => getMonthIndex(row.month) ?? row.month,
@@ -100,15 +102,19 @@ const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
   },
   {
     key: "reportCode",
-    header: "REPORT_CODE",
+    header: "Report Code",
     exportValue: (row) => row.reportCode,
     render: (row) => row.reportCode || "-",
   },
   {
     key: "reportDesc",
-    header: "REPORT_DESC",
+    header: "Description",
     exportValue: (row) => row.reportDesc,
-    render: (row) => row.reportDesc || "-",
+    render: (row) => (
+      <span className="block max-w-[16rem] whitespace-normal break-words">
+        {row.reportDesc || "-"}
+      </span>
+    ),
   },
   {
     key: "currency",
@@ -139,12 +145,12 @@ const covidienSalesColumns: PowerBiTableColumn<CovidienSalesRow>[] = [
 const covidienSalesFilters: PowerBiTableFilter<CovidienSalesRow>[] = [
   {
     key: "group1",
-    label: "Group1",
+    label: "Family Group",
     getValue: (row) => row.group1,
   },
   {
     key: "group2",
-    label: "Group2",
+    label: "Business Unit",
     getValue: (row) => row.group2,
   },
   {
@@ -213,31 +219,31 @@ function FamilyBreakdown({ rows }: { rows: CovidienSalesRow[] }) {
   );
 
   return (
-    <section className="d-flex flex-column gap-2">
-      <div className="app-card p-3">
-        <div className="fw-semibold">Family groups</div>
-        <div className="small text-secondary mt-1">VCY σε σχέση με TCY</div>
+    <section className="flex flex-col gap-2">
+      <div className="app-card p-5">
+        <div className="font-semibold">Family groups</div>
+        <div className="text-sm text-muted-foreground mt-1">VCY σε σχέση με TCY</div>
       </div>
 
       {familyRows.map((row) => (
-        <div key={row.key} className="app-card p-3">
-          <div className="d-flex align-items-start justify-content-between gap-3">
+        <div key={row.key} className="app-card p-5">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <div className="fw-bold text-truncate">{row.label}</div>
-              <div className="small text-secondary">
+              <div className="font-bold truncate">{row.label}</div>
+              <div className="text-sm text-muted-foreground">
                 {formatIntGR(row.records)} γραμμές
               </div>
             </div>
           </div>
 
-          <div className="row g-2 mt-3">
-            <div className="col-6">
+          <div className="app-metric-grid app-metric-grid--2 mt-3">
+            <div>
               <ValuePill
                 label="VCY"
                 value={formatNullableCurrency(row.sales)}
               />
             </div>
-            <div className="col-6">
+            <div>
               <ValuePill
                 label="TCY"
                 value={formatNullableCurrency(row.target)}
@@ -261,40 +267,40 @@ function SellerTable({ rows }: { rows: CovidienSalesRow[] }) {
   );
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="fw-semibold">Πωλητές</div>
-          <div className="small text-secondary">
+          <div className="font-semibold">Πωλητές</div>
+          <div className="text-sm text-muted-foreground">
             Σύνολα ανά πωλητή για το logged-in area
           </div>
         </div>
-        <i className="bi bi-table text-secondary" aria-hidden />
+        <AppIcon name="bi-table" className="text-muted-foreground" size={18} />
       </div>
 
-      <div className="table-responsive mt-3">
-        <table className="table-sm mb-0 table align-middle">
-          <thead>
-            <tr className="small text-secondary">
-              <th>Πωλητής</th>
-              <th className="text-end">VCY</th>
-              <th className="text-end">TCY</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="mt-3">
+        <Table>
+          <TableHeader>
+            <TableRow className="text-muted-foreground hover:bg-transparent">
+              <TableHead>Πωλητής</TableHead>
+              <TableHead className="text-right">VCY</TableHead>
+              <TableHead className="text-right">TCY</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sellerRows.map((row) => (
-              <tr key={row.key}>
-                <td className="fw-semibold">{row.label}</td>
-                <td className="text-end">
+              <TableRow key={row.key}>
+                <TableCell className="font-semibold">{row.label}</TableCell>
+                <TableCell className="text-right">
                   {formatNullableCurrency(row.sales)}
-                </td>
-                <td className="text-end">
+                </TableCell>
+                <TableCell className="text-right">
                   {formatNullableCurrency(row.target)}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -304,43 +310,47 @@ function MonthRows({ rows }: { rows: CovidienSalesRow[] }) {
   if (!rows.length) return null;
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="fw-semibold">Αναλυτικές γραμμές</div>
-          <div className="small text-secondary">
+          <div className="font-semibold">Αναλυτικές γραμμές</div>
+          <div className="text-sm text-muted-foreground">
             Month, status και family group από Power BI
           </div>
         </div>
-        <span className="badge rounded-pill bg-body-tertiary text-body border">
+        <span className="inline-flex items-center rounded-full border bg-muted px-2 py-0.5 text-xs text-foreground">
           {formatIntGR(rows.length)}
         </span>
       </div>
 
-      <div className="d-flex flex-column mt-3 gap-2">
-        {rows.slice(0, 80).map((row, index) => (
-          <div
-            key={`${row.sellerCode}-${row.group1}-${row.month}-${index}`}
-            className="rounded-4 bg-body-tertiary p-2"
-          >
-            <div className="d-flex align-items-start justify-content-between gap-3">
-              <div className="min-w-0">
-                <div className="fw-semibold text-truncate">
+      <div className="mt-3">
+        <Table>
+          <TableHeader>
+            <TableRow className="text-muted-foreground hover:bg-transparent">
+              <TableHead>Μήνας / Group</TableHead>
+              <TableHead>Πωλητής / Status</TableHead>
+              <TableHead className="text-right">VCY</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.slice(0, 80).map((row, index) => (
+              <TableRow
+                key={`${row.sellerCode}-${row.group1}-${row.month}-${index}`}
+              >
+                <TableCell className="font-semibold">
                   {row.month || "-"} • {row.group1 || "-"}
-                </div>
-                <div className="small text-secondary text-truncate">
-                  {row.sellerName || "Πωλητής"}{" "}
-                  {row.closedMonthStatus ? `• ${row.closedMonthStatus}` : ""}
-                </div>
-              </div>
-              <div className="flex-shrink-0 text-end">
-                <div className="fw-semibold">
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {row.sellerName || "Πωλητής"}
+                  {row.closedMonthStatus ? ` • ${row.closedMonthStatus}` : ""}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
                   {formatNullableCurrency(row.vcy)}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -351,46 +361,12 @@ export function CovidienSalesReportPage({
   showAllDataTable = false,
   year,
 }: CovidienSalesReportPageProps) {
-  const [records, setRecords] = React.useState<CovidienSalesRow[]>([]);
-  const [area, setArea] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
-
-  const loadReport = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(apiPath, {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      });
-      const data = await parseProxyJson<CovidienSalesResponse>(
-        res,
-        `Failed to load Covidien sales ${year}`,
-      );
-
-      setRecords(data.records ?? []);
-      setArea(data.area ?? "");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : `Failed to load Covidien sales ${year}`,
-      );
-      setRecords([]);
-      setArea("");
-    } finally {
-      setLoading(false);
-    }
-  }, [apiPath, year]);
-
-  React.useEffect(() => {
-    void loadReport();
-  }, [loadReport]);
+  const { data, error, isLoading, isError, refetch } = useCovidienSalesReport(
+    apiPath,
+    year,
+  );
+  const records = data?.records ?? [];
+  const area = data?.area ?? "";
 
   const totalSales = sumNullable(records, (row) => row.vcy);
   const totalTarget = sumNullable(records, (row) => row.tcy);
@@ -399,21 +375,25 @@ export function CovidienSalesReportPage({
   const monthCount = countUnique(records, (row) => row.month);
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="app-page">
       <ReportHeader
         title={`Covidien Sales ${year}`}
         subtitle={area ? `Area: ${area}` : "Area από το login"}
         icon="bi-graph-up-arrow"
       />
 
-      {loading ? (
-        <AppLoader label="Φόρτωση Power BI..." />
-      ) : error ? (
-        <ReportError message={error} onRetry={() => void loadReport()} />
-      ) : records.length ? (
+      <ReportQueryBoundary
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        fallbackError={`Failed to load Covidien sales ${year}`}
+        onRetry={() => void refetch()}
+      >
+        {records.length ? (
         <>
           {showAllDataTable ? (
             <PowerBiTable
+              tableId={`covidien-sales-${year}`}
               columns={covidienSalesColumns}
               exportFileName={`covidien-sales-${year}`}
               filters={covidienSalesFilters}
@@ -426,7 +406,7 @@ export function CovidienSalesReportPage({
             />
           ) : null}
 
-          <section className="row g-3">
+          <section className="app-metric-grid">
             <MetricCard
               label="VCY"
               value={formatNullableCurrency(totalSales)}
@@ -447,14 +427,14 @@ export function CovidienSalesReportPage({
             />
           </section>
 
-          <section className="row g-3">
-            <div className="col-6">
+          <section className="app-metric-grid">
+            <div>
               <ValuePill
                 label="Family groups"
                 value={formatIntGR(familyCount)}
               />
             </div>
-            <div className="col-6">
+            <div>
               <ValuePill label="Μήνες" value={formatIntGR(monthCount)} />
             </div>
           </section>
@@ -463,11 +443,12 @@ export function CovidienSalesReportPage({
           <SellerTable rows={records} />
           <MonthRows rows={records} />
         </>
-      ) : (
-        <div className="app-card text-secondary p-3 text-center">
+        ) : (
+        <div className="app-card p-5 text-center text-muted-foreground">
           Δεν βρέθηκαν Covidien στοιχεία για το area του login.
         </div>
-      )}
+        )}
+      </ReportQueryBoundary>
     </div>
   );
 }

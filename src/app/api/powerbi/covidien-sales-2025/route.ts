@@ -1,8 +1,8 @@
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
-  buildCovidienSalesQuery,
-  normalizeCovidienSalesRows,
+  buildCovidienSales2025Query,
+  normalizeCovidienSales2025Rows,
 } from "@/lib/bi-reports/covidien";
 import {
   executePowerBiQuery,
@@ -37,7 +37,7 @@ export async function GET() {
   let data: PowerBiExecuteQueriesResponse;
   try {
     data = await executePowerBiQuery(
-      buildCovidienSalesQuery(area),
+      buildCovidienSales2025Query(area),
       resolveBiReportPowerBiTarget("covidien_sales_2025"),
       { amsaAccessToken: token },
     );
@@ -58,7 +58,7 @@ export async function GET() {
       report: "covidien_sales_2025",
       year: 2025,
       area,
-      records: normalizeCovidienSalesRows(data),
+      records: normalizeCovidienSales2025Rows(data),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );

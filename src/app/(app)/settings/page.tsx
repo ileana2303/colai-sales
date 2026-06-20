@@ -1,51 +1,55 @@
 "use client";
 
-import { toggleTheme } from "@/features/settings/settingsSlice";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import packageJson from "../../../../package.json";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { useSettingsStore } from "@/stores/settingsStore";
 
 export default function SettingsPage() {
-  const dispatch = useAppDispatch();
-  const theme = useAppSelector((s) => s.settings.theme);
-
-  const handleTheming = () => {
-    dispatch(toggleTheme());
-  };
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
 
   return (
-    <div
-      className="d-flex flex-column h-100"
-      style={{
-        minHeight: 0,
-        overflowX: "hidden",
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
-      <div className="app-card mb-3 p-3">
-        <div className="d-flex align-items-center justify-content-between">
+    <div className="app-page app-page--narrow">
+      <Card>
+        <CardHeader>
+          <CardTitle>Ρυθμίσεις</CardTitle>
+          <CardDescription>Προτιμήσεις εμφάνισης και εφαρμογής.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex items-center justify-between gap-3">
           <div>
-            <div className="fw-semibold">Theme</div>
-            <div className="text-secondary small">Light / Dark</div>
+            <Label htmlFor="theme-switch" className="font-semibold">
+              Σκοτεινό θέμα
+            </Label>
+            <div className="text-sm text-muted-foreground mt-1">
+              Εναλλαγή μεταξύ φωτεινής και σκοτεινής εμφάνισης.
+            </div>
           </div>
-          <button
-            type="button"
-            className="btn btn-outline-primary app-pill"
-            onClick={handleTheming}
-          >
-            <i
-              className={`bi ${theme === "dark" ? "bi-sun" : "bi-moon"} me-2`}
-            />
-            {theme === "dark" ? "Light" : "Dark"}
-          </button>
-        </div>
-      </div>
+          <Switch
+            id="theme-switch"
+            checked={theme === "dark"}
+            onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+          />
+        </CardContent>
+      </Card>
 
-      <div className="app-card p-3">
-        <div className="fw-semibold mb-2">About</div>
-        <div className="text-secondary small">
-          {process.env.NEXT_PUBLIC_APP_VERSION}
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Εφαρμογή</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-muted-foreground">Έκδοση</div>
+          <div className="font-semibold mt-1">{packageJson.version}</div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

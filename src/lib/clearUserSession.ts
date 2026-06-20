@@ -1,5 +1,5 @@
 /** localStorage keys that hold user-specific cached app data (not UI prefs like theme). */
-export const USER_SESSION_STORAGE_KEYS = ["auth", "wc"] as const;
+export const USER_SESSION_STORAGE_KEYS = ["auth"] as const;
 
 export function clearUserSessionLocalStorage(): void {
   if (typeof window === "undefined") return;

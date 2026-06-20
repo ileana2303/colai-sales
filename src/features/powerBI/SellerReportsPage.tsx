@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AppIcon } from "@/components/ui/app-icon";
 import type { ReportTile } from "@/lib/bi-reports/biReports";
 
 type SellerReportsPageProps = {
@@ -43,41 +44,36 @@ function buildReportHref(slug: string) {
 
 function ReportSelector({ reports }: { reports: ReportTile[] }) {
   return (
-    <div className="app-card p-2">
-      <div className="d-flex flex-column gap-2">
+    <div className="app-card p-4">
+      <div className="app-tile-grid">
         {reports.map((report) => (
           <Link
             key={report.key}
             href={report.href}
-            className="rounded-4 bg-body-tertiary d-flex align-items-center text-decoration-none gap-3 p-2 text-start"
-            style={{ color: "var(--bs-body-color)" }}
+            className="app-nav-tile"
           >
             <span
-              className="d-inline-flex align-items-center justify-content-center rounded-3 flex-shrink-0"
+              className="app-nav-tile__icon"
               style={{
-                width: 42,
-                height: 42,
                 background: `${report.accent}18`,
                 color: report.accent,
                 border: `1px solid ${report.accent}33`,
               }}
             >
-              <i className={`bi ${report.icon}`} aria-hidden />
+              <AppIcon name={report.icon} size={20} />
             </span>
-            <span className="min-w-0 flex-grow-1">
-              <span className="fw-semibold text-truncate d-block">
-                {report.title}
-              </span>
+            <span className="min-w-0 grow">
+              <span className="block truncate font-semibold">{report.title}</span>
               <span
-                className="d-block small text-secondary text-truncate"
+                className="block truncate text-sm text-muted-foreground"
                 style={{ lineHeight: 1.2 }}
               >
                 {report.subtitle}
               </span>
             </span>
-            <i
-              className="bi bi-chevron-right text-secondary flex-shrink-0"
-              aria-hidden
+            <AppIcon
+              name="bi-chevron-right"
+              className="shrink-0 text-muted-foreground"
             />
           </Link>
         ))}
@@ -95,14 +91,14 @@ export default function SellerReportsPage({
   }));
 
   return (
-    <div className="d-flex flex-column gap-3">
-      <section className="app-card p-3">
-        <div className="d-flex align-items-start justify-content-between gap-3">
-          <div className="min-w-0 flex-grow-1">
-            <div className="d-flex align-items-center flex-nowrap gap-2">
-              <h1 className="h4 fw-bold text-truncate mb-0">Seller Reports</h1>
+    <div className="app-page">
+      <section className="app-card p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 grow">
+            <div className="flex items-center flex-nowrap gap-2">
+              <h1 className="text-xl font-bold truncate mb-0">Seller Reports</h1>
               <span
-                className="badge rounded-pill flex-shrink-0"
+                className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
                 style={{
                   backgroundColor: "#f2c811",
                   border: "1px solid #d9b30d",
@@ -115,15 +111,15 @@ export default function SellerReportsPage({
                 PowerBI
               </span>
             </div>
-            <div className="text-secondary mt-1" style={{ fontSize: 13 }}>
+            <div className="text-muted-foreground mt-1" style={{ fontSize: 13 }}>
               {subtitle}
             </div>
           </div>
           <div
-            className="d-inline-flex align-items-center justify-content-center rounded-4 bg-body-tertiary flex-shrink-0"
+            className="inline-flex items-center justify-center rounded-xl bg-muted shrink-0"
             style={{ width: 48, height: 48 }}
           >
-            <i className="bi bi-clipboard-data" aria-hidden />
+            <AppIcon name="bi-clipboard-data" size={22} />
           </div>
         </div>
       </section>

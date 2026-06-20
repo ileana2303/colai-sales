@@ -2,10 +2,19 @@
 
 import React from "react";
 
-import AppLoader from "@/components/ui/AppLoader";
+import { AppIcon } from "@/components/ui/app-icon";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useAkrateiaReport } from "@/features/powerBI/hooks/usePowerBiReports";
+import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
-  ReportError,
   ReportHeader,
   TargetBar,
   ValuePill,
@@ -21,11 +30,9 @@ import {
   getMonthLabel,
   sumNullable,
 } from "@/lib/bi-reports/reportUtils";
-import { parseProxyJson } from "@/lib/api/client";
 import type {
   AkrateiaCoverSummary,
   AkrateiaPermanentRow,
-  AkrateiaResponse,
   AkrateiaRow,
 } from "@/lib/bi-reports/biReports";
 import { formatIntGR } from "@/lib/utils/number";
@@ -56,9 +63,9 @@ function ReportSectionTitle({
   subtitle: string;
 }) {
   return (
-    <div className="app-card p-3">
-      <div className="fw-semibold">{title}</div>
-      <div className="small text-secondary mt-1">{subtitle}</div>
+    <div className="app-card p-5">
+      <div className="font-semibold">{title}</div>
+      <div className="text-sm text-muted-foreground mt-1">{subtitle}</div>
     </div>
   );
 }
@@ -77,14 +84,14 @@ function AkrateiaMonthCard({
       : (row.ccNewSales ?? 0) + (row.ccRepSales ?? 0);
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="fw-bold">{getMonthLabel(row.month)}</div>
-          <div className="small text-secondary">CC sales και targets</div>
+          <div className="font-bold">{getMonthLabel(row.month)}</div>
+          <div className="text-sm text-muted-foreground">CC sales και targets</div>
         </div>
         <span
-          className="badge rounded-pill flex-shrink-0"
+          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
           style={{
             background: `${accent}1f`,
             color: accent,
@@ -95,31 +102,31 @@ function AkrateiaMonthCard({
         </span>
       </div>
 
-      <div className="row g-2 mt-2">
-        <div className="col-6">
+      <div className="app-metric-grid app-metric-grid--2 mt-2">
+        <div>
           <ValuePill
             label="CC NEW sales"
             value={formatNullableCurrency(row.ccNewSales)}
           />
         </div>
-        <div className="col-6">
+        <div>
           <ValuePill
             label="CC REP sales"
             value={formatNullableCurrency(row.ccRepSales)}
           />
         </div>
-        <div className="col-6">
+        <div>
           <ValuePill
             label="CC New PERi"
             value={formatNullableInt(row.ccNewPeri)}
           />
         </div>
-        <div className="col-6">
+        <div>
           <ValuePill label="CC EKTEL" value={formatNullableInt(row.ccEktel)} />
         </div>
       </div>
 
-      <div className="d-flex flex-column mt-3 gap-3">
+      <div className="flex flex-col mt-3 gap-3">
         <TargetBar
           label="CC Sales Target"
           actual={ccSales}
@@ -157,7 +164,7 @@ function AkrateiaCoverSummaryCards({
   if (!summary) return null;
 
   return (
-    <section className="row g-3">
+    <section className="app-metric-grid">
       <MetricCard
         label="% CC Sales Cover"
         value={formatNullableRatioPercent(summary.ccSalesCover)}
@@ -196,14 +203,14 @@ function PermanentMonthCard({
   const accent = accentColors[(index + 1) % accentColors.length];
 
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="fw-bold">{getMonthLabel(row.month)}</div>
-          <div className="small text-secondary">Μόνιμοι και στόχος</div>
+          <div className="font-bold">{getMonthLabel(row.month)}</div>
+          <div className="text-sm text-muted-foreground">Μόνιμοι και στόχος</div>
         </div>
         <span
-          className="badge rounded-pill flex-shrink-0"
+          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
           style={{
             background: `${accent}1f`,
             color: accent,
@@ -214,14 +221,14 @@ function PermanentMonthCard({
         </span>
       </div>
 
-      <div className="row g-2 mt-2">
-        <div className="col-6">
+      <div className="app-metric-grid app-metric-grid--2 mt-2">
+        <div>
           <ValuePill
             label="Μόνιμοι"
             value={formatNullableCurrency(row.monimoiSales)}
           />
         </div>
-        <div className="col-6">
+        <div>
           <ValuePill
             label="Μόνιμοι Sales Target"
             value={formatNullableCurrency(row.monimoiSalesTarget)}
@@ -247,7 +254,7 @@ function PermanentMonthlyBreakdown({ rows }: { rows: AkrateiaPermanentRow[] }) {
   if (!rows.length) return null;
 
   return (
-    <section className="d-flex flex-column gap-2">
+    <section className="flex flex-col gap-2">
       {rows.map((row, index) => (
         <PermanentMonthCard
           key={`${row.month}-${index}`}
@@ -261,104 +268,63 @@ function PermanentMonthlyBreakdown({ rows }: { rows: AkrateiaPermanentRow[] }) {
 
 function AkrateiaCompactTable({ rows }: { rows: AkrateiaRow[] }) {
   return (
-    <div className="app-card p-3">
-      <div className="d-flex align-items-start justify-content-between gap-3">
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="fw-semibold">Αναλυτικά στοιχεία</div>
-          <div className="small text-secondary">
+          <div className="font-semibold">Αναλυτικά στοιχεία</div>
+          <div className="text-sm text-muted-foreground">
             Μηνιαίες τιμές από Power BI
           </div>
         </div>
-        <i className="bi bi-table text-secondary" aria-hidden />
+        <AppIcon name="bi-table" className="text-muted-foreground" size={18} />
       </div>
 
-      <div className="table-responsive mt-3">
-        <table className="table-sm mb-0 table align-middle">
-          <thead>
-            <tr className="small text-secondary">
-              <th>Μήνας</th>
-              <th className="text-end">CC NEW</th>
-              <th className="text-end">CC REP</th>
-              <th className="text-end">Sales</th>
-              <th className="text-end">EKTEL</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="mt-3">
+        <Table>
+          <TableHeader>
+            <TableRow className="text-muted-foreground hover:bg-transparent">
+              <TableHead>Μήνας</TableHead>
+              <TableHead className="text-right">CC NEW</TableHead>
+              <TableHead className="text-right">CC REP</TableHead>
+              <TableHead className="text-right">Sales</TableHead>
+              <TableHead className="text-right">EKTEL</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.map((row) => (
-              <tr key={row.month}>
-                <td className="fw-semibold">{getMonthLabel(row.month)}</td>
-                <td className="text-end">
+              <TableRow key={row.month}>
+                <TableCell className="font-semibold">
+                  {getMonthLabel(row.month)}
+                </TableCell>
+                <TableCell className="text-right">
                   {formatNullableCurrency(row.ccNewSales)}
-                </td>
-                <td className="text-end">
+                </TableCell>
+                <TableCell className="text-right">
                   {formatNullableCurrency(row.ccRepSales)}
-                </td>
-                <td className="text-end">
+                </TableCell>
+                <TableCell className="text-right">
                   {formatNullableCurrency(row.sales)}
-                </td>
-                <td className="text-end">{formatNullableInt(row.ccEktel)}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatNullableInt(row.ccEktel)}
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
 }
 
 export function AkrateiaReportPage() {
-  const [records, setRecords] = React.useState<AkrateiaRow[]>([]);
-  const [permanentRecords, setPermanentRecords] = React.useState<
-    AkrateiaPermanentRow[]
-  >([]);
-  const [coverSummary, setCoverSummary] =
-    React.useState<AkrateiaCoverSummary | null>(null);
-  const [sellerCode, setSellerCode] = React.useState("");
-  const [sellerName, setSellerName] = React.useState("");
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const { data, error, isLoading, isError, refetch } = useAkrateiaReport();
 
-  const loadAkrateia = React.useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/powerbi/akrateia", {
-        cache: "no-store",
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      });
-      const data = await parseProxyJson<AkrateiaResponse>(
-        res,
-        "Failed to load Power BI akrateia report",
-      );
-
-      setRecords(data.records ?? []);
-      setPermanentRecords(data.permanentRecords ?? []);
-      setCoverSummary(data.coverSummary ?? null);
-      setSellerCode(data.sellerCode ?? "");
-      setSellerName(data.sellerName ?? "");
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Failed to load Power BI akrateia report";
-      setError(message);
-      setRecords([]);
-      setPermanentRecords([]);
-      setCoverSummary(null);
-      setSellerCode("");
-      setSellerName("");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    void loadAkrateia();
-  }, [loadAkrateia]);
+  const records = data?.records ?? [];
+  const permanentRecords = data?.permanentRecords ?? [];
+  const coverSummary = data?.coverSummary ?? null;
+  const sellerCode = data?.sellerCode ?? "";
+  const sellerName = data?.sellerName ?? "";
 
   const visibleRecords = React.useMemo(
     () => filterRowsThroughCurrentMonth(records),
@@ -385,25 +351,28 @@ export function AkrateiaReportPage() {
       : "CC sales, PER και εκτελέσεις ανά μήνα";
 
   return (
-    <div className="d-flex flex-column gap-3">
+    <div className="app-page">
       <ReportHeader
         title="Ακράτεια"
         subtitle={sellerLabel}
         icon="bi-droplet-half"
       />
 
-      {loading ? (
-        <AppLoader label="Φόρτωση Power BI..." />
-      ) : error ? (
-        <ReportError message={error} onRetry={() => void loadAkrateia()} />
-      ) : records.length ? (
+      <ReportQueryBoundary
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        fallbackError="Failed to load Power BI akrateia report"
+        onRetry={() => void refetch()}
+      >
+        {records.length ? (
         <>
           <ReportSectionTitle
             title="Αποτελέσματα Ακράτειας"
             subtitle="CC sales, PER και εκτελέσεις έως τον τρέχοντα μήνα"
           />
 
-          <section className="row g-3">
+          <section className="app-metric-grid">
             <MetricCard
               label="CC Sales"
               value={formatCurrency(totalCcSales)}
@@ -430,7 +399,7 @@ export function AkrateiaReportPage() {
             />
           </section>
 
-          <section className="d-flex flex-column gap-2">
+          <section className="flex flex-col gap-2">
             {visibleRecords.map((row, index) => (
               <AkrateiaMonthCard
                 key={`${row.month}-${index}`}
@@ -456,11 +425,12 @@ export function AkrateiaReportPage() {
 
           <AkrateiaCoverSummaryCards summary={coverSummary} />
         </>
-      ) : (
-        <div className="app-card text-secondary p-3 text-center">
+        ) : (
+        <div className="app-card p-5 text-center text-muted-foreground">
           Δεν βρέθηκαν στοιχεία ακράτειας.
         </div>
-      )}
+        )}
+      </ReportQueryBoundary>
     </div>
   );
 }

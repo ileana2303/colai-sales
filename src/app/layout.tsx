@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit } from "next/font/google";
+import { Outfit, Geist } from "next/font/google";
 
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
 import "./globals.css";
 
-import { StoreProvider } from "@/store/StoreProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { BootstrapThemeSync } from "@/components/ui/BootstrapThemeSync";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -15,10 +16,10 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: "ColAI",
-    template: "%s · ColAI",
+    default: "Mavrogenis",
+    template: "%s · Mavrogenis",
   },
-  description: "Sales tools and reports for Mavrogenis.",
+  description: "Mavrogenis login portal.",
   icons: {
     icon: [{ url: "/favicon.ico" }],
   },
@@ -38,6 +39,7 @@ const runtimeInitScript = `(() => {
       : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
     document.documentElement.setAttribute("data-bs-theme", theme);
+    document.documentElement.classList.toggle("dark", theme === "dark");
 
     const color = theme === "dark" ? "#0b1220" : "#ffffff";
     document.documentElement.style.backgroundColor = color;
@@ -50,16 +52,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={outfit.className} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={cn(outfit.className, "font-sans", geist.variable)}
+      suppressHydrationWarning
+    >
       <head>
         <meta name="color-scheme" content="dark light" />
         <script dangerouslySetInnerHTML={{ __html: runtimeInitScript }} />
       </head>
       <body>
-        <StoreProvider>
+        <QueryProvider>
           <BootstrapThemeSync />
           {children}
-        </StoreProvider>
+        </QueryProvider>
       </body>
     </html>
   );
