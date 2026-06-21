@@ -2,45 +2,57 @@
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
+import { AREA_REPORT_CATEGORIES } from "@/lib/bi-reports/reportCategories";
 import { useAuthStore } from "@/stores/authStore";
 import Link from "next/link";
 
 type ModuleCardProps = {
-  title: string;
+  accent: string;
   description: string;
-  icon: string;
   href: string;
+  icon: string;
+  title: string;
 };
 
-function ModuleCard({ title, description, icon, href }: ModuleCardProps) {
+function ModuleCard({ accent, description, href, icon, title }: ModuleCardProps) {
   return (
     <Link
       href={href}
-      className="block h-full no-underline text-inherit"
+      className="block h-full w-full no-underline text-inherit"
       aria-label={`${title} — μετάβαση`}
     >
       <div
-        className="app-card app-card-pressable h-full p-5"
+        className="app-card app-card-pressable h-full w-full overflow-hidden"
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        <div className="flex items-center justify-between gap-4">
-          <div
-            className="flex min-w-0 grow items-center gap-4"
-          >
-            <div className="home-module-card__icon">
-              <AppIcon name={icon} size={22} />
+        <div
+          className="home-module-card__banner"
+          style={{
+            background: `linear-gradient(90deg, ${accent}40, ${accent}14)`,
+            borderBottom: `3px solid ${accent}`,
+          }}
+        />
+        <div className="home-module-card__body">
+          <div className="home-module-card__content">
+            <div
+              className="home-module-card__icon"
+              style={{
+                borderColor: `${accent}55`,
+                background: `linear-gradient(180deg, ${accent}24, ${accent}0a)`,
+                color: accent,
+              }}
+            >
+              <AppIcon name={icon} size={28} />
             </div>
-            <div className="min-w-0">
-              <div className="text-lg font-semibold leading-tight">{title}</div>
-              <div className="mt-1.5 text-sm text-muted-foreground">
-                {description}
-              </div>
+            <div className="home-module-card__text">
+              <div className="home-module-card__title">{title}</div>
+              <div className="home-module-card__description">{description}</div>
             </div>
           </div>
           <AppIcon
             name="bi-chevron-right"
-            className="shrink-0 text-muted-foreground"
-            size={20}
+            className="home-module-card__chevron"
+            size={24}
           />
         </div>
       </div>
@@ -58,35 +70,29 @@ export default function HomeStats() {
         title="PowerBI . Sellers Reports"
         description="Αναφορές πωλήσεων και διαθέσιμα datasets."
         icon="bi-bar-chart"
+        accent="#6366f1"
         href="/powerbi/seller-reports"
       />
       <ModuleCard
         title="Power BI Groups"
         description="Workspaces και datasets του tenant."
         icon="bi-grid-3x3-gap"
+        accent="#64748b"
         href="/powerbi/groups"
       />
     </div>
   ) : (
     <div className="app-home-grid">
-      <ModuleCard
-        title="Covidien Reports"
-        description="PowerBI Reports for Covidien Sales & Trends."
-        icon="bi-bar-chart"
-        href="/powerbi/covidien-reports"
-      />
-      <ModuleCard
-        title="Porges Reports"
-        description="PowerBI Reports for Porges Sales & Trends."
-        icon="bi-bar-chart"
-        href="/powerbi/porges-reports"
-      />
-      <ModuleCard
-        title="BAUSCH & LOMB TRIPLEX Reports"
-        description="PowerBI Reports for BAUSCH & LOMB TRIPLEX Sales & Trends."
-        icon="bi-bar-chart"
-        href="/powerbi/BBM-reports"
-      />
+      {AREA_REPORT_CATEGORIES.map((category) => (
+        <ModuleCard
+          key={category.key}
+          title={category.title}
+          description={category.description}
+          icon={category.icon}
+          accent={category.accent}
+          href={category.href}
+        />
+      ))}
     </div>
   );
 }

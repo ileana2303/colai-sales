@@ -70,6 +70,10 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
     href: "/powerbi/porges-reports",
     label: "Porges Reports",
   },
+  "/powerbi/coloplast-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/genadyne-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/amoena-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/abbott-reports": { href: "/", label: "Αρχική" },
   "/salesWC": { href: "/", label: "Αρχική" },
   "/diadikasia-wc": { href: "/", label: "Αρχική" },
 };
@@ -89,6 +93,10 @@ const PARENT_LABELS: Record<string, string> = {
   "/powerbi/covidien-reports": "Covidien Reports",
   "/powerbi/porges-reports": "Porges Reports",
   "/powerbi/BBM-reports": "BAUSCH & LOMB Reports",
+  "/powerbi/coloplast-reports": "Coloplast Reports",
+  "/powerbi/genadyne-reports": "Genadyne Reports",
+  "/powerbi/amoena-reports": "AMOENA Reports",
+  "/powerbi/abbott-reports": "ABBOTT Reports",
   "/powerbi/groups": "Power BI Groups",
 };
 

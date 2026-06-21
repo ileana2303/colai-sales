@@ -14,6 +14,7 @@ import { ChevronRight } from "@/icons/lucide/chevron-right";
 import { CircleCheck } from "@/icons/lucide/circle-check";
 import { ClipboardList } from "@/icons/lucide/clipboard-list";
 import { Coins } from "@/icons/lucide/coins";
+import { Construction } from "@/icons/lucide/construction";
 import { Database } from "@/icons/lucide/database";
 import { Droplet } from "@/icons/lucide/droplet";
 import { FileSpreadsheet } from "@/icons/lucide/file-spreadsheet";
@@ -49,6 +50,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-chevron-right": ChevronRight,
   "bi-clipboard-data": ClipboardList,
   "bi-clipboard2-pulse": HeartPulse,
+  "bi-construction": Construction,
   "bi-database": Database,
   "bi-droplet-half": Droplet,
   "bi-file-earmark-excel": FileSpreadsheet,

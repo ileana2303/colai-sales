@@ -246,14 +246,14 @@ html.dark .app-header__inner {
 }
 
 .home-module-card__icon {
-  width: 52px;
-  height: 52px;
+  width: clamp(56px, 3.2rem + 1vw, 68px);
+  height: clamp(56px, 3.2rem + 1vw, 68px);
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(217, 179, 13, 0.68);
-  border-radius: 16px;
+  border-radius: 18px;
   background: linear-gradient(
     180deg,
     rgba(242, 200, 17, 0.24),
@@ -261,6 +261,63 @@ html.dark .app-header__inner {
   );
   color: #9a6b00;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.54);
+}
+
+.home-module-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: clamp(1.25rem, 1rem + 0.6vw, 1.75rem)
+    clamp(1.375rem, 1.1rem + 0.8vw, 2rem);
+}
+
+.home-module-card__content {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: clamp(1rem, 0.75rem + 0.6vw, 1.5rem);
+}
+
+.home-module-card__text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.home-module-card__title {
+  font-size: clamp(1.25rem, 1.05rem + 0.75vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.home-module-card__description {
+  margin-top: 0.5rem;
+  font-size: clamp(0.9375rem, 0.875rem + 0.35vw, 1.125rem);
+  line-height: 1.45;
+  color: var(--muted-foreground);
+}
+
+.home-module-card__chevron {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+
+.home-module-card__banner,
+.report-category-banner__strip {
+  width: 100%;
+  height: clamp(12px, 0.65rem + 0.35vw, 16px);
+}
+
+.report-category-banner__body {
+  padding: clamp(1.25rem, 1rem + 0.6vw, 1.75rem)
+    clamp(1.375rem, 1.1rem + 0.8vw, 2rem);
+}
+
+.report-category-banner__icon {
+  width: clamp(3.25rem, 3rem + 1vw, 3.75rem);
+  height: clamp(3.25rem, 3rem + 1vw, 3.75rem);
 }
 
 html[data-bs-theme="dark"] .home-module-card__icon {
@@ -402,8 +459,8 @@ html.dark .app-header-user__role {
 .app-home-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
-  max-width: 72rem;
+  gap: clamp(0.875rem, 0.75rem + 0.35vw, 1.25rem);
+  width: 100%;
 }
 
 .app-tile-grid {
@@ -438,15 +495,15 @@ html.dark .app-header-user__role {
 }
 
 .app-report-title {
-  font-size: 1.5rem;
+  font-size: clamp(1.375rem, 1.15rem + 0.85vw, 1.875rem);
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.02em;
 }
 
 .app-report-subtitle {
-  margin-top: 0.375rem;
-  font-size: 0.9375rem;
+  margin-top: 0.5rem;
+  font-size: clamp(0.9375rem, 0.875rem + 0.3vw, 1.0625rem);
   color: var(--muted-foreground);
 }
 
