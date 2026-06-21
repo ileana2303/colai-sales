@@ -10,9 +10,9 @@ import {
   type PowerBiTableFilter,
 } from "@/features/powerBI/PowerBiTable/types";
 import {
-  buildExcelHtml,
+  buildExcelWorkbook,
   compareSortValues,
-  downloadExcelFile,
+  downloadXlsxWorkbook,
   getExportFileName,
   normalizeFilterValue,
 } from "@/features/powerBI/PowerBiTable/utils";
@@ -141,8 +141,8 @@ export function usePowerBiTableRows<T>({
   }
 
   function exportToExcel() {
-    downloadExcelFile(
-      buildExcelHtml(columns, visibleRows),
+    downloadXlsxWorkbook(
+      buildExcelWorkbook(columns, visibleRows),
       getExportFileName(title, exportFileName),
     );
   }

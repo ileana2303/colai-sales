@@ -140,6 +140,7 @@ canvas {
   width: 42px;
   height: 42px;
   border-radius: 999px;
+  cursor: pointer;
 
   display: inline-flex;
   align-items: center;
@@ -1099,6 +1100,10 @@ html[data-bs-theme="dark"] .searchable-select-empty {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
   }
   body {
     @apply text-foreground;

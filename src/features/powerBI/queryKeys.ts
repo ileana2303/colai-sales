@@ -12,4 +12,7 @@ export const powerBiKeys = {
   bbmSales: (apiPath: string) =>
     [...powerBiKeys.all, "bbm-sales", apiPath] as const,
   bbmTrends: () => [...powerBiKeys.all, "bbm-trends"] as const,
+  porgesSales: (apiPath: string) =>
+    [...powerBiKeys.all, "porges-sales", apiPath] as const,
+  porgesTrends: () => [...powerBiKeys.all, "porges-trends"] as const,
 };

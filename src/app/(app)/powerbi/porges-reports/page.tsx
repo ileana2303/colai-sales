@@ -4,29 +4,29 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 const reports = [
   {
-    href: "/powerbi/covidien-reports/targets-and-trends",
+    href: "/powerbi/porges-reports/targets-and-trends",
     title: "Targets & Trends",
     subtitle: "2026 + 2025 + Trend analysis (MEDTRONIC template)",
     icon: "bi-stars",
     accent: "#dc2626",
   },
   {
-    href: "/powerbi/covidien-reports/covidien-sales-2026",
-    title: "Covidien Sales 2026",
+    href: "/powerbi/porges-reports/porges-sales-2026",
+    title: "Porges Sales 2026",
     subtitle: "Mavrogenis Sales Reports 2026CLP",
     icon: "bi-graph-up-arrow",
     accent: "#2563eb",
   },
   {
-    href: "/powerbi/covidien-reports/covidien-sales-2025",
-    title: "Covidien Sales 2025",
+    href: "/powerbi/porges-reports/porges-sales-2025",
+    title: "Porges Sales 2025",
     subtitle: "Mavrogenis Sales Reports 2025CLP",
     icon: "bi-bar-chart-line",
     accent: "#16a34a",
   },
   {
-    href: "/powerbi/covidien-reports/covidien-trends",
-    title: "Covidien Trends",
+    href: "/powerbi/porges-reports/porges-trends",
+    title: "Porges Trends",
     subtitle: "Mavrogenis Sales Reports 2026CLP",
     icon: "bi-activity",
     accent: "#7c3aed",
@@ -40,9 +40,7 @@ export default function Page() {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 grow">
             <div className="flex items-center flex-nowrap gap-2">
-              <h1 className="text-xl font-bold truncate mb-0">
-                Covidien Reports
-              </h1>
+              <h1 className="text-xl font-bold truncate mb-0">Porges Reports</h1>
               <span
                 className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
                 style={{
@@ -58,7 +56,7 @@ export default function Page() {
               </span>
             </div>
             <div className="text-muted-foreground mt-1" style={{ fontSize: 13 }}>
-              Επιλογή Covidien αναφοράς
+              Επιλογή Porges αναφοράς
             </div>
           </div>
           <div

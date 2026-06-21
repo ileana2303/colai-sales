@@ -8,6 +8,7 @@ import type {
 } from "@/lib/bi-reports/biReports";
 import type { BbmSalesRow, BbmTrendRow } from "@/lib/bi-reports/bbm";
 import type { CovidienSalesRow, CovidienTrendRow } from "@/lib/bi-reports/covidien";
+import type { PorgesSalesRow, PorgesTrendRow } from "@/lib/bi-reports/porges";
 
 const NO_CACHE_HEADERS = {
   "Cache-Control": "no-cache",
@@ -88,5 +89,19 @@ export function fetchBbmTrendsReport() {
   return fetchPowerBi<AreaReportResponse<BbmTrendRow>>(
     "/api/powerbi/bbm-trends-2026",
     "Failed to load BBM trends",
+  );
+}
+
+export function fetchPorgesSalesReport(apiPath: string, year: number | string) {
+  return fetchPowerBi<AreaReportResponse<PorgesSalesRow>>(
+    apiPath,
+    `Failed to load Porges sales ${year}`,
+  );
+}
+
+export function fetchPorgesTrendsReport() {
+  return fetchPowerBi<AreaReportResponse<PorgesTrendRow>>(
+    "/api/powerbi/porges-trend-2026",
+    "Failed to load Porges trends",
   );
 }

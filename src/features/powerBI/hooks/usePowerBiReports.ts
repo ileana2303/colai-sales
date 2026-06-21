@@ -8,6 +8,8 @@ import {
   fetchBbmTrendsReport,
   fetchCovidienSalesReport,
   fetchCovidienTrendsReport,
+  fetchPorgesSalesReport,
+  fetchPorgesTrendsReport,
   fetchPowerBiDatasets,
   fetchPowerBiGroups,
   fetchSalesPerMonthReport,
@@ -92,6 +94,25 @@ export function useBbmTrendsReport() {
   return useQuery({
     queryKey: powerBiKeys.bbmTrends(),
     queryFn: fetchBbmTrendsReport,
+    ...powerBiQueryOptions,
+  });
+}
+
+export function usePorgesSalesReport(
+  apiPath: string,
+  year: number | string,
+) {
+  return useQuery({
+    queryKey: powerBiKeys.porgesSales(apiPath),
+    queryFn: () => fetchPorgesSalesReport(apiPath, year),
+    ...powerBiQueryOptions,
+  });
+}
+
+export function usePorgesTrendsReport() {
+  return useQuery({
+    queryKey: powerBiKeys.porgesTrends(),
+    queryFn: fetchPorgesTrendsReport,
     ...powerBiQueryOptions,
   });
 }
