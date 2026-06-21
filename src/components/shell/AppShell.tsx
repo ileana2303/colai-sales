@@ -28,15 +28,6 @@ function getInitials(userInfos: ApiUserInfo | null) {
   return initials || "?";
 }
 
-function getRoleLabel(userInfos: ApiUserInfo | null) {
-  if (!userInfos) return "Χρήστης";
-  if (userInfos.isSuperAdmin) return "Super Admin";
-  if (userInfos.isSalesAdmin) return "Sales Admin";
-  if (userInfos.isManager) return "Manager";
-  if (userInfos.isSeller) return "Seller";
-  return "Χρήστης";
-}
-
 function getUserMeta(userInfos: ApiUserInfo | null) {
   if (!userInfos) return "Σύνδεση ενεργή";
 
@@ -48,7 +39,7 @@ function getUserMeta(userInfos: ApiUserInfo | null) {
       : null,
   ].filter(Boolean);
 
-  return parts.length ? parts.join(" · ") : getRoleLabel(userInfos);
+  return parts.length && parts.join(" · ");
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -118,9 +109,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 </span>
                 <ChevronDown className="app-header-user__chevron" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuContent align="end" className="w-72 p-2">
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="font-normal">
+                  <DropdownMenuLabel className="px-2 py-2 font-normal">
                     <div className="flex flex-col gap-1">
                       <span className="font-semibold">{displayName}</span>
                       <span className="text-muted-foreground text-xs">
@@ -130,16 +121,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push("/settings")}>
-                  <AppIcon name="bi-gear" className="mr-2" size={14} />
+                <DropdownMenuItem
+                  className="hover:bg-muted/80 cursor-pointer gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
+                  onClick={() => router.push("/settings")}
+                >
+                  <AppIcon name="bi-gear" size={16} />
                   Ρυθμίσεις
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={onLogout}>
-                  <AppIcon
-                    name="bi-box-arrow-right"
-                    className="mr-2"
-                    size={14}
-                  />
+                <DropdownMenuItem
+                  className="hover:bg-muted/80 cursor-pointer gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
+                  onClick={onLogout}
+                >
+                  <AppIcon name="bi-box-arrow-right" size={16} />
                   Αποσύνδεση
                 </DropdownMenuItem>
               </DropdownMenuContent>

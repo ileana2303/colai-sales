@@ -4,6 +4,13 @@ import { AppIcon } from "@/components/ui/app-icon";
 
 const reports = [
   {
+    href: "/powerbi/BBM-reports/targets-and-trends",
+    title: "Targets & Trends",
+    subtitle: "2026 + 2025 + Trend analysis (MEDTRONIC template)",
+    icon: "bi-stars",
+    accent: "#dc2626",
+  },
+  {
     href: "/powerbi/BBM-reports/BBM-sales-2026",
     title: "BBM Sales 2026",
     subtitle: "Mavrogenis Sales Reports 2026CLP",

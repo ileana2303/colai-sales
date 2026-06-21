@@ -1,3 +1,5 @@
+import * as XLSX from "xlsx";
+
 import type { PowerBiTableColumn } from "@/features/powerBI/PowerBiTable/types";
 
 export function normalizeFilterValue(value: string | null | undefined): string {
@@ -36,34 +38,21 @@ function renderExportValue<T>(
     : "";
 }
 
-function escapeExcelCell(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-export function buildExcelHtml<T>(
+export function buildExcelWorkbook<T>(
   columns: PowerBiTableColumn<T>[],
   rows: T[],
+  sheetName = "Data",
 ) {
-  const headerCells = columns
-    .map((column) => `<th>${escapeExcelCell(column.header)}</th>`)
-    .join("");
-  const bodyRows = rows
-    .map((row, rowIndex) => {
-      const cells = columns
-        .map(
-          (column) =>
-            `<td>${escapeExcelCell(renderExportValue(column, row, rowIndex))}</td>`,
-        )
-        .join("");
-      return `<tr>${cells}</tr>`;
-    })
-    .join("");
+  const headers = columns.map((column) => column.header);
+  const data = rows.map((row, rowIndex) =>
+    columns.map((column) => renderExportValue(column, row, rowIndex)),
+  );
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
+  const workbook = XLSX.utils.book_new();
 
-  return `<!doctype html><html><head><meta charset="utf-8" /></head><body><table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table></body></html>`;
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+
+  return workbook;
 }
 
 export function getExportFileName(title: string, exportFileName?: string) {
@@ -73,12 +62,16 @@ export function getExportFileName(title: string, exportFileName?: string) {
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
 
-  return `${base || "powerbi-data"}.xls`;
+  return `${base || "powerbi-data"}.xlsx`;
 }
 
-export function downloadExcelFile(html: string, fileName: string) {
-  const blob = new Blob([html], {
-    type: "application/vnd.ms-excel;charset=utf-8",
+export function downloadXlsxWorkbook(
+  workbook: XLSX.WorkBook,
+  fileName: string,
+) {
+  const buffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");

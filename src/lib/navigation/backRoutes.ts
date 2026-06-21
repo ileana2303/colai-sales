@@ -32,6 +32,10 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
     href: "/powerbi/covidien-reports",
     label: "Covidien Reports",
   },
+  "/powerbi/covidien-reports/targets-and-trends": {
+    href: "/powerbi/covidien-reports",
+    label: "Covidien Reports",
+  },
   "/powerbi/BBM-reports": { href: "/", label: "Αρχική" },
   "/powerbi/BBM-reports/BBM-sales-2026": {
     href: "/powerbi/BBM-reports",
@@ -44,6 +48,27 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
   "/powerbi/BBM-reports/BBM-trends": {
     href: "/powerbi/BBM-reports",
     label: "BAUSCH & LOMB Reports",
+  },
+  "/powerbi/BBM-reports/targets-and-trends": {
+    href: "/powerbi/BBM-reports",
+    label: "BAUSCH & LOMB Reports",
+  },
+  "/powerbi/porges-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/porges-reports/porges-sales-2026": {
+    href: "/powerbi/porges-reports",
+    label: "Porges Reports",
+  },
+  "/powerbi/porges-reports/porges-sales-2025": {
+    href: "/powerbi/porges-reports",
+    label: "Porges Reports",
+  },
+  "/powerbi/porges-reports/porges-trends": {
+    href: "/powerbi/porges-reports",
+    label: "Porges Reports",
+  },
+  "/powerbi/porges-reports/targets-and-trends": {
+    href: "/powerbi/porges-reports",
+    label: "Porges Reports",
   },
   "/salesWC": { href: "/", label: "Αρχική" },
   "/diadikasia-wc": { href: "/", label: "Αρχική" },
@@ -62,6 +87,7 @@ const PATTERN_BACK_ROUTES: Array<{
 const PARENT_LABELS: Record<string, string> = {
   "/powerbi/seller-reports": "Seller Reports",
   "/powerbi/covidien-reports": "Covidien Reports",
+  "/powerbi/porges-reports": "Porges Reports",
   "/powerbi/BBM-reports": "BAUSCH & LOMB Reports",
   "/powerbi/groups": "Power BI Groups",
 };

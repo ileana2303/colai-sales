@@ -20,7 +20,10 @@ export type BiReportPowerBiTargetKey =
   | "bbm_trends_2026"
   | "covidien_sales_2025"
   | "covidien_sales_2026"
-  | "covidien_trend_2026";
+  | "covidien_trend_2026"
+  | "porges_sales_2025"
+  | "porges_sales_2026"
+  | "porges_trend_2026";
 
 const MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID =
   "e928997c-ad45-4320-a7d6-b35a8fa8e510";
@@ -39,6 +42,9 @@ const BI_REPORT_DATASET_IDS: Record<BiReportPowerBiTargetKey, string> = {
   covidien_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
   covidien_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
   covidien_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
+  porges_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
+  porges_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
+  porges_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
 };
 
 export type MonthlySalesRow = {

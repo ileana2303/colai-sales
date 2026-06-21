@@ -76,6 +76,12 @@ export default function HomeStats() {
         href="/powerbi/covidien-reports"
       />
       <ModuleCard
+        title="Porges Reports"
+        description="PowerBI Reports for Porges Sales & Trends."
+        icon="bi-bar-chart"
+        href="/powerbi/porges-reports"
+      />
+      <ModuleCard
         title="BAUSCH & LOMB TRIPLEX Reports"
         description="PowerBI Reports for BAUSCH & LOMB TRIPLEX Sales & Trends."
         icon="bi-bar-chart"
