@@ -5,7 +5,8 @@ export default function Page() {
     <TargetsTrendsReportPage
       businessUnit="porges"
       group1Label="PORGES Group"
-      groupSectionTitle="Ανά PORGES group"
+      group2Label="PORGES SUB"
+      groupSectionTitle="Ανά PORGES group / SUB"
       subtitle="2026 + 2025 + Trend analysis"
       title="Porges Targets & Trends"
     />

@@ -86,7 +86,7 @@ export function MetricCard({
 
 export function ValuePill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-muted p-3">
+    <div className="app-value-pill">
       <div className="text-sm text-muted-foreground" style={{ lineHeight: 1.1 }}>
         {label}
       </div>

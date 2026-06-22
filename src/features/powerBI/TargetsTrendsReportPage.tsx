@@ -38,6 +38,7 @@ import { formatIntGR } from "@/lib/utils/number";
 type TargetsTrendsReportPageProps = {
   businessUnit: TargetsTrendsBusinessUnit;
   group1Label?: string;
+  group2Label?: string;
   groupSectionTitle?: string;
   subtitle: string;
   title: string;
@@ -207,6 +208,7 @@ function buildGroupFilterOptions(
 function GroupBreakdownTable({
   exportFileName,
   group1Label = "Family Group",
+  group2Label,
   groupSectionTitle = "Ανά family group",
   groups,
   metrics,
@@ -214,17 +216,23 @@ function GroupBreakdownTable({
 }: {
   exportFileName: string;
   group1Label?: string;
+  group2Label?: string;
   groupSectionTitle?: string;
   groups: TargetsTrendsGroupMetrics[];
   metrics: TargetsTrendsMetrics;
   title: string;
 }) {
   const [group1Filter, setGroup1Filter] = useState("");
+  const [group2Filter, setGroup2Filter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
 
   const group1Options = useMemo(
     () => buildGroupFilterOptions(groups, (row) => row.group1),
+    [groups],
+  );
+  const group2Options = useMemo(
+    () => buildGroupFilterOptions(groups, (row) => row.group2 ?? ""),
     [groups],
   );
   const teamOptions = useMemo(
@@ -245,6 +253,7 @@ function GroupBreakdownTable({
     () =>
       groups.filter((row) => {
         if (group1Filter && row.group1 !== group1Filter) return false;
+        if (group2Filter && (row.group2 ?? "") !== group2Filter) return false;
         if (teamFilter && row.team !== teamFilter) return false;
         if (
           sellerFilter &&
@@ -254,13 +263,16 @@ function GroupBreakdownTable({
         }
         return true;
       }),
-    [group1Filter, groups, sellerFilter, teamFilter],
+    [group1Filter, group2Filter, groups, sellerFilter, teamFilter],
   );
 
-  const hasActiveFilters = Boolean(group1Filter || teamFilter || sellerFilter);
+  const hasActiveFilters = Boolean(
+    group1Filter || group2Filter || teamFilter || sellerFilter,
+  );
 
   function resetFilters() {
     setGroup1Filter("");
+    setGroup2Filter("");
     setTeamFilter("");
     setSellerFilter("");
   }
@@ -269,6 +281,7 @@ function GroupBreakdownTable({
     exportTargetsTrendsToExcel({
       exportFileName,
       group1Label,
+      group2Label,
       groupSectionTitle,
       groups: filteredGroups,
       metrics,
@@ -301,6 +314,16 @@ function GroupBreakdownTable({
                   onChange={setGroup1Filter}
                 />
               </TableHead>
+              {group2Label ? (
+                <TableHead className="min-w-28 align-top">
+                  <PowerBiTableHeaderFilter
+                    label={group2Label}
+                    options={group2Options}
+                    value={group2Filter}
+                    onChange={setGroup2Filter}
+                  />
+                </TableHead>
+              ) : null}
               <TableHead className="min-w-28 align-top">
                 <PowerBiTableHeaderFilter
                   label="Team"
@@ -330,6 +353,9 @@ function GroupBreakdownTable({
               filteredGroups.map((row) => (
                 <TableRow key={row.key}>
                   <TableCell className="font-semibold">{row.group1}</TableCell>
+                  {group2Label ? (
+                    <TableCell>{row.group2 || "-"}</TableCell>
+                  ) : null}
                   <TableCell>{row.team || "-"}</TableCell>
                   <TableCell>
                     {row.sellerName || row.sellerCode || "-"}
@@ -357,7 +383,7 @@ function GroupBreakdownTable({
             ) : (
               <TableRow className="hover:bg-transparent">
                 <TableCell
-                  colSpan={9}
+                  colSpan={group2Label ? 10 : 9}
                   className="text-muted-foreground py-3 text-center"
                 >
                   Δεν βρέθηκαν γραμμές με τα επιλεγμένα φίλτρα.
@@ -374,6 +400,7 @@ function GroupBreakdownTable({
 export function TargetsTrendsReportPage({
   businessUnit,
   group1Label,
+  group2Label,
   groupSectionTitle,
   subtitle,
   title,
@@ -402,6 +429,7 @@ export function TargetsTrendsReportPage({
         <GroupBreakdownTable
           exportFileName={`${businessUnit}-targets-trends`}
           group1Label={group1Label}
+          group2Label={group2Label}
           groupSectionTitle={groupSectionTitle}
           groups={analysis.groups}
           metrics={analysis.summary}

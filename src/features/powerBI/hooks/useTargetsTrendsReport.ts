@@ -18,6 +18,7 @@ import type { PorgesSalesRow, PorgesTrendRow } from "@/lib/bi-reports/porges";
 import {
   buildTargetsTrendsAnalysis,
   type TargetsTrendsAnalysis,
+  type TargetsTrendsAnalysisOptions,
   type TargetsTrendsSalesRow,
   type TargetsTrendsTrendRow,
 } from "@/lib/bi-reports/targetsTrends";
@@ -79,15 +80,29 @@ const CONFIG = {
     trendsKey: powerBiKeys.bbmTrends,
   },
   porges: {
-    sales2026Path: "/api/powerbi/porges-sales-2026",
+    sales2026Path: "/api/powerbi/porges-sales-2026-targets",
     sales2025Path: "/api/powerbi/porges-sales-2025",
-    fetchSales2026: () => fetchPorgesSalesReport("/api/powerbi/porges-sales-2026", 2026),
+    fetchSales2026: () =>
+      fetchPorgesSalesReport("/api/powerbi/porges-sales-2026-targets", 2026),
     fetchSales2025: () => fetchPorgesSalesReport("/api/powerbi/porges-sales-2025", 2025),
     fetchTrends: fetchPorgesTrendsReport,
     salesKey: powerBiKeys.porgesSales,
     trendsKey: powerBiKeys.porgesTrends,
   },
 } as const;
+
+const ANALYSIS_OPTIONS: Partial<
+  Record<TargetsTrendsBusinessUnit, TargetsTrendsAnalysisOptions>
+> = {
+  porges: {
+    grain: "group1Group2",
+    includeTrendOnlyGroups: true,
+  },
+  bbm: {
+    grain: "group1Group2",
+    includeTrendOnlyGroups: true,
+  },
+};
 
 export function useTargetsTrendsReport(businessUnit: TargetsTrendsBusinessUnit) {
   const config = CONFIG[businessUnit];
@@ -126,8 +141,9 @@ export function useTargetsTrendsReport(businessUnit: TargetsTrendsBusinessUnit) 
       sales2026.map(toSalesRow),
       sales2025.map(toSalesRow),
       trends.map(toTrendRow),
+      ANALYSIS_OPTIONS[businessUnit],
     );
-  }, [sales2026, sales2025, trends]);
+  }, [businessUnit, sales2026, sales2025, trends]);
 
   const isLoading =
     sales2026Query.isLoading ||

@@ -473,14 +473,27 @@ html.dark .app-header-user__role {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
+  width: 100%;
 }
 
-.app-metric-grid--2 {
+.app-metric-grid.app-metric-grid--2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.app-metric-grid--3 {
+.app-metric-grid.app-metric-grid--3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.app-metric-grid.app-metric-grid--2 > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.app-value-pill {
+  height: 100%;
+  min-width: 0;
+  border-radius: calc(var(--radius) * 1.4);
+  background: var(--muted);
+  padding: 1rem 1.125rem;
 }
 
 .app-list-grid {
@@ -572,7 +585,7 @@ html.dark .app-header-user__role {
 }
 
 @media (max-width: 1100px) {
-  .app-metric-grid {
+  .app-metric-grid:not(.app-metric-grid--2):not(.app-metric-grid--3) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -594,7 +607,7 @@ html.dark .app-header-user__role {
 
   .app-home-grid,
   .app-tile-grid,
-  .app-metric-grid,
+  .app-metric-grid:not(.app-metric-grid--3),
   .app-metric-grid--2,
   .app-metric-grid--3 {
     grid-template-columns: 1fr;

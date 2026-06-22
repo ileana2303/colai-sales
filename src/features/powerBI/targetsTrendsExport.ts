@@ -133,12 +133,14 @@ function buildOpenMonthsSection(metrics: TargetsTrendsMetrics): SummarySection {
 function appendGroupTable(
   sheetRows: string[][],
   group1Label: string,
+  group2Label: string | undefined,
   groupSectionTitle: string,
   groups: TargetsTrendsGroupMetrics[],
 ) {
   sheetRows.push([groupSectionTitle]);
   sheetRows.push([
     group1Label,
+    ...(group2Label ? [group2Label] : []),
     "Team",
     "Πωλητής",
     "Κλειστά VCY",
@@ -152,6 +154,7 @@ function appendGroupTable(
   for (const row of groups) {
     sheetRows.push([
       row.group1,
+      ...(group2Label ? [row.group2 || "-"] : []),
       row.team || "-",
       row.sellerName || row.sellerCode || "-",
       formatNullableCurrency(row.closedSales),
@@ -166,11 +169,13 @@ function appendGroupTable(
 
 export function buildTargetsTrendsWorkbook({
   group1Label,
+  group2Label,
   groupSectionTitle,
   groups,
   metrics,
 }: {
   group1Label: string;
+  group2Label?: string;
   groupSectionTitle: string;
   groups: TargetsTrendsGroupMetrics[];
   metrics: TargetsTrendsMetrics;
@@ -180,7 +185,7 @@ export function buildTargetsTrendsWorkbook({
   appendSummarySection(sheetRows, buildClosedMonthsSection(metrics));
   appendSummarySection(sheetRows, buildGapSection(metrics));
   appendSummarySection(sheetRows, buildOpenMonthsSection(metrics));
-  appendGroupTable(sheetRows, group1Label, groupSectionTitle, groups);
+  appendGroupTable(sheetRows, group1Label, group2Label, groupSectionTitle, groups);
 
   const worksheet = XLSX.utils.aoa_to_sheet(sheetRows);
   const workbook = XLSX.utils.book_new();
@@ -193,6 +198,7 @@ export function buildTargetsTrendsWorkbook({
 export function exportTargetsTrendsToExcel({
   exportFileName,
   group1Label,
+  group2Label,
   groupSectionTitle,
   groups,
   metrics,
@@ -200,6 +206,7 @@ export function exportTargetsTrendsToExcel({
 }: {
   exportFileName: string;
   group1Label: string;
+  group2Label?: string;
   groupSectionTitle: string;
   groups: TargetsTrendsGroupMetrics[];
   metrics: TargetsTrendsMetrics;
@@ -208,6 +215,7 @@ export function exportTargetsTrendsToExcel({
   downloadXlsxWorkbook(
     buildTargetsTrendsWorkbook({
       group1Label,
+      group2Label,
       groupSectionTitle,
       groups,
       metrics,
