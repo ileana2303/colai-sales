@@ -2,6 +2,7 @@ import {
   type ReportMatrixColumn,
   type ReportMatrixLeadingColumn,
   type ReportMatrixRow,
+  type ReportMatrixRowMetrics,
   type ReportMatrixSection,
   type ReportMatrixTone,
 } from "@/features/powerBI/ReportMatrixTable";
@@ -118,6 +119,53 @@ function buildDiffCellTones(values: {
   }
 
   return Object.keys(cellTones).length ? cellTones : undefined;
+}
+
+function metricsFromAggregate(
+  aggregate: MatrixAggregate,
+): ReportMatrixRowMetrics {
+  return {
+    tcyAll: aggregate.tcyAll,
+    vcyAll: aggregate.vcyAll,
+    tcyClosed: aggregate.tcyClosed,
+    vcyClosed: aggregate.vcyClosed,
+    vlc: aggregate.vlc,
+    vTrend: aggregate.vTrend,
+    hasClosedMonthStatus: aggregate.hasClosedMonthStatus,
+    openMonthTcyByMonth: Object.fromEntries(aggregate.openMonthTcyByMonth),
+  };
+}
+
+function aggregateFromMetrics(
+  metrics: ReportMatrixRowMetrics,
+): MatrixAggregate {
+  return {
+    group1: "",
+    group2: "",
+    team: "",
+    sellerCode: "",
+    sellerName: "",
+    tcyAll: metrics.tcyAll,
+    vcyAll: metrics.vcyAll,
+    tcyClosed: metrics.tcyClosed,
+    vcyClosed: metrics.vcyClosed,
+    vlc: metrics.vlc,
+    vTrend: metrics.vTrend,
+    hasClosedMonthStatus: metrics.hasClosedMonthStatus,
+    openMonthTcyByMonth: new Map(Object.entries(metrics.openMonthTcyByMonth)),
+  };
+}
+
+export function buildReportMatrixTotalRow(
+  rows: ReportMatrixRow[],
+): ReportMatrixRow | null {
+  const aggregates = rows
+    .filter((row) => !row.isTotal && row.metrics)
+    .map((row) => aggregateFromMetrics(row.metrics!));
+
+  if (!aggregates.length) return null;
+
+  return aggregateToMatrixRow(buildTotalAggregate(aggregates), true);
 }
 
 function formatOptionalCurrency(value: number | null) {
@@ -324,6 +372,7 @@ function aggregateToMatrixRow(
           sellerLabel,
         },
     isTotal,
+    metrics: isTotal ? undefined : metricsFromAggregate(aggregate),
     leadingValues: {
       team: aggregate.team || "-",
       seller: isTotal ? EMPTY_VALUE : renderSeller(aggregate),

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PowerBiTableHeaderFilter } from "@/features/powerBI/PowerBiTable/PowerBiTableHeaderFilter";
 import type { FilterOption } from "@/features/powerBI/PowerBiTable/types";
 import { exportReportMatrixToExcel } from "@/features/powerBI/reportMatrixExport";
+import { buildReportMatrixTotalRow } from "@/features/powerBI/reportMatrixData";
 
 export type ReportMatrixTone =
   | "danger"
@@ -39,6 +40,17 @@ export type ReportMatrixSection = {
   tone?: ReportMatrixTone;
 };
 
+export type ReportMatrixRowMetrics = {
+  hasClosedMonthStatus: boolean;
+  openMonthTcyByMonth: Record<string, number>;
+  tcyAll: number;
+  tcyClosed: number;
+  vTrend: number;
+  vcyAll: number;
+  vcyClosed: number;
+  vlc: number;
+};
+
 export type ReportMatrixRow = {
   key: string;
   category: ReactNode;
@@ -49,6 +61,7 @@ export type ReportMatrixRow = {
     team: string;
   };
   leadingValues?: Record<string, ReactNode>;
+  metrics?: ReportMatrixRowMetrics;
   values: Record<string, ReactNode>;
   cellTones?: Record<string, ReportMatrixTone>;
   isTotal?: boolean;
@@ -206,7 +219,6 @@ export function ReportMatrixTable({
     () => rows.filter((row) => !row.isTotal),
     [rows],
   );
-  const totalRow = useMemo(() => rows.find((row) => row.isTotal), [rows]);
 
   const categoryOptions = useMemo(
     () =>
@@ -256,18 +268,14 @@ export function ReportMatrixTable({
       return true;
     });
 
-    if (!hasActiveFilters && totalRow) {
-      return [...filteredData, totalRow];
-    }
+    const filteredTotal = buildReportMatrixTotalRow(filteredData);
 
-    return filteredData;
+    return filteredTotal ? [...filteredData, filteredTotal] : filteredData;
   }, [
     categoryFilter,
     dataRows,
-    hasActiveFilters,
     sellerFilter,
     teamFilter,
-    totalRow,
   ]);
 
   useLayoutEffect(() => {
@@ -309,7 +317,7 @@ export function ReportMatrixTable({
       brandLabel,
       exportFileName,
       leadingColumns: resolvedLeadingColumns,
-      rows: filteredRows.filter((row) => !row.isTotal),
+      rows: filteredRows,
       sections,
     });
   }
