@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,33 @@ type ReportMatrixTableProps = {
 
 function cn(...classes: Array<false | null | string | undefined>) {
   return classes.filter(Boolean).join(" ");
+}
+
+const REPORT_MATRIX_MIN_VIEWPORT_HEIGHT = 240;
+
+function syncReportMatrixViewportHeight(
+  card: HTMLElement,
+  viewport: HTMLElement,
+) {
+  const styles = getComputedStyle(document.documentElement);
+  const bottomPad =
+    Number.parseFloat(styles.getPropertyValue("--app-content-pad-bottom")) ||
+    48;
+  const cardRect = card.getBoundingClientRect();
+  const header = card.querySelector<HTMLElement>(".report-matrix-card__header");
+  const headerHeight = header?.offsetHeight ?? 0;
+  const maxAvailable = Math.max(
+    REPORT_MATRIX_MIN_VIEWPORT_HEIGHT,
+    window.innerHeight - cardRect.top - bottomPad - 8 - headerHeight,
+  );
+  const table = viewport.querySelector("table");
+  const contentHeight = table?.getBoundingClientRect().height ?? 0;
+  const nextHeight = Math.min(
+    Math.max(contentHeight, REPORT_MATRIX_MIN_VIEWPORT_HEIGHT),
+    maxAvailable,
+  );
+
+  viewport.style.setProperty("--report-matrix-viewport-height", `${nextHeight}px`);
 }
 
 function getAlignClass(align: ReportMatrixColumn["align"]) {
@@ -154,6 +181,8 @@ export function ReportMatrixTable({
   const [categoryFilter, setCategoryFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
+  const cardRef = useRef<HTMLElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
   const dataRows = useMemo(
     () => rows.filter((row) => !row.isTotal),
@@ -223,6 +252,30 @@ export function ReportMatrixTable({
     totalRow,
   ]);
 
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    const viewport = viewportRef.current;
+    if (!card || !viewport) return;
+
+    const sync = () => syncReportMatrixViewportHeight(card, viewport);
+
+    sync();
+
+    window.addEventListener("resize", sync);
+
+    const observer = new ResizeObserver(sync);
+    observer.observe(card);
+    observer.observe(viewport);
+
+    const table = viewport.querySelector("table");
+    if (table) observer.observe(table);
+
+    return () => {
+      window.removeEventListener("resize", sync);
+      observer.disconnect();
+    };
+  }, [filteredRows.length, title, description, sections.length]);
+
   function resetFilters() {
     setCategoryFilter("");
     setTeamFilter("");
@@ -265,7 +318,7 @@ export function ReportMatrixTable({
   );
 
   return (
-    <section className="app-card report-matrix-card">
+    <section ref={cardRef} className="app-card report-matrix-card">
       <div className="report-matrix-card__header">
         <div className="min-w-0">
           {title ? (
@@ -299,7 +352,7 @@ export function ReportMatrixTable({
         </div>
       </div>
 
-      <div className="report-matrix__viewport">
+      <div ref={viewportRef} className="report-matrix__viewport">
         <table className="report-matrix">
           <caption className="sr-only">{caption}</caption>
           <thead>

@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --app-content-max-width: 1920px;
+  --app-content-max-width: 2560px;
   --app-page-gutter: clamp(28px, 3vw, 56px);
   --app-content-pad-bottom: 48px;
   --app-section-gap: 1.5rem;
@@ -504,6 +504,21 @@ html.dark .app-header-user__role {
 .app-table-viewport {
   max-height: var(--app-table-max-height);
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-slot="table-container"] {
+  max-height: var(--app-table-max-height);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-slot="table-head"] {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--card);
+  box-shadow: 0 1px 0 var(--border);
 }
 
 .report-matrix-card {
@@ -550,7 +565,17 @@ html.dark .app-header-user__role {
 }
 
 .report-matrix__viewport {
+  height: var(--report-matrix-viewport-height, auto);
+  max-height: var(--report-matrix-viewport-height, var(--app-table-max-height));
+  min-height: 12rem;
   overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.report-matrix thead {
+  position: sticky;
+  top: 0;
+  z-index: 12;
 }
 
 .report-matrix {
