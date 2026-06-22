@@ -3,6 +3,7 @@ import {
   type ReportMatrixLeadingColumn,
   type ReportMatrixRow,
   type ReportMatrixSection,
+  type ReportMatrixTone,
 } from "@/features/powerBI/ReportMatrixTable";
 import {
   formatNullableRatioPercent,
@@ -93,6 +94,30 @@ function formatYearComparison(current: number, previous: number) {
 function formatYearDiff(current: number, previous: number) {
   if (!Number.isFinite(current) || !Number.isFinite(previous)) return EMPTY_VALUE;
   return formatCurrency(current - previous);
+}
+
+function getDiffTone(value: number): ReportMatrixTone | undefined {
+  if (!Number.isFinite(value) || value === 0) return undefined;
+  return value > 0 ? "success" : "danger";
+}
+
+function buildDiffCellTones(values: {
+  currentDiff: number;
+  previousDiff: number;
+  yearDiff: number;
+}) {
+  const cellTones: Record<string, ReportMatrixTone> = {};
+
+  for (const [key, value] of Object.entries(values) as Array<
+    [keyof typeof values, number]
+  >) {
+    const tone = getDiffTone(value);
+    if (tone) {
+      cellTones[key] = tone;
+    }
+  }
+
+  return Object.keys(cellTones).length ? cellTones : undefined;
 }
 
 function formatOptionalCurrency(value: number | null) {
@@ -274,6 +299,9 @@ function aggregateToMatrixRow(
     ? EMPTY_VALUE
     : [aggregate.sellerName, aggregate.sellerCode].filter(Boolean).join(" - ") ||
       "-";
+  const previousDiffValue = closedPeriod.target - closedPeriod.result;
+  const currentDiffValue = aggregate.vTrend - aggregate.tcyAll;
+  const yearDiffValue = closedPeriod.result - aggregate.vlc;
 
   return {
     key: isTotal
@@ -300,6 +328,11 @@ function aggregateToMatrixRow(
       team: aggregate.team || "-",
       seller: isTotal ? EMPTY_VALUE : renderSeller(aggregate),
     },
+    cellTones: buildDiffCellTones({
+      currentDiff: currentDiffValue,
+      previousDiff: previousDiffValue,
+      yearDiff: yearDiffValue,
+    }),
     values: {
       currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
       currentDiff: formatGapDiff(aggregate.vTrend, aggregate.tcyAll),

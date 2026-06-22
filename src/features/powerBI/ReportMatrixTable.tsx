@@ -469,16 +469,7 @@ export function ReportMatrixTable({
                       : undefined
                   }
                 >
-                  {typeof column.label === "string" ? (
-                    <span
-                      className="report-matrix__cell-content"
-                      title={column.label}
-                    >
-                      {column.label}
-                    </span>
-                  ) : (
-                    column.label
-                  )}
+                  {column.label}
                 </th>
               ))}
             </tr>
@@ -542,7 +533,7 @@ export function ReportMatrixTable({
                         tone !== "default" && `report-matrix__cell--${tone}`,
                       )}
                     >
-                      {renderTruncatedCell(row.values[column.key])}
+                      {renderValue(row.values[column.key])}
                     </td>
                   );
                 })}

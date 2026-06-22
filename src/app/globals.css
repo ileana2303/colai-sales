@@ -594,14 +594,12 @@ html.dark .app-header-user__role {
   padding: 0.58rem 0.42rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .report-matrix thead th {
   font-weight: 800;
   white-space: normal;
+  overflow: visible;
   overflow-wrap: anywhere;
   hyphens: auto;
 }
@@ -649,6 +647,9 @@ html.dark .app-header-user__role {
   border-right: 1px solid var(--border);
   background: color-mix(in oklch, var(--background) 92%, var(--muted) 8%);
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .report-matrix__category-cell {
@@ -694,6 +695,8 @@ html.dark .app-header-user__role {
   color: #1f4e80;
   text-align: center;
   font-size: 0.76rem;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .report-matrix__section-heading--rose {
@@ -706,10 +709,9 @@ html.dark .app-header-user__role {
   text-align: right;
   font-size: 0.72rem;
   line-height: 1.15;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  overflow-wrap: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
 }
 
 .report-matrix__column-heading--danger {
@@ -728,6 +730,8 @@ html.dark .app-header-user__role {
   color: var(--foreground);
   font-variant-numeric: tabular-nums;
   font-weight: 650;
+  white-space: nowrap;
+  overflow: visible;
 }
 
 .report-matrix__cell--left {
@@ -771,10 +775,28 @@ html.dark .app-header-user__role {
 .report-matrix__row--total td,
 .report-matrix__row--total .report-matrix__category-cell,
 .report-matrix__row--total .report-matrix__dimension-cell {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   border-top: 2px solid #ef4444;
   border-bottom: 0;
   background: color-mix(in oklch, var(--background) 86%, var(--muted) 14%);
+  box-shadow: 0 -1px 0 var(--border);
   font-weight: 850;
+}
+
+.report-matrix__row--total .report-matrix__dimension-cell {
+  z-index: 6;
+}
+
+.report-matrix__row--total .report-matrix__category-cell {
+  z-index: 7;
+}
+
+.report-matrix tbody tr.report-matrix__row--total:hover td,
+.report-matrix tbody tr.report-matrix__row--total:hover .report-matrix__category-cell,
+.report-matrix tbody tr.report-matrix__row--total:hover .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--background) 86%, var(--muted) 14%);
 }
 
 html.dark .report-matrix__brand-cell,
