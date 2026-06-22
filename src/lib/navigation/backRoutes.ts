@@ -18,7 +18,6 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
     href: "/powerbi/seller-reports",
     label: "Seller Reports",
   },
-  "/powerbi/groups": { href: "/", label: "Αρχική" },
   "/powerbi/covidien-reports": { href: "/", label: "Αρχική" },
   "/powerbi/BBM-reports": { href: "/", label: "Αρχική" },
   "/powerbi/porges-reports": { href: "/", label: "Αρχική" },
@@ -33,12 +32,7 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
 const PATTERN_BACK_ROUTES: Array<{
   pattern: RegExp;
   route: BackRoute;
-}> = [
-  {
-    pattern: /^\/powerbi\/groups\/[^/]+\/datasets$/,
-    route: { href: "/powerbi/groups", label: "Power BI Groups" },
-  },
-];
+}> = [];
 
 const PARENT_LABELS: Record<string, string> = {
   "/powerbi/seller-reports": "Seller Reports",
@@ -49,7 +43,6 @@ const PARENT_LABELS: Record<string, string> = {
   "/powerbi/genadyne-reports": "Genadyne Reports",
   "/powerbi/amoena-reports": "AMOENA Reports",
   "/powerbi/abbott-reports": "ABBOTT Reports",
-  "/powerbi/groups": "Power BI Groups",
 };
 
 function titleCaseSegment(segment: string) {

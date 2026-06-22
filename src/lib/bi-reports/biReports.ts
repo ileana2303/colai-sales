@@ -1,7 +1,5 @@
 import type {
-  PowerBiDataset,
   PowerBiDatasetTarget,
-  PowerBiGroup,
 } from "@/lib/bi-reports/powerBi";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import type { ApiUserInfo } from "@/types/api/schemas";
@@ -163,19 +161,6 @@ export type SalesPerYearResponse = {
   records: SalesPerYearRow[];
   monthlyRecords: SalesPerYearMonthlyRow[];
   coverSummary: SalesPerYearCoverSummary | null;
-};
-
-export type BiReportGroupsResponse = {
-  ok: true;
-  configuredWorkspaceId: string;
-  configuredGroup: PowerBiGroup | null;
-  groups: PowerBiGroup[];
-};
-
-export type BiReportDatasetsResponse = {
-  ok: true;
-  workspaceId: string;
-  datasets: PowerBiDataset[];
 };
 
 export function resolveBiReportPowerBiTarget(

@@ -29,36 +29,6 @@ export type PowerBiAuthInfo = {
   hasAmsaApiBaseUrl: boolean;
 };
 
-export type PowerBiDataset = {
-  id: string;
-  name: string;
-  webUrl?: string;
-  configuredBy?: string;
-  isRefreshable?: boolean;
-  isEffectiveIdentityRequired?: boolean;
-  isEffectiveIdentityRolesRequired?: boolean;
-  isOnPremGatewayRequired?: boolean;
-  targetStorageMode?: string;
-  createdDate?: string;
-};
-
-export type PowerBiGroup = {
-  id: string;
-  name: string;
-  type?: string;
-  isReadOnly?: boolean;
-  isOnDedicatedCapacity?: boolean;
-};
-
-type PowerBiDatasetsResponse = {
-  value?: PowerBiDataset[];
-};
-
-type PowerBiGroupsResponse = {
-  value?: PowerBiGroup[];
-  ["@odata.count"]?: number;
-};
-
 type AmsaPowerBiTokenResponse = {
   statusCode?: number;
   message?: string;
@@ -178,14 +148,6 @@ function getPowerBiExecuteQueriesEndpoint(
   }
 
   return `https://api.powerbi.com/v1.0/myorg/${datasetPath}`;
-}
-
-function getPowerBiDatasetsEndpoint(workspaceId: string): string {
-  return `https://api.powerbi.com/v1.0/myorg/groups/${workspaceId}/datasets`;
-}
-
-function getPowerBiGroupsEndpoint(): string {
-  return "https://api.powerbi.com/v1.0/myorg/groups";
 }
 
 function getPowerBi404Hint(target?: PowerBiDatasetTarget): string {
@@ -411,89 +373,4 @@ export async function executePowerBiQuery(
   }
 
   return data as PowerBiExecuteQueriesResponse;
-}
-
-export async function getPowerBiDatasets(
-  target?: Pick<PowerBiDatasetTarget, "workspaceId">,
-  tokenOptions?: PowerBiTokenOptions,
-): Promise<PowerBiDataset[]> {
-  const workspaceId =
-    target?.workspaceId?.trim() || getDefaultPowerBiWorkspaceId();
-  const accessToken = await getPowerBiToken(tokenOptions);
-
-  let upstream: Response;
-  try {
-    upstream = await fetch(getPowerBiDatasetsEndpoint(workspaceId), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    });
-  } catch (err) {
-    throw new PowerBiRequestError(
-      err instanceof Error ? err.message : "Power BI datasets request failed",
-      502,
-    );
-  }
-
-  const data = (await upstream.json().catch(() => ({}))) as
-    | PowerBiDatasetsResponse
-    | PowerBiErrorResponse;
-
-  if (!upstream.ok) {
-    throw new PowerBiRequestError(
-      getPowerBiErrorMessage(
-        data as PowerBiErrorResponse,
-        upstream.status,
-        {
-          workspaceId,
-        },
-        "Power BI datasets request",
-      ),
-      upstream.status,
-    );
-  }
-
-  return "value" in data && Array.isArray(data.value) ? data.value : [];
-}
-
-export async function getPowerBiGroups(
-  tokenOptions?: PowerBiTokenOptions,
-): Promise<PowerBiGroup[]> {
-  const accessToken = await getPowerBiToken(tokenOptions);
-
-  let upstream: Response;
-  try {
-    upstream = await fetch(getPowerBiGroupsEndpoint(), {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-      cache: "no-store",
-    });
-  } catch (err) {
-    throw new PowerBiRequestError(
-      err instanceof Error ? err.message : "Power BI groups request failed",
-      502,
-    );
-  }
-
-  const data = (await upstream.json().catch(() => ({}))) as
-    | PowerBiGroupsResponse
-    | PowerBiErrorResponse;
-
-  if (!upstream.ok) {
-    throw new PowerBiRequestError(
-      getPowerBiErrorMessage(
-        data as PowerBiErrorResponse,
-        upstream.status,
-        undefined,
-        "Power BI groups request",
-      ),
-      upstream.status,
-    );
-  }
-
-  return "value" in data && Array.isArray(data.value) ? data.value : [];
 }

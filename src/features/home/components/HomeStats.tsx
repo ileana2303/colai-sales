@@ -68,17 +68,10 @@ export default function HomeStats() {
     <div className="app-home-grid">
       <ModuleCard
         title="PowerBI . Sellers Reports"
-        description="Αναφορές πωλήσεων και διαθέσιμα datasets."
+        description="Αναφορές πωλήσεων."
         icon="bi-bar-chart"
         accent="#6366f1"
         href="/powerbi/seller-reports"
-      />
-      <ModuleCard
-        title="Power BI Groups"
-        description="Workspaces και datasets του tenant."
-        icon="bi-grid-3x3-gap"
-        accent="#64748b"
-        href="/powerbi/groups"
       />
     </div>
   ) : (

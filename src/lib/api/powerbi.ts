@@ -1,8 +1,6 @@
 import { parseProxyJson } from "@/lib/api/client";
 import type {
   AkrateiaResponse,
-  BiReportDatasetsResponse,
-  BiReportGroupsResponse,
   SalesPerMonthResponse,
   SalesPerYearResponse,
 } from "@/lib/bi-reports/biReports";
@@ -40,20 +38,6 @@ export function fetchPowerBiAreaReport<TRow>(
   fallbackError: string,
 ) {
   return fetchPowerBi<AreaReportResponse<TRow>>(apiPath, fallbackError);
-}
-
-export function fetchPowerBiGroups() {
-  return fetchPowerBi<BiReportGroupsResponse>(
-    "/api/powerbi/groups",
-    "Failed to load Power BI groups",
-  );
-}
-
-export function fetchPowerBiDatasets(groupId: string) {
-  return fetchPowerBi<BiReportDatasetsResponse>(
-    `/api/powerbi/groups/${encodeURIComponent(groupId)}/datasets`,
-    "Failed to load Power BI datasets",
-  );
 }
 
 export function fetchSalesPerMonthReport() {

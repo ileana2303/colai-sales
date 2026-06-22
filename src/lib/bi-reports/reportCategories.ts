@@ -4,7 +4,7 @@ export type ReportCategoryKey =
   | "bbm"
   | "coloplast"
   | "covidien"
-  | "genadyne"
+  | "akrateia"
   | "porges";
 
 export type ReportCategoryDefinition = {
@@ -18,30 +18,6 @@ export type ReportCategoryDefinition = {
 
 export const AREA_REPORT_CATEGORIES: ReportCategoryDefinition[] = [
   {
-    key: "covidien",
-    title: "Covidien Reports",
-    description: "PowerBI Reports for Covidien Sales & Trends.",
-    href: "/powerbi/covidien-reports",
-    icon: "bi-clipboard2-pulse",
-    accent: "#2563eb",
-  },
-  {
-    key: "porges",
-    title: "Porges Reports",
-    description: "PowerBI Reports for Porges Sales & Trends.",
-    href: "/powerbi/porges-reports",
-    icon: "bi-stars",
-    accent: "#7c3aed",
-  },
-  {
-    key: "bbm",
-    title: "BAUSCH & LOMB TRIPLEX Reports",
-    description: "PowerBI Reports for BAUSCH & LOMB TRIPLEX Sales & Trends.",
-    href: "/powerbi/BBM-reports",
-    icon: "bi-bar-chart",
-    accent: "#dc2626",
-  },
-  {
     key: "coloplast",
     title: "Coloplast Reports",
     description: "PowerBI Reports for Coloplast Sales & Trends.",
@@ -50,8 +26,8 @@ export const AREA_REPORT_CATEGORIES: ReportCategoryDefinition[] = [
     accent: "#0f766e",
   },
   {
-    key: "genadyne",
-    title: "Genadyne Reports",
+    key: "akrateia",
+    title: "Akrateia Reports",
     description: "PowerBI Reports for Genadyne Sales & Forecast.",
     href: "/powerbi/genadyne-reports",
     icon: "bi-graph-up-arrow",
@@ -72,6 +48,30 @@ export const AREA_REPORT_CATEGORIES: ReportCategoryDefinition[] = [
     href: "/powerbi/abbott-reports",
     icon: "bi-building-2",
     accent: "#0369a1",
+  },
+  {
+    key: "porges",
+    title: "Porges Reports",
+    description: "PowerBI Reports for Porges Sales & Trends.",
+    href: "/powerbi/porges-reports",
+    icon: "bi-stars",
+    accent: "#7c3aed",
+  },
+  {
+    key: "bbm",
+    title: "Bausch & Lomb Reports",
+    description: "PowerBI Reports for BAUSCH & LOMB Sales & Trends.",
+    href: "/powerbi/BBM-reports",
+    icon: "bi-bar-chart",
+    accent: "#dc2626",
+  },
+  {
+    key: "covidien",
+    title: "Covidien Reports",
+    description: "PowerBI Reports for Covidien Sales & Trends.",
+    href: "/powerbi/covidien-reports",
+    icon: "bi-clipboard2-pulse",
+    accent: "#2563eb",
   },
 ];
 
