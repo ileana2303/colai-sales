@@ -26,6 +26,7 @@ export type PowerBiMatrixSourceRow = {
 };
 
 export type BuildReportMatrixRowsInput = {
+  categoryOrder?: string[];
   currentRows: PowerBiMatrixSourceRow[];
   previousRows: PowerBiMatrixSourceRow[];
   trendRows: PowerBiMatrixSourceRow[];
@@ -93,7 +94,8 @@ function formatYearComparison(current: number, previous: number) {
 }
 
 function formatYearDiff(current: number, previous: number) {
-  if (!Number.isFinite(current) || !Number.isFinite(previous)) return EMPTY_VALUE;
+  if (!Number.isFinite(current) || !Number.isFinite(previous))
+    return EMPTY_VALUE;
   return formatCurrency(current - previous);
 }
 
@@ -253,6 +255,18 @@ function getCategoryLabel(aggregate: MatrixAggregate, isTotal = false) {
   return aggregate.group1 || "-";
 }
 
+function getCategoryOrderIndex(
+  categoryOrder: string[] | undefined,
+  category: string,
+) {
+  if (!categoryOrder?.length) return -1;
+
+  const normalizedCategory = normalizeKeyPart(category);
+  return categoryOrder
+    .map((item) => normalizeKeyPart(item))
+    .indexOf(normalizedCategory);
+}
+
 function mergeOpenMonthMaps(
   aggregates: MatrixAggregate[],
 ): Map<string, number> {
@@ -325,7 +339,9 @@ function computeMonthlyTargetMetrics(
   const openMonthCount = openMonths.length;
   const monthlyTarget = openMonths[0]?.[1] ?? null;
   const extraMonthlyTarget =
-    diffGap > 0 || openMonthCount === 0 ? 0 : Math.abs(diffGap) / openMonthCount;
+    diffGap > 0 || openMonthCount === 0
+      ? 0
+      : Math.abs(diffGap) / openMonthCount;
   const newMonthlyTarget =
     monthlyTarget == null ? null : monthlyTarget + extraMonthlyTarget;
 
@@ -345,8 +361,9 @@ function aggregateToMatrixRow(
   const category = getCategoryLabel(aggregate, isTotal);
   const sellerLabel = isTotal
     ? EMPTY_VALUE
-    : [aggregate.sellerName, aggregate.sellerCode].filter(Boolean).join(" - ") ||
-      "-";
+    : [aggregate.sellerName, aggregate.sellerCode]
+        .filter(Boolean)
+        .join(" - ") || "-";
   const previousDiffValue = closedPeriod.target - closedPeriod.result;
   const currentDiffValue = aggregate.vTrend - aggregate.tcyAll;
   const yearDiffValue = closedPeriod.result - aggregate.vlc;
@@ -399,10 +416,7 @@ function aggregateToMatrixRow(
       previousDiff: formatTargetDiff(closedPeriod.target, closedPeriod.result),
       previousResult: formatCurrency(closedPeriod.result),
       previousTarget: formatCurrency(closedPeriod.target),
-      yearComparison: formatYearComparison(
-        closedPeriod.result,
-        aggregate.vlc,
-      ),
+      yearComparison: formatYearComparison(closedPeriod.result, aggregate.vlc),
       yearDiff: formatYearDiff(closedPeriod.result, aggregate.vlc),
       yearResult: formatCurrency(aggregate.vlc),
     },
@@ -410,6 +424,7 @@ function aggregateToMatrixRow(
 }
 
 export function buildReportMatrixRows({
+  categoryOrder,
   currentRows,
   previousRows,
   trendRows,
@@ -450,6 +465,14 @@ export function buildReportMatrixRows({
   }
 
   const sortedAggregates = [...aggregates.values()].sort((left, right) => {
+    const leftOrder = getCategoryOrderIndex(categoryOrder, left.group1);
+    const rightOrder = getCategoryOrderIndex(categoryOrder, right.group1);
+    if (leftOrder !== rightOrder) {
+      if (leftOrder === -1) return 1;
+      if (rightOrder === -1) return -1;
+      return leftOrder - rightOrder;
+    }
+
     const categoryCompare = getCategoryLabel(left).localeCompare(
       getCategoryLabel(right),
       "el",

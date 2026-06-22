@@ -22,7 +22,7 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
   "/powerbi/BBM-reports": { href: "/", label: "Αρχική" },
   "/powerbi/porges-reports": { href: "/", label: "Αρχική" },
   "/powerbi/coloplast-reports": { href: "/", label: "Αρχική" },
-  "/powerbi/genadyne-reports": { href: "/", label: "Αρχική" },
+  "/powerbi/akrateia-reports": { href: "/", label: "Αρχική" },
   "/powerbi/amoena-reports": { href: "/", label: "Αρχική" },
   "/powerbi/abbott-reports": { href: "/", label: "Αρχική" },
   "/salesWC": { href: "/", label: "Αρχική" },
@@ -40,7 +40,7 @@ const PARENT_LABELS: Record<string, string> = {
   "/powerbi/porges-reports": "Porges Reports",
   "/powerbi/BBM-reports": "BAUSCH & LOMB Reports",
   "/powerbi/coloplast-reports": "Coloplast Reports",
-  "/powerbi/genadyne-reports": "Genadyne Reports",
+  "/powerbi/akrateia-reports": "Akrateia Reports",
   "/powerbi/amoena-reports": "AMOENA Reports",
   "/powerbi/abbott-reports": "ABBOTT Reports",
 };

@@ -25,6 +25,7 @@ type MatrixReportPayload = {
 type PowerBiReportMatrixPageProps = {
   brandLabel: string;
   caption: string;
+  categoryOrder?: string[];
   currentSalesPath: string;
   currentYear: number;
   emptyMessage: string;
@@ -82,6 +83,7 @@ async function fetchMatrixPayload({
 export function PowerBiReportMatrixPage({
   brandLabel,
   caption,
+  categoryOrder,
   currentSalesPath,
   currentYear,
   emptyMessage,
@@ -118,12 +120,13 @@ export function PowerBiReportMatrixPage({
     () =>
       data
         ? buildReportMatrixRows({
+            categoryOrder,
             currentRows: data.currentRows,
             previousRows: data.previousRows,
             trendRows: data.trendRows,
           })
         : [],
-    [data],
+    [categoryOrder, data],
   );
   return (
     <div className="app-page">

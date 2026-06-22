@@ -1,6 +1,4 @@
-import type {
-  PowerBiDatasetTarget,
-} from "@/lib/bi-reports/powerBi";
+import type { PowerBiDatasetTarget } from "@/lib/bi-reports/powerBi";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import type { ApiUserInfo } from "@/types/api/schemas";
 
@@ -13,6 +11,9 @@ export type BiReportPowerBiTargetKey =
   | "sales"
   | "sales_year"
   | "akrateia"
+  | "akrateia_sales_2025"
+  | "akrateia_sales_2026"
+  | "akrateia_trend_2026"
   | "bbm_sales_2025"
   | "bbm_sales_2026"
   | "bbm_trends_2026"
@@ -34,6 +35,9 @@ const BI_REPORT_DATASET_IDS: Record<BiReportPowerBiTargetKey, string> = {
   sales: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   sales_year: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   akrateia: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
+  akrateia_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
+  akrateia_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
+  akrateia_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
   bbm_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
   bbm_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
   bbm_trends_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,

@@ -28,8 +28,8 @@ export const AREA_REPORT_CATEGORIES: ReportCategoryDefinition[] = [
   {
     key: "akrateia",
     title: "Akrateia Reports",
-    description: "PowerBI Reports for Genadyne Sales & Forecast.",
-    href: "/powerbi/genadyne-reports",
+    description: "PowerBI Reports for Akrateia Sales & Forecast.",
+    href: "/powerbi/akrateia-reports",
     icon: "bi-graph-up-arrow",
     accent: "#16a34a",
   },

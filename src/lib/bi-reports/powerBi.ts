@@ -59,6 +59,35 @@ type PowerBiErrorResponse = {
   message?: string;
 };
 
+function getPowerBiDetailMessages(data: PowerBiErrorResponse): string[] {
+  const detailSources = [
+    data.error?.details,
+    data.error?.["pbi.error"]?.details,
+  ];
+  const messages: string[] = [];
+
+  for (const source of detailSources) {
+    if (!Array.isArray(source)) continue;
+
+    for (const detail of source) {
+      if (!detail || typeof detail !== "object") continue;
+
+      const record = detail as Record<string, unknown>;
+      const nestedDetail =
+        record.detail && typeof record.detail === "object"
+          ? (record.detail as Record<string, unknown>)
+          : null;
+      const value = nestedDetail?.value ?? record.message ?? record.value;
+
+      if (typeof value === "string" && value.trim()) {
+        messages.push(value.trim());
+      }
+    }
+  }
+
+  return [...new Set(messages)];
+}
+
 export class PowerBiRequestError extends Error {
   status: number;
 
@@ -173,6 +202,10 @@ function getPowerBiErrorMessage(
     const detail =
       data.error.message ||
       ("message" in data && data.message ? data.message : "");
+    const detailMessages = getPowerBiDetailMessages(data);
+    const detailSuffix = detailMessages.length
+      ? ` Details: ${detailMessages.join(" | ")}`
+      : "";
 
     const base = detail
       ? `${operation} failed (${code}): ${detail}`
@@ -182,7 +215,9 @@ function getPowerBiErrorMessage(
       return `${base}. Workspace ${getPowerBiWorkspaceId(target) || "My workspace"} was not found, or this token cannot access it. Check that the app/service principal is added to the workspace.`;
     }
 
-    return status === 404 ? `${base}. ${getPowerBi404Hint(target)}` : base;
+    return status === 404
+      ? `${base}. ${getPowerBi404Hint(target)}${detailSuffix}`
+      : `${base}${detailSuffix}`;
   }
 
   if ("message" in data && data.message) {
