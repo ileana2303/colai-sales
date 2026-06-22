@@ -80,6 +80,34 @@ function renderValue(value: ReactNode) {
   return value == null || value === "" ? "—" : value;
 }
 
+function getTruncationTitle(value: ReactNode, fallback = "") {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  return fallback;
+}
+
+function renderTruncatedCell(value: ReactNode, title?: string) {
+  const content = renderValue(value);
+
+  if (typeof content !== "string" && typeof content !== "number") {
+    return content;
+  }
+
+  const text = String(content);
+  const resolvedTitle = title ?? text;
+
+  return (
+    <span
+      className="report-matrix__cell-content"
+      title={resolvedTitle && resolvedTitle !== "—" ? resolvedTitle : undefined}
+    >
+      {text}
+    </span>
+  );
+}
+
 function getLeadingValue(row: ReportMatrixRow, key: string) {
   if (key === "category") return row.category;
   return row.leadingValues?.[key];
@@ -370,7 +398,16 @@ export function ReportMatrixTable({
                       : undefined
                   }
                 >
-                  {column.label}
+                  {typeof column.label === "string" ? (
+                    <span
+                      className="report-matrix__cell-content"
+                      title={column.label}
+                    >
+                      {column.label}
+                    </span>
+                  ) : (
+                    column.label
+                  )}
                 </th>
               ))}
             </tr>
@@ -382,7 +419,12 @@ export function ReportMatrixTable({
                 className={cn(row.isTotal && "report-matrix__row--total")}
               >
                 {resolvedLeadingColumns.map((column, index) => {
-                  const content = renderValue(getLeadingValue(row, column.key));
+                  const rawValue = getLeadingValue(row, column.key);
+                  const title =
+                    column.key === "seller"
+                      ? row.filterValues?.sellerLabel
+                      : getTruncationTitle(rawValue);
+                  const content = renderTruncatedCell(rawValue, title);
                   const className = cn(
                     index === 0
                       ? "report-matrix__category-cell"
@@ -400,11 +442,17 @@ export function ReportMatrixTable({
                       className={className}
                       scope="row"
                       style={style}
+                      title={title && title !== "—" ? title : undefined}
                     >
                       {content}
                     </th>
                   ) : (
-                    <td key={column.key} className={className} style={style}>
+                    <td
+                      key={column.key}
+                      className={className}
+                      style={style}
+                      title={title && title !== "—" ? title : undefined}
+                    >
                       {content}
                     </td>
                   );
@@ -423,7 +471,7 @@ export function ReportMatrixTable({
                         tone !== "default" && `report-matrix__cell--${tone}`,
                       )}
                     >
-                      {renderValue(row.values[column.key])}
+                      {renderTruncatedCell(row.values[column.key])}
                     </td>
                   );
                 })}

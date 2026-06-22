@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --app-content-max-width: 1680px;
+  --app-content-max-width: 1920px;
   --app-page-gutter: clamp(28px, 3vw, 56px);
   --app-content-pad-bottom: 48px;
   --app-section-gap: 1.5rem;
@@ -545,6 +545,8 @@ html.dark .app-header-user__role {
   vertical-align: bottom;
   padding-top: 0.45rem;
   padding-bottom: 0.45rem;
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .report-matrix__viewport {
@@ -565,6 +567,8 @@ html.dark .app-header-user__role {
   padding: 0.58rem 0.42rem;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -573,6 +577,14 @@ html.dark .app-header-user__role {
   white-space: normal;
   overflow-wrap: anywhere;
   hyphens: auto;
+}
+
+.report-matrix__cell-content {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .report-matrix__brand-cell,
@@ -626,8 +638,10 @@ html.dark .app-header-user__role {
 .report-matrix__seller-cell {
   display: flex;
   min-width: 0;
+  max-width: 100%;
   flex-direction: column;
   gap: 0.12rem;
+  overflow: hidden;
 }
 
 .report-matrix__seller-name,
@@ -665,6 +679,10 @@ html.dark .app-header-user__role {
   text-align: right;
   font-size: 0.72rem;
   line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
 }
 
 .report-matrix__column-heading--danger {

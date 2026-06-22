@@ -175,8 +175,9 @@ function renderSeller(aggregate: MatrixAggregate) {
   );
 }
 
-function getCategoryLabel(aggregate: MatrixAggregate) {
-  return [aggregate.group2, aggregate.group1].filter(Boolean).join(" / ");
+function getCategoryLabel(aggregate: MatrixAggregate, isTotal = false) {
+  if (isTotal) return "Σύνολα";
+  return aggregate.group1 || "-";
 }
 
 function mergeOpenMonthMaps(
@@ -268,7 +269,7 @@ function aggregateToMatrixRow(
 ): ReportMatrixRow {
   const closedPeriod = getClosedPeriodMetrics(aggregate);
   const monthlyTargets = computeMonthlyTargetMetrics(aggregate);
-  const category = getCategoryLabel(aggregate);
+  const category = getCategoryLabel(aggregate, isTotal);
   const sellerLabel = isTotal
     ? EMPTY_VALUE
     : [aggregate.sellerName, aggregate.sellerCode].filter(Boolean).join(" - ") ||
