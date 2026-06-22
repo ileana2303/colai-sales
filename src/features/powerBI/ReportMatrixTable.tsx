@@ -76,25 +76,43 @@ function syncReportMatrixViewportHeight(
   card: HTMLElement,
   viewport: HTMLElement,
 ) {
-  const styles = getComputedStyle(document.documentElement);
-  const bottomPad =
-    Number.parseFloat(styles.getPropertyValue("--app-content-pad-bottom")) ||
-    48;
-  const cardRect = card.getBoundingClientRect();
   const header = card.querySelector<HTMLElement>(".report-matrix-card__header");
   const headerHeight = header?.offsetHeight ?? 0;
+  const appContent = card.closest(".app-content");
+  const contentStyle = appContent ? getComputedStyle(appContent) : null;
+  const paddingBottom = contentStyle
+    ? Number.parseFloat(contentStyle.paddingBottom) || 0
+    : Number.parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--app-content-pad-bottom",
+        ),
+      ) || 0;
+  const cardRect = card.getBoundingClientRect();
+  const viewportTop = cardRect.top + headerHeight;
+  const pageScrollbarHeight = Math.max(
+    0,
+    window.innerHeight - document.documentElement.clientHeight,
+  );
   const maxAvailable = Math.max(
     REPORT_MATRIX_MIN_VIEWPORT_HEIGHT,
-    window.innerHeight - cardRect.top - bottomPad - 8 - headerHeight,
+    Math.floor(
+      document.documentElement.clientHeight -
+        viewportTop -
+        paddingBottom -
+        pageScrollbarHeight,
+    ),
   );
   const table = viewport.querySelector("table");
-  const contentHeight = table?.getBoundingClientRect().height ?? 0;
+  const contentHeight = table?.scrollHeight ?? 0;
   const nextHeight = Math.min(
     Math.max(contentHeight, REPORT_MATRIX_MIN_VIEWPORT_HEIGHT),
     maxAvailable,
   );
 
-  viewport.style.setProperty("--report-matrix-viewport-height", `${nextHeight}px`);
+  viewport.style.setProperty(
+    "--report-matrix-viewport-height",
+    `${nextHeight}px`,
+  );
 }
 
 function getAlignClass(align: ReportMatrixColumn["align"]) {
