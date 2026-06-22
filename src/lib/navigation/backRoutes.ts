@@ -20,56 +20,8 @@ const EXACT_BACK_ROUTES: Record<string, BackRoute> = {
   },
   "/powerbi/groups": { href: "/", label: "Αρχική" },
   "/powerbi/covidien-reports": { href: "/", label: "Αρχική" },
-  "/powerbi/covidien-reports/covidien-sales-2026": {
-    href: "/powerbi/covidien-reports",
-    label: "Covidien Reports",
-  },
-  "/powerbi/covidien-reports/covidien-sales-2025": {
-    href: "/powerbi/covidien-reports",
-    label: "Covidien Reports",
-  },
-  "/powerbi/covidien-reports/covidien-trends": {
-    href: "/powerbi/covidien-reports",
-    label: "Covidien Reports",
-  },
-  "/powerbi/covidien-reports/targets-and-trends": {
-    href: "/powerbi/covidien-reports",
-    label: "Covidien Reports",
-  },
   "/powerbi/BBM-reports": { href: "/", label: "Αρχική" },
-  "/powerbi/BBM-reports/BBM-sales-2026": {
-    href: "/powerbi/BBM-reports",
-    label: "BAUSCH & LOMB Reports",
-  },
-  "/powerbi/BBM-reports/BBM-sales-2025": {
-    href: "/powerbi/BBM-reports",
-    label: "BAUSCH & LOMB Reports",
-  },
-  "/powerbi/BBM-reports/BBM-trends": {
-    href: "/powerbi/BBM-reports",
-    label: "BAUSCH & LOMB Reports",
-  },
-  "/powerbi/BBM-reports/targets-and-trends": {
-    href: "/powerbi/BBM-reports",
-    label: "BAUSCH & LOMB Reports",
-  },
   "/powerbi/porges-reports": { href: "/", label: "Αρχική" },
-  "/powerbi/porges-reports/porges-sales-2026": {
-    href: "/powerbi/porges-reports",
-    label: "Porges Reports",
-  },
-  "/powerbi/porges-reports/porges-sales-2025": {
-    href: "/powerbi/porges-reports",
-    label: "Porges Reports",
-  },
-  "/powerbi/porges-reports/porges-trends": {
-    href: "/powerbi/porges-reports",
-    label: "Porges Reports",
-  },
-  "/powerbi/porges-reports/targets-and-trends": {
-    href: "/powerbi/porges-reports",
-    label: "Porges Reports",
-  },
   "/powerbi/coloplast-reports": { href: "/", label: "Αρχική" },
   "/powerbi/genadyne-reports": { href: "/", label: "Αρχική" },
   "/powerbi/amoena-reports": { href: "/", label: "Αρχική" },

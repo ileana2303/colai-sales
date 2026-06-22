@@ -31,6 +31,7 @@ export type CovidienSalesRow = {
   reportDesc: string;
   currency: number | null;
   vcy: number | null;
+  vlc?: number | null;
   tcy: number | null;
 };
 
@@ -80,7 +81,7 @@ export function buildCovidienSales2025Query(areaName: string): string {
   const { area, businessUnit, excludedDocumentTypes, familyGroups } =
     getCovidienSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VLY", "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit LY", "Currency", 1, "VCY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}}))) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VLY", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Month]`;
+  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VLY", "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit LY", "Currency", 1, "VCY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}}))) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VLC", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Month]`;
 }
 
 export function buildCovidienSalesQuery(areaName: string): string {
@@ -101,21 +102,29 @@ export function normalizeCovidienSales2025Rows(
 ): CovidienSalesRow[] {
   const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
 
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    sellerName: readString(row, "SellerName"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    month: readString(row, "Month"),
-    closedMonthStatus: "",
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vcy: readNumber(row, "VLY") ?? readNumber(row, "VCY"),
-    tcy: null,
-  }));
+  return rows.map((row) => {
+    const vlc =
+      readNumber(row, "VLC") ??
+      readNumber(row, "VLY") ??
+      readNumber(row, "VCY");
+
+    return {
+      area: readString(row, "Area"),
+      team: readString(row, "Team"),
+      sellerCode: readString(row, "SellerCode"),
+      sellerName: readString(row, "SellerName"),
+      group1: readString(row, "Group1"),
+      group2: readString(row, "Group2"),
+      month: readString(row, "Month"),
+      closedMonthStatus: "",
+      reportCode: readString(row, "REPORT_CODE"),
+      reportDesc: readString(row, "REPORT_DESC"),
+      currency: readNumber(row, "Currency"),
+      vcy: vlc,
+      vlc,
+      tcy: null,
+    };
+  });
 }
 
 export function normalizeCovidienSalesRows(
@@ -136,6 +145,7 @@ export function normalizeCovidienSalesRows(
     reportDesc: readString(row, "REPORT_DESC"),
     currency: readNumber(row, "Currency"),
     vcy: readNumber(row, "VCY"),
+    vlc: null,
     tcy: readNumber(row, "TCY"),
   }));
 }

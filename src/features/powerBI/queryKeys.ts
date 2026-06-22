@@ -9,6 +9,20 @@ export const powerBiKeys = {
   covidienSales: (apiPath: string) =>
     [...powerBiKeys.all, "covidien-sales", apiPath] as const,
   covidienTrends: () => [...powerBiKeys.all, "covidien-trends"] as const,
+  reportMatrix: (
+    reportKey: string,
+    currentSalesPath: string,
+    previousSalesPath: string,
+    trendPath: string,
+  ) =>
+    [
+      ...powerBiKeys.all,
+      "report-matrix",
+      reportKey,
+      currentSalesPath,
+      previousSalesPath,
+      trendPath,
+    ] as const,
   bbmSales: (apiPath: string) =>
     [...powerBiKeys.all, "bbm-sales", apiPath] as const,
   bbmTrends: () => [...powerBiKeys.all, "bbm-trends"] as const,

@@ -1,5 +1,10 @@
-import { ReportCategoryHubPage } from "@/features/powerBI/ReportCategoryHubPage";
+import { StaticReportMatrixPage } from "@/features/powerBI/StaticReportMatrixPage";
 
 export default function Page() {
-  return <ReportCategoryHubPage categoryKey="abbott" />;
+  return (
+    <StaticReportMatrixPage
+      brandLabel="ABBOTT"
+      caption="ABBOTT target planning matrix"
+    />
+  );
 }

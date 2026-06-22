@@ -18,6 +18,7 @@ export type BbmSalesRow = {
   reportDesc: string;
   currency?: number | null;
   vcy: number | null;
+  vlc?: number | null;
   tcy?: number | null;
 };
 
@@ -61,7 +62,7 @@ function getBbmSalesQueryContext(areaName: string) {
 export function buildBbmSales2025Query(areaName: string): string {
   const { area, businessUnits } = getBbmSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Item Family Code'[ItemFamilyCode (groups)], 'UBussiness'[BusinessUnit], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}), "REPORT_CODE", "P06VALL-VLY", "REPORT_DESC", "BBM Sales by AREA, GROUP and Business Unit", "VCY", [Sales LY]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Item Family Code'[ItemFamilyCode (groups)], "Group2", 'UBussiness'[BusinessUnit], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VLY", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]`;
+  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Item Family Code'[ItemFamilyCode (groups)], 'UBussiness'[BusinessUnit], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}), "REPORT_CODE", "P06VALL-VLY", "REPORT_DESC", "BBM Sales by AREA, GROUP and Business Unit", "VCY", [Sales LY]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Item Family Code'[ItemFamilyCode (groups)], "Group2", 'UBussiness'[BusinessUnit], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VLC", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]`;
 }
 
 export function buildBbmSales2026Query(areaName: string): string {
@@ -81,18 +82,26 @@ export function normalizeBbmSales2025Rows(
 ): BbmSalesRow[] {
   const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
 
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    sellerName: readString(row, "SellerName"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    month: readString(row, "Month"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    vcy: readNumber(row, "VLY") ?? readNumber(row, "VCY"),
-  }));
+  return rows.map((row) => {
+    const vlc =
+      readNumber(row, "VLC") ??
+      readNumber(row, "VLY") ??
+      readNumber(row, "VCY");
+
+    return {
+      area: readString(row, "Area"),
+      team: readString(row, "Team"),
+      sellerCode: readString(row, "SellerCode"),
+      sellerName: readString(row, "SellerName"),
+      group1: readString(row, "Group1"),
+      group2: readString(row, "Group2"),
+      month: readString(row, "Month"),
+      reportCode: readString(row, "REPORT_CODE"),
+      reportDesc: readString(row, "REPORT_DESC"),
+      vcy: vlc,
+      vlc,
+    };
+  });
 }
 
 export function normalizeBbmSales2026Rows(
@@ -113,6 +122,7 @@ export function normalizeBbmSales2026Rows(
     reportDesc: readString(row, "REPORT_DESC"),
     currency: readNumber(row, "Currency"),
     vcy: readNumber(row, "VCY"),
+    vlc: null,
     tcy: readNumber(row, "TCY"),
   }));
 }

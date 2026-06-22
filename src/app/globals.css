@@ -432,7 +432,6 @@ html.dark .app-header-user__avatar {
   text-overflow: ellipsis;
 }
 
-
 html[data-bs-theme="dark"] .app-header-user__role,
 html.dark .app-header-user__role {
   background: rgba(99, 102, 241, 0.2);
@@ -505,6 +504,255 @@ html.dark .app-header-user__role {
 .app-table-viewport {
   max-height: var(--app-table-max-height);
   overflow: auto;
+}
+
+.report-matrix-card {
+  overflow: hidden;
+}
+
+.report-matrix-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-matrix-card__title {
+  margin: 0;
+  font-size: clamp(1.05rem, 0.95rem + 0.35vw, 1.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.report-matrix-card__description {
+  margin: 0.4rem 0 0;
+  color: var(--muted-foreground);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.report-matrix__viewport {
+  overflow: auto;
+}
+
+.report-matrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+.report-matrix th,
+.report-matrix td {
+  padding: 0.58rem 0.42rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.report-matrix thead th {
+  font-weight: 800;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+.report-matrix__brand-cell,
+.report-matrix__leading-heading,
+.report-matrix__category-cell,
+.report-matrix__dimension-cell {
+  position: sticky;
+}
+
+.report-matrix__brand-cell {
+  z-index: 10;
+  border-right: 1px solid var(--border);
+  background: color-mix(in oklch, #bbf7d0 70%, var(--background) 30%);
+  color: #052e16;
+  text-align: center;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.report-matrix__leading-heading {
+  z-index: 8;
+  border-right: 1px solid var(--border);
+  background: color-mix(in oklch, var(--muted) 82%, var(--background) 18%);
+  color: #1f4e80;
+  text-align: left;
+}
+
+.report-matrix__category-heading {
+  font-size: 0.9rem;
+}
+
+.report-matrix__dimension-cell,
+.report-matrix__category-cell {
+  z-index: 4;
+  border-right: 1px solid var(--border);
+  background: color-mix(in oklch, var(--background) 92%, var(--muted) 8%);
+  text-align: left;
+}
+
+.report-matrix__category-cell {
+  color: #1f4e80;
+  font-weight: 800;
+}
+
+.report-matrix__dimension-cell {
+  color: var(--foreground);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.report-matrix__seller-cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.report-matrix__seller-name,
+.report-matrix__seller-code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.report-matrix__seller-name {
+  color: var(--foreground);
+  font-weight: 750;
+}
+
+.report-matrix__seller-code {
+  color: var(--muted-foreground);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.report-matrix__section-heading {
+  border-left: 4px solid var(--background);
+  background: color-mix(in oklch, var(--muted) 84%, var(--background) 16%);
+  color: #1f4e80;
+  text-align: center;
+  font-size: 0.76rem;
+}
+
+.report-matrix__section-heading--rose {
+  background: color-mix(in oklch, #f9a8d4 38%, var(--background) 62%);
+}
+
+.report-matrix__column-heading {
+  background: color-mix(in oklch, var(--muted) 78%, var(--background) 22%);
+  color: #1f4e80;
+  text-align: right;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.report-matrix__column-heading--danger {
+  color: #dc2626;
+}
+
+.report-matrix__column-heading--section-rose {
+  background: color-mix(in oklch, #f9a8d4 32%, var(--background) 68%);
+}
+
+.report-matrix__section-start {
+  border-left: 4px solid var(--background);
+}
+
+.report-matrix__cell {
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.report-matrix__cell--left {
+  text-align: left;
+}
+
+.report-matrix__cell--center {
+  text-align: center;
+}
+
+.report-matrix__cell--right {
+  text-align: right;
+}
+
+.report-matrix__cell--danger {
+  color: #dc2626;
+}
+
+.report-matrix__cell--success {
+  color: #15803d;
+}
+
+.report-matrix__cell--warning,
+.report-matrix__cell--rose {
+  color: #be123c;
+}
+
+.report-matrix__cell--muted {
+  color: var(--muted-foreground);
+}
+
+.report-matrix tbody tr:hover td,
+.report-matrix tbody tr:hover .report-matrix__category-cell {
+  background: color-mix(in oklch, var(--muted) 46%, var(--background) 54%);
+}
+
+.report-matrix tbody tr:hover .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--muted) 46%, var(--background) 54%);
+}
+
+.report-matrix__row--total td,
+.report-matrix__row--total .report-matrix__category-cell,
+.report-matrix__row--total .report-matrix__dimension-cell {
+  border-top: 2px solid #ef4444;
+  border-bottom: 0;
+  background: color-mix(in oklch, var(--background) 86%, var(--muted) 14%);
+  font-weight: 850;
+}
+
+html.dark .report-matrix__brand-cell,
+html[data-bs-theme="dark"] .report-matrix__brand-cell {
+  background: color-mix(in oklch, #14532d 52%, var(--background) 48%);
+  color: #bbf7d0;
+}
+
+html.dark .report-matrix__category-heading,
+html[data-bs-theme="dark"] .report-matrix__category-heading,
+html.dark .report-matrix__leading-heading,
+html[data-bs-theme="dark"] .report-matrix__leading-heading,
+html.dark .report-matrix__section-heading,
+html[data-bs-theme="dark"] .report-matrix__section-heading,
+html.dark .report-matrix__column-heading,
+html[data-bs-theme="dark"] .report-matrix__column-heading {
+  color: #bfdbfe;
+}
+
+html.dark .report-matrix__category-cell,
+html[data-bs-theme="dark"] .report-matrix__category-cell,
+html.dark .report-matrix__dimension-cell,
+html[data-bs-theme="dark"] .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--background) 88%, var(--muted) 12%);
+}
+
+html.dark .report-matrix__category-cell,
+html[data-bs-theme="dark"] .report-matrix__category-cell {
+  color: #bfdbfe;
+}
+
+html.dark .report-matrix__section-heading--rose,
+html[data-bs-theme="dark"] .report-matrix__section-heading--rose,
+html.dark .report-matrix__column-heading--section-rose,
+html[data-bs-theme="dark"] .report-matrix__column-heading--section-rose {
+  background: color-mix(in oklch, #831843 34%, var(--background) 66%);
 }
 
 .app-report-title {

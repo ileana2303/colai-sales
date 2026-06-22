@@ -4,12 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 
 import {
   fetchAkrateiaReport,
-  fetchBbmSalesReport,
-  fetchBbmTrendsReport,
-  fetchCovidienSalesReport,
-  fetchCovidienTrendsReport,
-  fetchPorgesSalesReport,
-  fetchPorgesTrendsReport,
   fetchPowerBiDatasets,
   fetchPowerBiGroups,
   fetchSalesPerMonthReport,
@@ -59,60 +53,6 @@ export function useAkrateiaReport() {
   return useQuery({
     queryKey: powerBiKeys.akrateia(),
     queryFn: fetchAkrateiaReport,
-    ...powerBiQueryOptions,
-  });
-}
-
-export function useCovidienSalesReport(
-  apiPath: string,
-  year: number | string,
-) {
-  return useQuery({
-    queryKey: powerBiKeys.covidienSales(apiPath),
-    queryFn: () => fetchCovidienSalesReport(apiPath, year),
-    ...powerBiQueryOptions,
-  });
-}
-
-export function useCovidienTrendsReport() {
-  return useQuery({
-    queryKey: powerBiKeys.covidienTrends(),
-    queryFn: fetchCovidienTrendsReport,
-    ...powerBiQueryOptions,
-  });
-}
-
-export function useBbmSalesReport(apiPath: string, year: number | string) {
-  return useQuery({
-    queryKey: powerBiKeys.bbmSales(apiPath),
-    queryFn: () => fetchBbmSalesReport(apiPath, year),
-    ...powerBiQueryOptions,
-  });
-}
-
-export function useBbmTrendsReport() {
-  return useQuery({
-    queryKey: powerBiKeys.bbmTrends(),
-    queryFn: fetchBbmTrendsReport,
-    ...powerBiQueryOptions,
-  });
-}
-
-export function usePorgesSalesReport(
-  apiPath: string,
-  year: number | string,
-) {
-  return useQuery({
-    queryKey: powerBiKeys.porgesSales(apiPath),
-    queryFn: () => fetchPorgesSalesReport(apiPath, year),
-    ...powerBiQueryOptions,
-  });
-}
-
-export function usePorgesTrendsReport() {
-  return useQuery({
-    queryKey: powerBiKeys.porgesTrends(),
-    queryFn: fetchPorgesTrendsReport,
     ...powerBiQueryOptions,
   });
 }

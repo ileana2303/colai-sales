@@ -24,10 +24,7 @@ type SummarySection = {
   title: string;
 };
 
-function appendSummarySection(
-  sheetRows: string[][],
-  section: SummarySection,
-) {
+function appendSummarySection(sheetRows: string[][], section: SummarySection) {
   sheetRows.push([section.title]);
   sheetRows.push(["Μετρική", "Τιμή"]);
 
@@ -38,7 +35,9 @@ function appendSummarySection(
   sheetRows.push([]);
 }
 
-function buildClosedMonthsSection(metrics: TargetsTrendsMetrics): SummarySection {
+function buildClosedMonthsSection(
+  metrics: TargetsTrendsMetrics,
+): SummarySection {
   return {
     title: "Πωλήσεις κλεισμένων μηνών",
     rows: [

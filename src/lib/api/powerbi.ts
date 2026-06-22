@@ -7,7 +7,10 @@ import type {
   SalesPerYearResponse,
 } from "@/lib/bi-reports/biReports";
 import type { BbmSalesRow, BbmTrendRow } from "@/lib/bi-reports/bbm";
-import type { CovidienSalesRow, CovidienTrendRow } from "@/lib/bi-reports/covidien";
+import type {
+  CovidienSalesRow,
+  CovidienTrendRow,
+} from "@/lib/bi-reports/covidien";
 import type { PorgesSalesRow, PorgesTrendRow } from "@/lib/bi-reports/porges";
 
 const NO_CACHE_HEADERS = {
@@ -15,7 +18,10 @@ const NO_CACHE_HEADERS = {
   Pragma: "no-cache",
 } as const;
 
-async function fetchPowerBi<T>(path: string, fallbackError: string): Promise<T> {
+async function fetchPowerBi<T>(
+  path: string,
+  fallbackError: string,
+): Promise<T> {
   const res = await fetch(path, {
     cache: "no-store",
     headers: NO_CACHE_HEADERS,
@@ -28,6 +34,13 @@ export type AreaReportResponse<TRow> = {
   area?: string;
   records: TRow[];
 };
+
+export function fetchPowerBiAreaReport<TRow>(
+  apiPath: string,
+  fallbackError: string,
+) {
+  return fetchPowerBi<AreaReportResponse<TRow>>(apiPath, fallbackError);
+}
 
 export function fetchPowerBiGroups() {
   return fetchPowerBi<BiReportGroupsResponse>(
@@ -64,7 +77,10 @@ export function fetchAkrateiaReport() {
   );
 }
 
-export function fetchCovidienSalesReport(apiPath: string, year: number | string) {
+export function fetchCovidienSalesReport(
+  apiPath: string,
+  year: number | string,
+) {
   return fetchPowerBi<AreaReportResponse<CovidienSalesRow>>(
     apiPath,
     `Failed to load Covidien sales ${year}`,
