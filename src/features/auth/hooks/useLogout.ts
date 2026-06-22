@@ -7,7 +7,6 @@ import { authKeys } from "@/features/auth/queryKeys";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { clearUserSessionLocalStorage } from "@/lib/clearUserSession";
 import { useAuthStore } from "@/stores/authStore";
-import { usePowerBiStore } from "@/stores/powerBiStore";
 
 export function useLogout() {
   const queryClient = useQueryClient();
@@ -18,7 +17,6 @@ export function useLogout() {
     onSettled: () => {
       clearUserSessionLocalStorage();
       reset();
-      usePowerBiStore.getState().resetAllTableUi();
       queryClient.removeQueries({ queryKey: authKeys.all });
       queryClient.removeQueries({ queryKey: powerBiKeys.all });
     },

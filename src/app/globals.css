@@ -534,6 +534,19 @@ html.dark .app-header-user__role {
   line-height: 1.45;
 }
 
+.report-matrix-card__actions {
+  display: flex;
+  shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-matrix__leading-heading--filter {
+  vertical-align: bottom;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
 .report-matrix__viewport {
   overflow: auto;
 }

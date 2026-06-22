@@ -4,6 +4,10 @@ import {
   type ReportMatrixRow,
   type ReportMatrixSection,
 } from "@/features/powerBI/ReportMatrixTable";
+import {
+  formatNullableRatioPercent,
+  getMonthIndex,
+} from "@/lib/bi-reports/reportUtils";
 
 export type PowerBiMatrixSourceRow = {
   group1?: string | null;
@@ -11,6 +15,8 @@ export type PowerBiMatrixSourceRow = {
   team?: string | null;
   sellerCode?: string | null;
   sellerName?: string | null;
+  month?: string | null;
+  closedMonthStatus?: string | null;
   tcy?: number | null;
   vcy?: number | null;
   vlc?: number | null;
@@ -29,10 +35,20 @@ type MatrixAggregate = {
   team: string;
   sellerCode: string;
   sellerName: string;
-  tcy: number;
-  vcy: number;
+  tcyAll: number;
+  vcyAll: number;
+  tcyClosed: number;
+  vcyClosed: number;
   vlc: number;
   vTrend: number;
+  openMonthTcyByMonth: Map<string, number>;
+  hasClosedMonthStatus: boolean;
+};
+
+type MonthlyTargetMetrics = {
+  extraMonthlyTarget: number | null;
+  monthlyTarget: number | null;
+  newMonthlyTarget: number | null;
 };
 
 const EMPTY_VALUE = "-";
@@ -44,14 +60,52 @@ const currencyFormatter = new Intl.NumberFormat("el-GR", {
 });
 
 export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
-  { key: "category", label: "Κατηγορία Στόχου", width: 180 },
-  { key: "team", label: "Team", width: 78 },
-  { key: "seller", label: "Seller Name - Seller code", width: 122 },
+  { key: "category", label: "Κατηγορία Στόχου", width: 196 },
+  { key: "team", label: "Team", width: 108 },
+  { key: "seller", label: "Seller Name - Seller code", width: 168 },
 ];
 
 function formatCurrency(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
   return currencyFormatter.format(value);
+}
+
+function formatCoverPercent(target: number, result: number) {
+  if (!target || !Number.isFinite(target)) return EMPTY_VALUE;
+  return formatNullableRatioPercent(result / target);
+}
+
+function formatTargetDiff(target: number, result: number) {
+  if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
+  return formatCurrency(target - result);
+}
+
+function formatGapDiff(result: number, target: number) {
+  if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
+  return formatCurrency(result - target);
+}
+
+function formatYearComparison(current: number, previous: number) {
+  if (!previous || !Number.isFinite(previous)) return EMPTY_VALUE;
+  return formatNullableRatioPercent(previous / current);
+}
+
+function formatYearDiff(current: number, previous: number) {
+  if (!Number.isFinite(current) || !Number.isFinite(previous)) return EMPTY_VALUE;
+  return formatCurrency(current - previous);
+}
+
+function formatOptionalCurrency(value: number | null) {
+  if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
+  return formatCurrency(value);
+}
+
+function isClosedMonth(status?: string | null) {
+  return status?.trim().toLowerCase() === "completed";
+}
+
+function getMonthSortIndex(month: string) {
+  return getMonthIndex(month) ?? Number.MAX_SAFE_INTEGER;
 }
 
 function toText(value: string | null | undefined) {
@@ -96,10 +150,14 @@ function ensureAggregate(
     team: toText(row.team),
     sellerCode: toText(row.sellerCode),
     sellerName: toText(row.sellerName),
-    tcy: 0,
-    vcy: 0,
+    tcyAll: 0,
+    vcyAll: 0,
+    tcyClosed: 0,
+    vcyClosed: 0,
     vlc: 0,
     vTrend: 0,
+    openMonthTcyByMonth: new Map(),
+    hasClosedMonthStatus: false,
   };
   aggregates.set(key, aggregate);
   return aggregate;
@@ -121,14 +179,32 @@ function getCategoryLabel(aggregate: MatrixAggregate) {
   return [aggregate.group2, aggregate.group1].filter(Boolean).join(" / ");
 }
 
+function mergeOpenMonthMaps(
+  aggregates: MatrixAggregate[],
+): Map<string, number> {
+  const merged = new Map<string, number>();
+
+  for (const aggregate of aggregates) {
+    for (const [month, target] of aggregate.openMonthTcyByMonth) {
+      merged.set(month, (merged.get(month) ?? 0) + target);
+    }
+  }
+
+  return merged;
+}
+
 function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
-  return aggregates.reduce<MatrixAggregate>(
-    (total, aggregate) => ({
-      ...total,
-      tcy: total.tcy + aggregate.tcy,
-      vcy: total.vcy + aggregate.vcy,
-      vlc: total.vlc + aggregate.vlc,
-      vTrend: total.vTrend + aggregate.vTrend,
+  const total = aggregates.reduce<MatrixAggregate>(
+    (sum, aggregate) => ({
+      ...sum,
+      tcyAll: sum.tcyAll + aggregate.tcyAll,
+      vcyAll: sum.vcyAll + aggregate.vcyAll,
+      tcyClosed: sum.tcyClosed + aggregate.tcyClosed,
+      vcyClosed: sum.vcyClosed + aggregate.vcyClosed,
+      vlc: sum.vlc + aggregate.vlc,
+      vTrend: sum.vTrend + aggregate.vTrend,
+      hasClosedMonthStatus:
+        sum.hasClosedMonthStatus || aggregate.hasClosedMonthStatus,
     }),
     {
       group1: "",
@@ -136,18 +212,68 @@ function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
       team: "-",
       sellerCode: "-",
       sellerName: "",
-      tcy: 0,
-      vcy: 0,
+      tcyAll: 0,
+      vcyAll: 0,
+      tcyClosed: 0,
+      vcyClosed: 0,
       vlc: 0,
       vTrend: 0,
+      openMonthTcyByMonth: new Map(),
+      hasClosedMonthStatus: false,
     },
   );
+
+  total.openMonthTcyByMonth = mergeOpenMonthMaps(aggregates);
+  return total;
+}
+
+function getClosedPeriodMetrics(aggregate: MatrixAggregate) {
+  if (aggregate.hasClosedMonthStatus) {
+    return {
+      target: aggregate.tcyClosed,
+      result: aggregate.vcyClosed,
+    };
+  }
+
+  return {
+    target: aggregate.tcyAll,
+    result: aggregate.vcyAll,
+  };
+}
+
+function computeMonthlyTargetMetrics(
+  aggregate: MatrixAggregate,
+): MonthlyTargetMetrics {
+  const diffGap = aggregate.vTrend - aggregate.tcyAll;
+  const openMonths = [...aggregate.openMonthTcyByMonth.entries()].sort(
+    (left, right) => getMonthSortIndex(left[0]) - getMonthSortIndex(right[0]),
+  );
+  const openMonthCount = openMonths.length;
+  const monthlyTarget = openMonths[0]?.[1] ?? null;
+  const extraMonthlyTarget =
+    diffGap > 0 || openMonthCount === 0 ? 0 : Math.abs(diffGap) / openMonthCount;
+  const newMonthlyTarget =
+    monthlyTarget == null ? null : monthlyTarget + extraMonthlyTarget;
+
+  return {
+    monthlyTarget,
+    extraMonthlyTarget: monthlyTarget == null ? null : extraMonthlyTarget,
+    newMonthlyTarget,
+  };
 }
 
 function aggregateToMatrixRow(
   aggregate: MatrixAggregate,
   isTotal = false,
 ): ReportMatrixRow {
+  const closedPeriod = getClosedPeriodMetrics(aggregate);
+  const monthlyTargets = computeMonthlyTargetMetrics(aggregate);
+  const category = getCategoryLabel(aggregate);
+  const sellerLabel = isTotal
+    ? EMPTY_VALUE
+    : [aggregate.sellerName, aggregate.sellerCode].filter(Boolean).join(" - ") ||
+      "-";
+
   return {
     key: isTotal
       ? "total"
@@ -159,26 +285,42 @@ function aggregateToMatrixRow(
         ]
           .map(normalizeKeyPart)
           .join("|"),
-    category: getCategoryLabel(aggregate),
+    category,
+    filterValues: isTotal
+      ? undefined
+      : {
+          category,
+          team: aggregate.team || "",
+          seller: `${aggregate.sellerCode}|${aggregate.sellerName}`,
+          sellerLabel,
+        },
     isTotal,
     leadingValues: {
       team: aggregate.team || "-",
       seller: isTotal ? EMPTY_VALUE : renderSeller(aggregate),
     },
     values: {
-      currentCover: EMPTY_VALUE,
-      currentDiff: EMPTY_VALUE,
-      currentTarget: formatCurrency(aggregate.tcy),
+      currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
+      currentDiff: formatGapDiff(aggregate.vTrend, aggregate.tcyAll),
+      currentTarget: formatCurrency(aggregate.tcyAll),
       currentTrend: formatCurrency(aggregate.vTrend),
-      extraMonthlyTarget: EMPTY_VALUE,
-      monthlyTarget: EMPTY_VALUE,
-      newMonthlyTarget: EMPTY_VALUE,
-      previousCover: EMPTY_VALUE,
-      previousDiff: EMPTY_VALUE,
-      previousResult: formatCurrency(aggregate.vcy),
-      previousTarget: formatCurrency(aggregate.tcy),
-      yearComparison: EMPTY_VALUE,
-      yearDiff: EMPTY_VALUE,
+      extraMonthlyTarget: formatOptionalCurrency(
+        monthlyTargets.extraMonthlyTarget,
+      ),
+      monthlyTarget: formatOptionalCurrency(monthlyTargets.monthlyTarget),
+      newMonthlyTarget: formatOptionalCurrency(monthlyTargets.newMonthlyTarget),
+      previousCover: formatCoverPercent(
+        closedPeriod.target,
+        closedPeriod.result,
+      ),
+      previousDiff: formatTargetDiff(closedPeriod.target, closedPeriod.result),
+      previousResult: formatCurrency(closedPeriod.result),
+      previousTarget: formatCurrency(closedPeriod.target),
+      yearComparison: formatYearComparison(
+        closedPeriod.result,
+        aggregate.vlc,
+      ),
+      yearDiff: formatYearDiff(closedPeriod.result, aggregate.vlc),
       yearResult: formatCurrency(aggregate.vlc),
     },
   };
@@ -193,8 +335,25 @@ export function buildReportMatrixRows({
 
   for (const row of currentRows) {
     const aggregate = ensureAggregate(aggregates, row);
-    aggregate.tcy = addNumber(aggregate.tcy, row.tcy);
-    aggregate.vcy = addNumber(aggregate.vcy, row.vcy);
+    aggregate.tcyAll = addNumber(aggregate.tcyAll, row.tcy);
+    aggregate.vcyAll = addNumber(aggregate.vcyAll, row.vcy);
+
+    const month = toText(row.month);
+    const status = toText(row.closedMonthStatus);
+
+    if (status) {
+      aggregate.hasClosedMonthStatus = true;
+
+      if (isClosedMonth(status)) {
+        aggregate.tcyClosed = addNumber(aggregate.tcyClosed, row.tcy);
+        aggregate.vcyClosed = addNumber(aggregate.vcyClosed, row.vcy);
+      } else if (month) {
+        aggregate.openMonthTcyByMonth.set(
+          month,
+          (aggregate.openMonthTcyByMonth.get(month) ?? 0) + (row.tcy ?? 0),
+        );
+      }
+    }
   }
 
   for (const row of previousRows) {

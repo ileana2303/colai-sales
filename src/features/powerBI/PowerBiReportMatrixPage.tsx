@@ -138,6 +138,7 @@ export function PowerBiReportMatrixPage({
           <ReportMatrixTable
             brandLabel={brandLabel}
             caption={caption}
+            exportFileName={`${reportKey}-matrix`}
             leadingColumns={reportMatrixLeadingColumns}
             rows={rows}
             sections={sections}

@@ -15,6 +15,7 @@ export default function Page() {
       <ReportMatrixTable
         brandLabel="AMOENA"
         caption="AMOENA report target matrix"
+        exportFileName="amoena-matrix"
         leadingColumns={reportMatrixLeadingColumns}
         rows={amoenaRows}
         sections={amoenaSections}
