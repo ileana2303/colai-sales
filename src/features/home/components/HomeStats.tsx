@@ -1,5 +1,7 @@
 "use client";
 
+import type { CSSProperties } from "react";
+
 import { AppIcon } from "@/components/ui/app-icon";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import { AREA_REPORT_CATEGORIES } from "@/lib/bi-reports/reportCategories";
@@ -20,6 +22,7 @@ function ModuleCard({ accent, description, href, icon, title }: ModuleCardProps)
       href={href}
       className="home-module-card block h-full w-full no-underline text-inherit"
       aria-label={`${title} — μετάβαση`}
+      style={{ "--home-module-accent": accent } as CSSProperties}
     >
       <div
         className="app-card app-card-pressable h-full w-full overflow-hidden"
