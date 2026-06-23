@@ -10,6 +10,7 @@ import {
   getMonthIndex,
   getYearComparisonTone,
 } from "@/lib/bi-reports/reportUtils";
+import type { ReactNode } from "react";
 
 export type PowerBiMatrixSourceRow = {
   group1?: string | null;
@@ -52,6 +53,14 @@ type MonthlyTargetMetrics = {
   extraMonthlyTarget: number | null;
   monthlyTarget: number | null;
   newMonthlyTarget: number | null;
+};
+
+type MatrixRowOptions = {
+  childCount?: number;
+  key?: string;
+  parentKey?: string;
+  rowKind?: ReportMatrixRow["rowKind"];
+  leadingValues?: Record<string, ReactNode>;
 };
 
 const EMPTY_VALUE = "-";
@@ -171,7 +180,7 @@ export function buildReportMatrixTotalRow(
   rows: ReportMatrixRow[],
 ): ReportMatrixRow | null {
   const aggregates = rows
-    .filter((row) => !row.isTotal && row.metrics)
+    .filter((row) => !row.isTotal && row.rowKind !== "category" && row.metrics)
     .map((row) => aggregateFromMetrics(row.metrics!));
 
   if (!aggregates.length) return null;
@@ -262,6 +271,10 @@ function renderSeller(aggregate: MatrixAggregate) {
 function getCategoryLabel(aggregate: MatrixAggregate, isTotal = false) {
   if (isTotal) return "Σύνολα";
   return aggregate.group1 || "-";
+}
+
+function getCategoryRowKey(category: string) {
+  return `category:${normalizeKeyPart(category)}`;
 }
 
 function getCategoryOrderIndex(
@@ -364,6 +377,7 @@ function computeMonthlyTargetMetrics(
 function aggregateToMatrixRow(
   aggregate: MatrixAggregate,
   isTotal = false,
+  options: MatrixRowOptions = {},
 ): ReportMatrixRow {
   const closedPeriod = getClosedPeriodMetrics(aggregate);
   const monthlyTargets = computeMonthlyTargetMetrics(aggregate);
@@ -373,35 +387,43 @@ function aggregateToMatrixRow(
     : [aggregate.sellerName, aggregate.sellerCode]
         .filter(Boolean)
         .join(" - ") || "-";
+  const rowKind = options.rowKind ?? (isTotal ? "total" : "detail");
+  const includeFilterValues = !isTotal && rowKind !== "category";
   const previousDiffValue = closedPeriod.result - closedPeriod.target;
   const currentDiffValue = aggregate.vTrend - aggregate.tcyAll;
   const yearDiffValue = closedPeriod.result - aggregate.vlc;
 
   return {
-    key: isTotal
-      ? "total"
-      : [
-          aggregate.group2,
-          aggregate.group1,
-          aggregate.team,
-          aggregate.sellerCode,
-        ]
-          .map(normalizeKeyPart)
-          .join("|"),
+    key:
+      options.key ??
+      (isTotal
+        ? "total"
+        : [
+            aggregate.group2,
+            aggregate.group1,
+            aggregate.team,
+            aggregate.sellerCode,
+          ]
+            .map(normalizeKeyPart)
+            .join("|")),
     category,
-    filterValues: isTotal
-      ? undefined
-      : {
+    childCount: options.childCount,
+    filterValues: includeFilterValues
+      ? {
           category,
           team: aggregate.team || "",
           seller: `${aggregate.sellerCode}|${aggregate.sellerName}`,
           sellerLabel,
-        },
+        }
+      : undefined,
     isTotal,
+    parentKey: options.parentKey,
+    rowKind,
     metrics: isTotal ? undefined : metricsFromAggregate(aggregate),
     leadingValues: {
-      team: aggregate.team || "-",
-      seller: isTotal ? EMPTY_VALUE : renderSeller(aggregate),
+      team: isTotal ? false : aggregate.team || "-",
+      seller: isTotal ? false : renderSeller(aggregate),
+      ...options.leadingValues,
     },
     cellTones: buildMetricCellTones({
       currentDiff: currentDiffValue,
@@ -430,6 +452,48 @@ function aggregateToMatrixRow(
       yearResult: formatCurrency(aggregate.vlc),
     },
   };
+}
+
+export function buildReportMatrixCategoryRows(
+  rows: ReportMatrixRow[],
+): ReportMatrixRow[] {
+  const groupedRows = new Map<string, ReportMatrixRow[]>();
+
+  for (const row of rows) {
+    if (row.isTotal || row.rowKind === "category" || !row.metrics) continue;
+
+    const category = row.filterValues?.category || String(row.category ?? "-");
+    const existing = groupedRows.get(category);
+
+    if (existing) {
+      existing.push(row);
+    } else {
+      groupedRows.set(category, [row]);
+    }
+  }
+
+  return [...groupedRows.entries()].map(([category, childRows]) => {
+    const childAggregates = childRows.map((row) =>
+      aggregateFromMetrics(row.metrics!),
+    );
+    const aggregate = buildTotalAggregate(childAggregates);
+
+    aggregate.group1 = category;
+    aggregate.group2 = "Σύνολο";
+    aggregate.team = "";
+    aggregate.sellerCode = "";
+    aggregate.sellerName = "";
+
+    return aggregateToMatrixRow(aggregate, false, {
+      childCount: childRows.length,
+      key: getCategoryRowKey(category),
+      leadingValues: {
+        team: false,
+        seller: false,
+      },
+      rowKind: "category",
+    });
+  });
 }
 
 export function buildReportMatrixRows({
@@ -499,8 +563,15 @@ export function buildReportMatrixRows({
 
   if (!sortedAggregates.length) return [];
 
+  const detailRows = sortedAggregates.map((aggregate) =>
+    aggregateToMatrixRow(aggregate, false, {
+      parentKey: getCategoryRowKey(getCategoryLabel(aggregate)),
+      rowKind: "detail",
+    }),
+  );
+
   return [
-    ...sortedAggregates.map((aggregate) => aggregateToMatrixRow(aggregate)),
+    ...detailRows,
     aggregateToMatrixRow(buildTotalAggregate(sortedAggregates), true),
   ];
 }

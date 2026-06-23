@@ -1,13 +1,22 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { PowerBiTableHeaderFilter } from "@/features/powerBI/PowerBiTable/PowerBiTableHeaderFilter";
 import type { FilterOption } from "@/features/powerBI/PowerBiTable/types";
 import { exportReportMatrixToExcel } from "@/features/powerBI/reportMatrixExport";
-import { buildReportMatrixTotalRow } from "@/features/powerBI/reportMatrixData";
+import {
+  buildReportMatrixCategoryRows,
+  buildReportMatrixTotalRow,
+} from "@/features/powerBI/reportMatrixData";
 
 export type ReportMatrixTone =
   | "danger"
@@ -54,6 +63,7 @@ export type ReportMatrixRowMetrics = {
 export type ReportMatrixRow = {
   key: string;
   category: ReactNode;
+  childCount?: number;
   filterValues?: {
     category: string;
     seller: string;
@@ -62,6 +72,8 @@ export type ReportMatrixRow = {
   };
   leadingValues?: Record<string, ReactNode>;
   metrics?: ReportMatrixRowMetrics;
+  parentKey?: string;
+  rowKind?: "category" | "detail" | "total";
   values: Record<string, ReactNode>;
   cellTones?: Record<string, ReportMatrixTone>;
   isTotal?: boolean;
@@ -167,6 +179,10 @@ function renderTruncatedCell(value: ReactNode, title?: string) {
   );
 }
 
+function canExpandCategory(row: ReportMatrixRow) {
+  return row.rowKind === "category" && (row.childCount ?? 0) > 1;
+}
+
 function getLeadingValue(row: ReportMatrixRow, key: string) {
   if (key === "category") return row.category;
   return row.leadingValues?.[key];
@@ -199,6 +215,10 @@ function buildFilterOptions(
     );
 }
 
+function getFilterOptionLabel(options: FilterOption[], value: string) {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
 export function ReportMatrixTable({
   brandLabel,
   caption,
@@ -214,49 +234,128 @@ export function ReportMatrixTable({
   const [categoryFilter, setCategoryFilter] = useState("");
   const [teamFilter, setTeamFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
+  const [expandedCategoryKeys, setExpandedCategoryKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
   const cardRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
-  const dataRows = useMemo(
-    () => rows.filter((row) => !row.isTotal),
+  const detailRows = useMemo(
+    () => rows.filter((row) => !row.isTotal && row.rowKind !== "category"),
     [rows],
   );
 
   const categoryOptions = useMemo(
     () =>
       buildFilterOptions(
-        dataRows,
+        detailRows,
         (row) => row.filterValues?.category ?? String(row.category ?? ""),
       ),
-    [dataRows],
+    [detailRows],
   );
   const teamOptions = useMemo(
     () =>
       buildFilterOptions(
-        dataRows,
-        (row) => row.filterValues?.team ?? String(row.leadingValues?.team ?? ""),
+        detailRows,
+        (row) =>
+          row.filterValues?.team ?? String(row.leadingValues?.team ?? ""),
       ),
-    [dataRows],
+    [detailRows],
   );
+
+  const sellerOptionRows = useMemo(
+    () =>
+      detailRows.filter((row) => {
+        const categoryValue =
+          row.filterValues?.category ?? String(row.category ?? "");
+        const teamValue =
+          row.filterValues?.team ?? String(row.leadingValues?.team ?? "");
+
+        if (categoryFilter && categoryValue !== categoryFilter) {
+          return false;
+        }
+        if (teamFilter && teamValue !== teamFilter) {
+          return false;
+        }
+
+        return true;
+      }),
+    [categoryFilter, detailRows, teamFilter],
+  );
+
   const sellerOptions = useMemo(
     () =>
       buildFilterOptions(
-        dataRows,
+        sellerOptionRows,
         (row) => row.filterValues?.seller ?? "",
         (row) => row.filterValues?.sellerLabel ?? "",
       ),
-    [dataRows],
+    [sellerOptionRows],
+  );
+  const effectiveSellerFilter =
+    sellerFilter &&
+    sellerOptions.some((option) => option.value === sellerFilter)
+      ? sellerFilter
+      : "";
+
+  const hasActiveFilters = Boolean(
+    categoryFilter || teamFilter || effectiveSellerFilter,
+  );
+  const selectedTeamLabel = teamFilter
+    ? getFilterOptionLabel(teamOptions, teamFilter)
+    : "";
+  const selectedSellerLabel = effectiveSellerFilter
+    ? getFilterOptionLabel(sellerOptions, effectiveSellerFilter)
+    : "";
+
+  const filteredDetailRows = useMemo(
+    () =>
+      detailRows.filter((row) => {
+        const categoryValue =
+          row.filterValues?.category ?? String(row.category ?? "");
+        const teamValue =
+          row.filterValues?.team ?? String(row.leadingValues?.team ?? "");
+        const sellerValue = row.filterValues?.seller ?? "";
+
+        if (categoryFilter && categoryValue !== categoryFilter) {
+          return false;
+        }
+        if (teamFilter && teamValue !== teamFilter) {
+          return false;
+        }
+        if (effectiveSellerFilter && sellerValue !== effectiveSellerFilter) {
+          return false;
+        }
+        return true;
+      }),
+    [categoryFilter, detailRows, effectiveSellerFilter, teamFilter],
   );
 
-  const hasActiveFilters = Boolean(categoryFilter || teamFilter || sellerFilter);
+  const selectedSellerTeams = useMemo(() => {
+    if (!effectiveSellerFilter || teamFilter) return new Set<string>();
 
-  const filteredRows = useMemo(() => {
-    const filteredData = dataRows.filter((row) => {
+    return new Set(
+      detailRows
+        .filter((row) => row.filterValues?.seller === effectiveSellerFilter)
+        .map((row) => row.filterValues?.team ?? "")
+        .filter(Boolean),
+    );
+  }, [detailRows, effectiveSellerFilter, teamFilter]);
+
+  const comparisonDetailRows = useMemo(() => {
+    const visibleCategories = effectiveSellerFilter
+      ? new Set(
+          filteredDetailRows.map(
+            (row) => row.filterValues?.category ?? String(row.category ?? ""),
+          ),
+        )
+      : null;
+
+    return detailRows.filter((row) => {
       const categoryValue =
         row.filterValues?.category ?? String(row.category ?? "");
       const teamValue =
         row.filterValues?.team ?? String(row.leadingValues?.team ?? "");
-      const sellerValue = row.filterValues?.seller ?? "";
 
       if (categoryFilter && categoryValue !== categoryFilter) {
         return false;
@@ -264,20 +363,90 @@ export function ReportMatrixTable({
       if (teamFilter && teamValue !== teamFilter) {
         return false;
       }
-      if (sellerFilter && sellerValue !== sellerFilter) {
+      if (
+        !teamFilter &&
+        selectedSellerTeams.size > 0 &&
+        !selectedSellerTeams.has(teamValue)
+      ) {
         return false;
       }
+      if (visibleCategories && !visibleCategories.has(categoryValue)) {
+        return false;
+      }
+
       return true;
     });
-
-    const filteredTotal = buildReportMatrixTotalRow(filteredData);
-
-    return filteredTotal ? [...filteredData, filteredTotal] : filteredData;
   }, [
     categoryFilter,
-    dataRows,
-    sellerFilter,
+    detailRows,
+    effectiveSellerFilter,
+    filteredDetailRows,
+    selectedSellerTeams,
     teamFilter,
+  ]);
+
+  const categoryRows = useMemo(
+    () => buildReportMatrixCategoryRows(comparisonDetailRows),
+    [comparisonDetailRows],
+  );
+  const expandableCategoryKeys = useMemo(
+    () =>
+      effectiveSellerFilter
+        ? []
+        : categoryRows
+            .filter((row) => canExpandCategory(row))
+            .map((row) => row.key),
+    [categoryRows, effectiveSellerFilter],
+  );
+  const hasExpandableCategories = expandableCategoryKeys.length > 0;
+  const areAllExpandableCategoriesExpanded =
+    hasExpandableCategories &&
+    expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key));
+
+  const detailRowsByCategory = useMemo(() => {
+    const groupedRows = new Map<string, ReportMatrixRow[]>();
+
+    for (const row of filteredDetailRows) {
+      const parentKey = row.parentKey;
+      if (!parentKey) continue;
+
+      const existing = groupedRows.get(parentKey);
+      if (existing) {
+        existing.push(row);
+      } else {
+        groupedRows.set(parentKey, [row]);
+      }
+    }
+
+    return groupedRows;
+  }, [filteredDetailRows]);
+
+  const filteredRows = useMemo(() => {
+    const bodyRows = categoryRows.flatMap((row) => {
+      const detailRows = detailRowsByCategory.get(row.key) ?? [];
+
+      if (effectiveSellerFilter) {
+        return detailRows.length ? [row, ...detailRows] : [row];
+      }
+
+      if (!canExpandCategory(row) || !expandedCategoryKeys.has(row.key)) {
+        return [row];
+      }
+
+      return [row, ...detailRows];
+    });
+    const filteredTotal = buildReportMatrixTotalRow(comparisonDetailRows);
+
+    return filteredTotal && !categoryFilter
+      ? [...bodyRows, filteredTotal]
+      : bodyRows;
+  }, [
+    categoryRows,
+    categoryFilter,
+    comparisonDetailRows,
+    detailRowsByCategory,
+    effectiveSellerFilter,
+    expandedCategoryKeys,
   ]);
 
   useLayoutEffect(() => {
@@ -308,6 +477,52 @@ export function ReportMatrixTable({
     setCategoryFilter("");
     setTeamFilter("");
     setSellerFilter("");
+    setExpandedCategoryKeys(new Set());
+  }
+
+  function toggleCategory(rowKey: string) {
+    setExpandedCategoryKeys((current) => {
+      const next = new Set(current);
+
+      if (next.has(rowKey)) {
+        next.delete(rowKey);
+      } else {
+        next.add(rowKey);
+      }
+
+      return next;
+    });
+  }
+
+  function toggleAllCategories() {
+    setExpandedCategoryKeys((current) => {
+      if (!expandableCategoryKeys.length) return current;
+
+      const next = new Set(current);
+      const shouldCollapse = expandableCategoryKeys.every((key) =>
+        next.has(key),
+      );
+
+      for (const key of expandableCategoryKeys) {
+        if (shouldCollapse) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+      }
+
+      return next;
+    });
+  }
+
+  function handleCategoryFilterChange(nextCategory: string) {
+    setCategoryFilter(nextCategory);
+    setSellerFilter("");
+  }
+
+  function handleTeamFilterChange(nextTeam: string) {
+    setTeamFilter(nextTeam);
+    setSellerFilter("");
   }
 
   const resolvedLeadingColumns = leadingColumns ?? [
@@ -322,6 +537,40 @@ export function ReportMatrixTable({
       rows: filteredRows,
       sections,
     });
+  }
+
+  function renderCategoryCellContent(row: ReportMatrixRow, content: ReactNode) {
+    if (row.rowKind === "category") {
+      if (effectiveSellerFilter || !canExpandCategory(row)) {
+        return content;
+      }
+
+      const isExpanded = expandedCategoryKeys.has(row.key);
+
+      return (
+        <button
+          type="button"
+          className="report-matrix__category-toggle"
+          aria-expanded={isExpanded}
+          onClick={() => toggleCategory(row.key)}
+        >
+          <AppIcon
+            name={isExpanded ? "bi-chevron-down" : "bi-chevron-right"}
+            className="report-matrix__category-toggle-icon"
+            size={16}
+          />
+          <span className="report-matrix__category-toggle-label">
+            {content}
+          </span>
+        </button>
+      );
+    }
+
+    if (row.rowKind === "detail") {
+      return <span className="report-matrix__detail-label">{content}</span>;
+    }
+
+    return content;
   }
 
   const leadingOffsets = resolvedLeadingColumns.reduce<number[]>(
@@ -358,7 +607,81 @@ export function ReportMatrixTable({
           ) : null}
         </div>
         <div className="report-matrix-card__actions">
+          {teamFilter || effectiveSellerFilter ? (
+            <div className="report-matrix-card__active-filters">
+              {teamFilter ? (
+                <span className="report-matrix-filter-pill">
+                  <span className="report-matrix-filter-pill__label">Team</span>
+                  <span className="report-matrix-filter-pill__value">
+                    {selectedTeamLabel}
+                  </span>
+                  <button
+                    type="button"
+                    className="report-matrix-filter-pill__clear"
+                    aria-label={`Clear Team filter ${selectedTeamLabel}`}
+                    onClick={() => handleTeamFilterChange("")}
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : null}
+              {effectiveSellerFilter ? (
+                <span className="report-matrix-filter-pill">
+                  <span className="report-matrix-filter-pill__label">
+                    Seller
+                  </span>
+                  <span className="report-matrix-filter-pill__value">
+                    {selectedSellerLabel}
+                  </span>
+                  <button
+                    type="button"
+                    className="report-matrix-filter-pill__clear"
+                    aria-label={`Clear Seller filter ${selectedSellerLabel}`}
+                    onClick={() => setSellerFilter("")}
+                  >
+                    ×
+                  </button>
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           <Button
+            type="button"
+            variant="outline"
+            size="icon-sm"
+            className="report-matrix-card__expand-toggle"
+            disabled={!hasExpandableCategories}
+            aria-label={
+              areAllExpandableCategoriesExpanded
+                ? "Collapse all expandable rows"
+                : "Expand all expandable rows"
+            }
+            aria-pressed={areAllExpandableCategoriesExpanded}
+            title={
+              areAllExpandableCategoriesExpanded
+                ? "Collapse all rows"
+                : "Expand all rows"
+            }
+            onClick={toggleAllCategories}
+          >
+            <AppIcon name="bi-unfold-vertical" size={16} />
+          </Button>
+         
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!hasActiveFilters}
+            onClick={resetFilters}
+          >
+            <AppIcon
+              name="bi-arrow-counterclockwise"
+              className="mr-1"
+              size={14}
+            />
+            Reset filters
+          </Button>
+           <Button
             type="button"
             variant="outline"
             size="sm"
@@ -367,16 +690,6 @@ export function ReportMatrixTable({
           >
             <AppIcon name="bi-file-earmark-excel" className="mr-1" size={14} />
             Excel
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!hasActiveFilters}
-            onClick={resetFilters}
-          >
-            <AppIcon name="bi-arrow-counterclockwise" className="mr-1" size={14} />
-            Reset filters
           </Button>
         </div>
       </div>
@@ -434,7 +747,7 @@ export function ReportMatrixTable({
                       }
                       options={categoryOptions}
                       value={categoryFilter}
-                      onChange={setCategoryFilter}
+                      onChange={handleCategoryFilterChange}
                     />
                   ) : column.key === "team" ? (
                     <PowerBiTableHeaderFilter
@@ -443,7 +756,7 @@ export function ReportMatrixTable({
                       }
                       options={teamOptions}
                       value={teamFilter}
-                      onChange={setTeamFilter}
+                      onChange={handleTeamFilterChange}
                     />
                   ) : column.key === "seller" ? (
                     <PowerBiTableHeaderFilter
@@ -453,7 +766,7 @@ export function ReportMatrixTable({
                           : "Seller"
                       }
                       options={sellerOptions}
-                      value={sellerFilter}
+                      value={effectiveSellerFilter}
                       onChange={setSellerFilter}
                     />
                   ) : (
@@ -489,7 +802,11 @@ export function ReportMatrixTable({
             {filteredRows.map((row) => (
               <tr
                 key={row.key}
-                className={cn(row.isTotal && "report-matrix__row--total")}
+                className={cn(
+                  row.rowKind === "category" && "report-matrix__row--category",
+                  row.rowKind === "detail" && "report-matrix__row--detail",
+                  row.isTotal && "report-matrix__row--total",
+                )}
               >
                 {resolvedLeadingColumns.map((column, index) => {
                   const rawValue = getLeadingValue(row, column.key);
@@ -497,7 +814,13 @@ export function ReportMatrixTable({
                     column.key === "seller"
                       ? row.filterValues?.sellerLabel
                       : getTruncationTitle(rawValue);
-                  const content = renderTruncatedCell(rawValue, title);
+                  const content =
+                    column.key === "category"
+                      ? renderCategoryCellContent(
+                          row,
+                          renderTruncatedCell(rawValue, title),
+                        )
+                      : renderTruncatedCell(rawValue, title);
                   const className = cn(
                     index === 0
                       ? "report-matrix__category-cell"

@@ -560,9 +560,77 @@ html.dark .app-header-user__role {
 
 .report-matrix-card__actions {
   display: flex;
-  shrink: 0;
+  flex-shrink: 0;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.report-matrix-card__active-filters {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.report-matrix-filter-pill {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(20rem, 42vw);
+  align-items: center;
+  gap: 0.38rem;
+  border: 1px solid color-mix(in oklch, #2563eb 32%, var(--border) 68%);
+  border-radius: 999px;
+  background: color-mix(in oklch, #dbeafe 58%, var(--background) 42%);
+  color: #1e3a8a;
+  font-size: 0.78rem;
+  font-weight: 760;
+  line-height: 1;
+  padding: 0.35rem 0.38rem 0.35rem 0.6rem;
+}
+
+.report-matrix-filter-pill__label {
+  flex: 0 0 auto;
+  color: color-mix(in oklch, #1e3a8a 72%, var(--muted-foreground) 28%);
+  font-size: 0.67rem;
+  font-weight: 850;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.report-matrix-filter-pill__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.report-matrix-filter-pill__clear {
+  display: inline-flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in oklch, #2563eb 12%, var(--background) 88%);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.report-matrix-filter-pill__clear:hover {
+  background: color-mix(in oklch, #2563eb 20%, var(--background) 80%);
+}
+
+.report-matrix-card__expand-toggle {
+  border-radius: 999px;
 }
 
 .report-matrix__leading-heading--filter {
@@ -697,6 +765,39 @@ html.dark .app-header-user__role {
   font-weight: 700;
 }
 
+.report-matrix__category-toggle {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.38rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.report-matrix__category-toggle-icon {
+  flex: 0 0 auto;
+  color: var(--muted-foreground);
+}
+
+.report-matrix__category-toggle-label {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.report-matrix__detail-label {
+  display: block;
+  min-width: 0;
+  padding-left: 1.35rem;
+}
+
 .report-matrix__section-heading {
   border-left: 4px solid var(--background);
   background: color-mix(in oklch, var(--muted) 84%, var(--background) 16%);
@@ -780,6 +881,27 @@ html.dark .app-header-user__role {
   background: color-mix(in oklch, var(--muted) 46%, var(--background) 54%);
 }
 
+.report-matrix__row--category td,
+.report-matrix__row--category .report-matrix__category-cell,
+.report-matrix__row--category .report-matrix__dimension-cell {
+  background: color-mix(in oklch, #dbeafe 42%, var(--background) 58%);
+  font-weight: 850;
+}
+
+.report-matrix__row--category .report-matrix__dimension-cell {
+  color: var(--muted-foreground);
+}
+
+.report-matrix__row--detail .report-matrix__category-cell,
+.report-matrix__row--detail .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--background) 96%, var(--muted) 4%);
+}
+
+.report-matrix__row--detail .report-matrix__category-cell {
+  color: var(--muted-foreground);
+  font-weight: 700;
+}
+
 .report-matrix__row--total td,
 .report-matrix__row--total .report-matrix__category-cell,
 .report-matrix__row--total .report-matrix__dimension-cell {
@@ -802,8 +924,14 @@ html.dark .app-header-user__role {
 }
 
 .report-matrix tbody tr.report-matrix__row--total:hover td,
-.report-matrix tbody tr.report-matrix__row--total:hover .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--total:hover .report-matrix__dimension-cell {
+.report-matrix
+  tbody
+  tr.report-matrix__row--total:hover
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--total:hover
+  .report-matrix__dimension-cell {
   background: color-mix(in oklch, var(--background) 86%, var(--muted) 14%);
 }
 
@@ -834,6 +962,52 @@ html[data-bs-theme="dark"] .report-matrix__dimension-cell {
 html.dark .report-matrix__category-cell,
 html[data-bs-theme="dark"] .report-matrix__category-cell {
   color: #bfdbfe;
+}
+
+html.dark .report-matrix-filter-pill,
+html[data-bs-theme="dark"] .report-matrix-filter-pill {
+  border-color: color-mix(in oklch, #60a5fa 32%, var(--border) 68%);
+  background: color-mix(in oklch, #1e3a8a 42%, var(--background) 58%);
+  color: #dbeafe;
+}
+
+html.dark .report-matrix-filter-pill__label,
+html[data-bs-theme="dark"] .report-matrix-filter-pill__label {
+  color: #93c5fd;
+}
+
+html.dark .report-matrix-filter-pill__clear,
+html[data-bs-theme="dark"] .report-matrix-filter-pill__clear {
+  background: color-mix(in oklch, #60a5fa 14%, var(--background) 86%);
+}
+
+html.dark .report-matrix-filter-pill__clear:hover,
+html[data-bs-theme="dark"] .report-matrix-filter-pill__clear:hover {
+  background: color-mix(in oklch, #60a5fa 24%, var(--background) 76%);
+}
+
+html.dark .report-matrix__row--category td,
+html[data-bs-theme="dark"] .report-matrix__row--category td,
+html.dark .report-matrix__row--category .report-matrix__category-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--category
+  .report-matrix__category-cell,
+html.dark .report-matrix__row--category .report-matrix__dimension-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--category
+  .report-matrix__dimension-cell {
+  background: color-mix(in oklch, #1e3a8a 36%, var(--background) 64%);
+}
+
+html.dark .report-matrix__row--detail .report-matrix__category-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--detail
+  .report-matrix__category-cell,
+html.dark .report-matrix__row--detail .report-matrix__dimension-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--detail
+  .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--background) 94%, var(--muted) 6%);
 }
 
 html.dark .report-matrix__section-heading--rose,

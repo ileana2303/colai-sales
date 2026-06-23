@@ -9,6 +9,7 @@ import { ArrowUpDown } from "@/icons/lucide/arrow-up-down";
 import { BarChart3 } from "@/icons/lucide/bar-chart-3";
 import { Building2 } from "@/icons/lucide/building-2";
 import { Calendar } from "@/icons/lucide/calendar";
+import { ChevronDown } from "@/icons/lucide/chevron-down";
 import { ChevronLeft } from "@/icons/lucide/chevron-left";
 import { ChevronRight } from "@/icons/lucide/chevron-right";
 import { CircleCheck } from "@/icons/lucide/circle-check";
@@ -29,6 +30,7 @@ import { Sparkles } from "@/icons/lucide/sparkles";
 import { Table } from "@/icons/lucide/table";
 import { Target } from "@/icons/lucide/target";
 import { TrendingUp } from "@/icons/lucide/trending-up";
+import { UnfoldVertical } from "@/icons/lucide/unfold-vertical";
 import { UserPlus } from "@/icons/lucide/user-plus";
 import { Users } from "@/icons/lucide/users";
 import { cn } from "@/lib/utils";
@@ -45,6 +47,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-calendar2-week": Calendar,
   "bi-cash-stack": Coins,
   "bi-check2-circle": CircleCheck,
+  "bi-chevron-down": ChevronDown,
   "bi-chevron-left": ChevronLeft,
   "bi-chevron-right": ChevronRight,
   "bi-clipboard-data": ClipboardList,
@@ -63,6 +66,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-sort-up": ArrowUp,
   "bi-stars": Sparkles,
   "bi-table": Table,
+  "bi-unfold-vertical": UnfoldVertical,
 };
 
 type AppIconProps = {
