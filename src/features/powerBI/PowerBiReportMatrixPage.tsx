@@ -17,6 +17,7 @@ import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
 
 type MatrixReportPayload = {
   area: string;
+  headerLabel: string;
   currentRows: PowerBiMatrixSourceRow[];
   previousRows: PowerBiMatrixSourceRow[];
   trendRows: PowerBiMatrixSourceRow[];
@@ -40,6 +41,10 @@ const matrixQueryOptions = {
   staleTime: 60_000,
   retry: 1,
 } as const;
+
+function getGroup2Label(rows: PowerBiMatrixSourceRow[]) {
+  return rows.find((row) => row.group2?.trim())?.group2?.trim() ?? "";
+}
 
 async function fetchMatrixPayload({
   currentSalesPath,
@@ -74,6 +79,10 @@ async function fetchMatrixPayload({
 
   return {
     area: current.area ?? previous.area ?? trend.area ?? "",
+    headerLabel:
+      getGroup2Label(current.records) ||
+      getGroup2Label(previous.records) ||
+      getGroup2Label(trend.records),
     currentRows: current.records,
     previousRows: previous.records,
     trendRows: trend.records,
@@ -111,6 +120,7 @@ export function PowerBiReportMatrixPage({
       }),
     ...matrixQueryOptions,
   });
+  const headerLabel = data?.headerLabel || brandLabel;
 
   const sections = useMemo(
     () => createReportMatrixSections({ currentYear, previousYear }),
@@ -142,6 +152,7 @@ export function PowerBiReportMatrixPage({
             brandLabel={brandLabel}
             caption={caption}
             exportFileName={`${reportKey}-matrix`}
+            headerLabel={headerLabel}
             leadingColumns={reportMatrixLeadingColumns}
             rows={rows}
             sections={sections}

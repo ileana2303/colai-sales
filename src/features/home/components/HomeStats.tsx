@@ -18,7 +18,7 @@ function ModuleCard({ accent, description, href, icon, title }: ModuleCardProps)
   return (
     <Link
       href={href}
-      className="block h-full w-full no-underline text-inherit"
+      className="home-module-card block h-full w-full no-underline text-inherit"
       aria-label={`${title} — μετάβαση`}
     >
       <div

@@ -980,6 +980,13 @@ html[data-bs-theme="dark"] a:hover .app-card-pressable {
   border-color: rgba(var(--bs-primary-rgb), 0.45);
 }
 
+.home-module-card:hover .app-card-pressable {
+  border-color: rgba(var(--bs-primary-rgb), 0.22);
+  box-shadow:
+    var(--app-shadow-tight),
+    0 0 0 1px rgba(var(--bs-primary-rgb), 0.08);
+}
+
 .app-card-soft {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(16, 24, 40, 0.06);

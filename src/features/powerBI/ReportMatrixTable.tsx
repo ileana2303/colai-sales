@@ -73,6 +73,7 @@ type ReportMatrixTableProps = {
   categoryLabel?: string;
   description?: string;
   exportFileName?: string;
+  headerLabel?: ReactNode;
   leadingColumns?: ReportMatrixLeadingColumn[];
   rows: ReportMatrixRow[];
   sections: ReportMatrixSection[];
@@ -204,6 +205,7 @@ export function ReportMatrixTable({
   categoryLabel = "Κατηγορία Στόχου",
   description,
   exportFileName,
+  headerLabel,
   leadingColumns,
   rows,
   sections,
@@ -333,6 +335,7 @@ export function ReportMatrixTable({
     (sum, column) => sum + column.width,
     0,
   );
+  const resolvedHeaderLabel = headerLabel ?? brandLabel;
 
   const columns = sections.flatMap((section) =>
     section.columns.map((column, index) => ({
@@ -389,7 +392,7 @@ export function ReportMatrixTable({
                 scope="colgroup"
                 style={{ left: 0, minWidth: leadingWidth, width: leadingWidth }}
               >
-                {brandLabel}
+                {resolvedHeaderLabel}
               </th>
               {sections.map((section) => (
                 <th
