@@ -7,7 +7,6 @@ import {
   type ReportMatrixTone,
 } from "@/features/powerBI/ReportMatrixTable";
 import {
-  formatNullableRatioPercent,
   getMonthIndex,
 } from "@/lib/bi-reports/reportUtils";
 
@@ -70,12 +69,22 @@ export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
 
 function formatCurrency(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
+  if (value === 0) return "0";
   return currencyFormatter.format(value);
+}
+
+function formatMatrixPercent(ratio: number | null | undefined) {
+  if (ratio == null || !Number.isFinite(ratio)) return EMPTY_VALUE;
+  if (ratio === 0) return "0%";
+  return `${new Intl.NumberFormat("el-GR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(ratio * 100)}%`;
 }
 
 function formatCoverPercent(target: number, result: number) {
   if (!target || !Number.isFinite(target)) return EMPTY_VALUE;
-  return formatNullableRatioPercent(result / target);
+  return formatMatrixPercent(result / target);
 }
 
 function formatTargetDiff(target: number, result: number) {
@@ -90,7 +99,7 @@ function formatGapDiff(result: number, target: number) {
 
 function formatYearComparison(current: number, previous: number) {
   if (!previous || !Number.isFinite(previous)) return EMPTY_VALUE;
-  return formatNullableRatioPercent(previous / current);
+  return formatMatrixPercent(previous / current);
 }
 
 function formatYearDiff(current: number, previous: number) {
