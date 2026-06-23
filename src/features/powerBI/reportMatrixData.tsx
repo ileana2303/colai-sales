@@ -8,7 +8,7 @@ import {
 } from "@/features/powerBI/ReportMatrixTable";
 import {
   getMonthIndex,
-  getSignedValueTone,
+  getYearComparisonTone,
 } from "@/lib/bi-reports/reportUtils";
 
 export type PowerBiMatrixSourceRow = {
@@ -88,11 +88,6 @@ function formatCoverPercent(target: number, result: number) {
   return formatMatrixPercent(result / target);
 }
 
-function formatTargetDiff(target: number, result: number) {
-  if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
-  return formatCurrency(target - result);
-}
-
 function formatGapDiff(result: number, target: number) {
   if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
   return formatCurrency(result - target);
@@ -100,7 +95,8 @@ function formatGapDiff(result: number, target: number) {
 
 function formatYearComparison(current: number, previous: number) {
   if (!previous || !Number.isFinite(previous)) return EMPTY_VALUE;
-  return formatMatrixPercent(previous / current);
+  if (!Number.isFinite(current)) return EMPTY_VALUE;
+  return formatMatrixPercent(current / previous);
 }
 
 function formatYearDiff(current: number, previous: number) {
@@ -115,20 +111,22 @@ function buildMetricCellTones(values: {
   yearDiff: number;
 }) {
   const cellTones: Record<string, ReportMatrixTone> = {};
-  const pairs: Array<
-    [diffKey: string, percentKey: string, value: number]
-  > = [
-    ["previousDiff", "previousCover", values.previousDiff],
-    ["currentDiff", "currentCover", values.currentDiff],
-    ["yearDiff", "yearComparison", values.yearDiff],
-  ];
+  const previousTone = getYearComparisonTone(values.previousDiff);
+  if (previousTone) {
+    cellTones.previousDiff = previousTone;
+    cellTones.previousCover = previousTone;
+  }
 
-  for (const [diffKey, percentKey, value] of pairs) {
-    const tone = getSignedValueTone(value);
-    if (tone) {
-      cellTones[diffKey] = tone;
-      cellTones[percentKey] = tone;
-    }
+  const currentTone = getYearComparisonTone(values.currentDiff);
+  if (currentTone) {
+    cellTones.currentDiff = currentTone;
+    cellTones.currentCover = currentTone;
+  }
+
+  const yearTone = getYearComparisonTone(values.yearDiff);
+  if (yearTone) {
+    cellTones.yearDiff = yearTone;
+    cellTones.yearComparison = yearTone;
   }
 
   return Object.keys(cellTones).length ? cellTones : undefined;
@@ -375,7 +373,7 @@ function aggregateToMatrixRow(
     : [aggregate.sellerName, aggregate.sellerCode]
         .filter(Boolean)
         .join(" - ") || "-";
-  const previousDiffValue = closedPeriod.target - closedPeriod.result;
+  const previousDiffValue = closedPeriod.result - closedPeriod.target;
   const currentDiffValue = aggregate.vTrend - aggregate.tcyAll;
   const yearDiffValue = closedPeriod.result - aggregate.vlc;
 
@@ -424,7 +422,7 @@ function aggregateToMatrixRow(
         closedPeriod.target,
         closedPeriod.result,
       ),
-      previousDiff: formatTargetDiff(closedPeriod.target, closedPeriod.result),
+      previousDiff: formatGapDiff(closedPeriod.result, closedPeriod.target),
       previousResult: formatCurrency(closedPeriod.result),
       previousTarget: formatCurrency(closedPeriod.target),
       yearComparison: formatYearComparison(closedPeriod.result, aggregate.vlc),

@@ -86,6 +86,13 @@ export function getSignedValueTone(
   value: number | null | undefined,
 ): ValueTone | undefined {
   if (value == null || !Number.isFinite(value) || value === 0) return undefined;
+  return value > 0 ? "danger" : "success";
+}
+
+export function getYearComparisonTone(
+  value: number | null | undefined,
+): ValueTone | undefined {
+  if (value == null || !Number.isFinite(value) || value === 0) return undefined;
   return value > 0 ? "success" : "danger";
 }
 

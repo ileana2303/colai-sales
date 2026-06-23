@@ -161,7 +161,7 @@ export function TargetBar({
           className="h-full rounded-full"
           style={{
             width: `${width}%`,
-            background: ratio != null && ratio >= 1 ? "#16a34a" : accent,
+            background: ratio != null && ratio >= 1 ? "#dc2626" : "#16a34a",
           }}
         />
       </div>
