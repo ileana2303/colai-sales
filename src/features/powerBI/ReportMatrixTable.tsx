@@ -15,7 +15,8 @@ import type { FilterOption } from "@/features/powerBI/PowerBiTable/types";
 import { exportReportMatrixToExcel } from "@/features/powerBI/reportMatrixExport";
 import {
   buildReportMatrixCategoryRows,
-  buildReportMatrixTotalRow,
+  buildReportMatrixTeamRows,
+  buildReportMatrixTotalRows,
 } from "@/features/powerBI/reportMatrixData";
 
 export type ReportMatrixTone =
@@ -42,14 +43,23 @@ export type ReportMatrixLeadingColumn = {
   width: number;
 };
 
+export type ReportMatrixSectionSummary = {
+  details?: ReactNode[];
+  label: ReactNode;
+  tone?: ReportMatrixTone;
+  value: ReactNode;
+};
+
 export type ReportMatrixSection = {
   key: string;
+  summary?: ReportMatrixSectionSummary;
   title: ReactNode;
   columns: ReportMatrixColumn[];
   tone?: ReportMatrixTone;
 };
 
 export type ReportMatrixRowMetrics = {
+  currency: number | null;
   hasClosedMonthStatus: boolean;
   openMonthTcyByMonth: Record<string, number>;
   tcyAll: number;
@@ -73,7 +83,7 @@ export type ReportMatrixRow = {
   leadingValues?: Record<string, ReactNode>;
   metrics?: ReportMatrixRowMetrics;
   parentKey?: string;
-  rowKind?: "category" | "detail" | "total";
+  rowKind?: "category" | "detail" | "team" | "total";
   values: Record<string, ReactNode>;
   cellTones?: Record<string, ReportMatrixTone>;
   isTotal?: boolean;
@@ -183,6 +193,10 @@ function canExpandCategory(row: ReportMatrixRow) {
   return row.rowKind === "category" && (row.childCount ?? 0) > 1;
 }
 
+function canExpandTeam(row: ReportMatrixRow) {
+  return row.rowKind === "team" && (row.childCount ?? 0) > 1;
+}
+
 function getLeadingValue(row: ReportMatrixRow, key: string) {
   if (key === "category") return row.category;
   return row.leadingValues?.[key];
@@ -237,11 +251,14 @@ export function ReportMatrixTable({
   const [expandedCategoryKeys, setExpandedCategoryKeys] = useState<Set<string>>(
     () => new Set(),
   );
+  const [expandedTeamKeys, setExpandedTeamKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
   const cardRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const detailRows = useMemo(
-    () => rows.filter((row) => !row.isTotal && row.rowKind !== "category"),
+    () => rows.filter((row) => !row.isTotal && row.rowKind === "detail"),
     [rows],
   );
 
@@ -389,6 +406,10 @@ export function ReportMatrixTable({
     () => buildReportMatrixCategoryRows(comparisonDetailRows),
     [comparisonDetailRows],
   );
+  const teamRows = useMemo(
+    () => buildReportMatrixTeamRows(comparisonDetailRows),
+    [comparisonDetailRows],
+  );
   const expandableCategoryKeys = useMemo(
     () =>
       effectiveSellerFilter
@@ -398,12 +419,39 @@ export function ReportMatrixTable({
             .map((row) => row.key),
     [categoryRows, effectiveSellerFilter],
   );
-  const hasExpandableCategories = expandableCategoryKeys.length > 0;
-  const areAllExpandableCategoriesExpanded =
-    hasExpandableCategories &&
-    expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key));
+  const expandableTeamKeys = useMemo(
+    () =>
+      effectiveSellerFilter
+        ? []
+        : teamRows.filter((row) => canExpandTeam(row)).map((row) => row.key),
+    [effectiveSellerFilter, teamRows],
+  );
+  const hasExpandableRows =
+    expandableCategoryKeys.length > 0 || expandableTeamKeys.length > 0;
+  const areAllExpandableRowsExpanded =
+    hasExpandableRows &&
+    expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key)) &&
+    expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
 
-  const detailRowsByCategory = useMemo(() => {
+  const teamRowsByCategory = useMemo(() => {
+    const groupedRows = new Map<string, ReportMatrixRow[]>();
+
+    for (const row of teamRows) {
+      const parentKey = row.parentKey;
+      if (!parentKey) continue;
+
+      const existing = groupedRows.get(parentKey);
+      if (existing) {
+        existing.push(row);
+      } else {
+        groupedRows.set(parentKey, [row]);
+      }
+    }
+
+    return groupedRows;
+  }, [teamRows]);
+
+  const detailRowsByTeam = useMemo(() => {
     const groupedRows = new Map<string, ReportMatrixRow[]>();
 
     for (const row of filteredDetailRows) {
@@ -421,33 +469,53 @@ export function ReportMatrixTable({
     return groupedRows;
   }, [filteredDetailRows]);
 
-  const filteredRows = useMemo(() => {
-    const bodyRows = categoryRows.flatMap((row) => {
-      const detailRows = detailRowsByCategory.get(row.key) ?? [];
+  const bodyRows = useMemo(() => {
+    return categoryRows.flatMap((row) => {
+      const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
+
+      const expandedTeamRows = categoryTeamRows.flatMap((teamRow) => {
+        const sellerRows = detailRowsByTeam.get(teamRow.key) ?? [];
+
+        if (effectiveSellerFilter) {
+          return sellerRows.length ? [teamRow, ...sellerRows] : [teamRow];
+        }
+
+        if (!canExpandTeam(teamRow) || !expandedTeamKeys.has(teamRow.key)) {
+          return [teamRow];
+        }
+
+        return [teamRow, ...sellerRows];
+      });
 
       if (effectiveSellerFilter) {
-        return detailRows.length ? [row, ...detailRows] : [row];
+        return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
       }
 
       if (!canExpandCategory(row) || !expandedCategoryKeys.has(row.key)) {
         return [row];
       }
 
-      return [row, ...detailRows];
+      return [row, ...expandedTeamRows];
     });
-    const filteredTotal = buildReportMatrixTotalRow(comparisonDetailRows);
-
-    return filteredTotal && !categoryFilter
-      ? [...bodyRows, filteredTotal]
-      : bodyRows;
   }, [
     categoryRows,
-    categoryFilter,
-    comparisonDetailRows,
-    detailRowsByCategory,
+    detailRowsByTeam,
     effectiveSellerFilter,
     expandedCategoryKeys,
+    expandedTeamKeys,
+    teamRowsByCategory,
   ]);
+
+  const totalRows = useMemo(
+    () =>
+      !categoryFilter ? buildReportMatrixTotalRows(comparisonDetailRows) : [],
+    [categoryFilter, comparisonDetailRows],
+  );
+
+  const filteredRows = useMemo(
+    () => [...bodyRows, ...totalRows],
+    [bodyRows, totalRows],
+  );
 
   useLayoutEffect(() => {
     const card = cardRef.current;
@@ -478,6 +546,7 @@ export function ReportMatrixTable({
     setTeamFilter("");
     setSellerFilter("");
     setExpandedCategoryKeys(new Set());
+    setExpandedTeamKeys(new Set());
   }
 
   function toggleCategory(rowKey: string) {
@@ -495,20 +564,28 @@ export function ReportMatrixTable({
   }
 
   function toggleAllCategories() {
-    setExpandedCategoryKeys((current) => {
-      if (!expandableCategoryKeys.length) return current;
+    const shouldCollapse =
+      expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key)) &&
+      expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
 
+    if (shouldCollapse) {
+      setExpandedCategoryKeys(new Set());
+      setExpandedTeamKeys(new Set());
+      return;
+    }
+
+    setExpandedCategoryKeys(new Set(expandableCategoryKeys));
+    setExpandedTeamKeys(new Set(expandableTeamKeys));
+  }
+
+  function toggleTeam(rowKey: string) {
+    setExpandedTeamKeys((current) => {
       const next = new Set(current);
-      const shouldCollapse = expandableCategoryKeys.every((key) =>
-        next.has(key),
-      );
 
-      for (const key of expandableCategoryKeys) {
-        if (shouldCollapse) {
-          next.delete(key);
-        } else {
-          next.add(key);
-        }
+      if (next.has(rowKey)) {
+        next.delete(rowKey);
+      } else {
+        next.add(rowKey);
       }
 
       return next;
@@ -539,8 +616,12 @@ export function ReportMatrixTable({
     });
   }
 
-  function renderCategoryCellContent(row: ReportMatrixRow, content: ReactNode) {
-    if (row.rowKind === "category") {
+  function renderLeadingCellContent(
+    row: ReportMatrixRow,
+    columnKey: string,
+    content: ReactNode,
+  ) {
+    if (columnKey === "category" && row.rowKind === "category") {
       if (effectiveSellerFilter || !canExpandCategory(row)) {
         return content;
       }
@@ -566,11 +647,113 @@ export function ReportMatrixTable({
       );
     }
 
-    if (row.rowKind === "detail") {
+    if (columnKey === "team" && row.rowKind === "team") {
+      if (effectiveSellerFilter || !canExpandTeam(row)) {
+        return content;
+      }
+
+      const isExpanded = expandedTeamKeys.has(row.key);
+
+      return (
+        <button
+          type="button"
+          className="report-matrix__category-toggle"
+          aria-expanded={isExpanded}
+          onClick={() => toggleTeam(row.key)}
+        >
+          <AppIcon
+            name={isExpanded ? "bi-chevron-down" : "bi-chevron-right"}
+            className="report-matrix__category-toggle-icon"
+            size={16}
+          />
+          <span className="report-matrix__category-toggle-label">
+            {content}
+          </span>
+        </button>
+      );
+    }
+
+    if (row.rowKind === "detail" && columnKey === "seller") {
       return <span className="report-matrix__detail-label">{content}</span>;
     }
 
     return content;
+  }
+
+  function renderMatrixRow(row: ReportMatrixRow) {
+    return (
+      <tr
+        key={row.key}
+        className={cn(
+          row.rowKind === "category" && "report-matrix__row--category",
+          row.rowKind === "team" && "report-matrix__row--team",
+          row.rowKind === "detail" && "report-matrix__row--detail",
+          row.isTotal && "report-matrix__row--total",
+        )}
+      >
+        {resolvedLeadingColumns.map((column, index) => {
+          const rawValue = getLeadingValue(row, column.key);
+          const title =
+            column.key === "seller"
+              ? row.filterValues?.sellerLabel
+              : getTruncationTitle(rawValue);
+          const content = renderLeadingCellContent(
+            row,
+            column.key,
+            renderTruncatedCell(rawValue, title),
+          );
+          const className = cn(
+            index === 0
+              ? "report-matrix__category-cell"
+              : "report-matrix__dimension-cell",
+          );
+          const style = {
+            left: leadingOffsets[index],
+            minWidth: column.width,
+            width: column.width,
+          };
+
+          return index === 0 ? (
+            <th
+              key={column.key}
+              className={className}
+              scope="row"
+              style={style}
+              title={title && title !== "—" ? title : undefined}
+            >
+              {content}
+            </th>
+          ) : (
+            <td
+              key={column.key}
+              className={className}
+              style={style}
+              title={title && title !== "—" ? title : undefined}
+            >
+              {content}
+            </td>
+          );
+        })}
+        {columns.map((column) => {
+          const tone =
+            row.cellTones?.[column.key] ?? column.cellTone ?? "default";
+
+          return (
+            <td
+              key={`${row.key}-${column.key}`}
+              className={cn(
+                "report-matrix__cell",
+                getAlignClass(column.align),
+                column.isSectionStart && "report-matrix__section-start",
+                tone !== "default" && `report-matrix__cell--${tone}`,
+              )}
+            >
+              {renderValue(row.values[column.key])}
+            </td>
+          );
+        })}
+      </tr>
+    );
   }
 
   const leadingOffsets = resolvedLeadingColumns.reduce<number[]>(
@@ -585,6 +768,7 @@ export function ReportMatrixTable({
     0,
   );
   const resolvedHeaderLabel = headerLabel ?? brandLabel;
+  const hasSectionSummaries = sections.some((section) => section.summary);
 
   const columns = sections.flatMap((section) =>
     section.columns.map((column, index) => ({
@@ -594,7 +778,6 @@ export function ReportMatrixTable({
       sectionTone: section.tone,
     })),
   );
-
   return (
     <section ref={cardRef} className="app-card report-matrix-card">
       <div className="report-matrix-card__header">
@@ -650,15 +833,15 @@ export function ReportMatrixTable({
             variant="outline"
             size="icon-sm"
             className="report-matrix-card__expand-toggle"
-            disabled={!hasExpandableCategories}
+            disabled={!hasExpandableRows}
             aria-label={
-              areAllExpandableCategoriesExpanded
+              areAllExpandableRowsExpanded
                 ? "Collapse all expandable rows"
                 : "Expand all expandable rows"
             }
-            aria-pressed={areAllExpandableCategoriesExpanded}
+            aria-pressed={areAllExpandableRowsExpanded}
             title={
-              areAllExpandableCategoriesExpanded
+              areAllExpandableRowsExpanded
                 ? "Collapse all rows"
                 : "Expand all rows"
             }
@@ -666,7 +849,7 @@ export function ReportMatrixTable({
           >
             <AppIcon name="bi-unfold-vertical" size={16} />
           </Button>
-         
+
           <Button
             type="button"
             variant="outline"
@@ -681,7 +864,7 @@ export function ReportMatrixTable({
             />
             Reset filters
           </Button>
-           <Button
+          <Button
             type="button"
             variant="outline"
             size="sm"
@@ -698,6 +881,63 @@ export function ReportMatrixTable({
         <table className="report-matrix">
           <caption className="sr-only">{caption}</caption>
           <thead>
+            {hasSectionSummaries ? (
+              <tr>
+                <th
+                  className="report-matrix__summary-spacer"
+                  colSpan={resolvedLeadingColumns.length}
+                  scope="colgroup"
+                  style={{
+                    left: 0,
+                    minWidth: leadingWidth,
+                    width: leadingWidth,
+                  }}
+                />
+                {sections.map((section) => (
+                  <th
+                    key={`${section.key}-summary`}
+                    className={cn(
+                      "report-matrix__section-summary-heading",
+                      section.tone &&
+                        `report-matrix__section-summary-heading--${section.tone}`,
+                    )}
+                    colSpan={section.columns.length}
+                    scope="colgroup"
+                  >
+                    {section.summary ? (
+                      <div
+                        className={cn(
+                          "report-matrix__section-summary",
+                          section.summary.tone &&
+                            `report-matrix__section-summary--${section.summary.tone}`,
+                        )}
+                      >
+                        <span className="report-matrix__section-summary-label">
+                          {section.summary.label}
+                        </span>
+                        <strong className="report-matrix__section-summary-value">
+                          {section.summary.value}
+                        </strong>
+                        {section.summary.details?.length ? (
+                          <span className="report-matrix__section-summary-details">
+                            {section.summary.details.map(
+                              (detail, summaryIndex) => (
+                                <span
+                                  key={`${section.key}-summary-${summaryIndex}`}
+                                  className="report-matrix__section-summary-detail"
+                                >
+                                  {detail}
+                                </span>
+                              ),
+                            )}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </th>
+                ))}
+              </tr>
+            ) : null}
             <tr>
               <th
                 className="report-matrix__brand-cell"
@@ -718,7 +958,9 @@ export function ReportMatrixTable({
                   colSpan={section.columns.length}
                   scope="colgroup"
                 >
-                  {section.title}
+                  <span className="report-matrix__section-title">
+                    {section.title}
+                  </span>
                 </th>
               ))}
             </tr>
@@ -798,82 +1040,12 @@ export function ReportMatrixTable({
               ))}
             </tr>
           </thead>
-          <tbody>
-            {filteredRows.map((row) => (
-              <tr
-                key={row.key}
-                className={cn(
-                  row.rowKind === "category" && "report-matrix__row--category",
-                  row.rowKind === "detail" && "report-matrix__row--detail",
-                  row.isTotal && "report-matrix__row--total",
-                )}
-              >
-                {resolvedLeadingColumns.map((column, index) => {
-                  const rawValue = getLeadingValue(row, column.key);
-                  const title =
-                    column.key === "seller"
-                      ? row.filterValues?.sellerLabel
-                      : getTruncationTitle(rawValue);
-                  const content =
-                    column.key === "category"
-                      ? renderCategoryCellContent(
-                          row,
-                          renderTruncatedCell(rawValue, title),
-                        )
-                      : renderTruncatedCell(rawValue, title);
-                  const className = cn(
-                    index === 0
-                      ? "report-matrix__category-cell"
-                      : "report-matrix__dimension-cell",
-                  );
-                  const style = {
-                    left: leadingOffsets[index],
-                    minWidth: column.width,
-                    width: column.width,
-                  };
-
-                  return index === 0 ? (
-                    <th
-                      key={column.key}
-                      className={className}
-                      scope="row"
-                      style={style}
-                      title={title && title !== "—" ? title : undefined}
-                    >
-                      {content}
-                    </th>
-                  ) : (
-                    <td
-                      key={column.key}
-                      className={className}
-                      style={style}
-                      title={title && title !== "—" ? title : undefined}
-                    >
-                      {content}
-                    </td>
-                  );
-                })}
-                {columns.map((column) => {
-                  const tone =
-                    row.cellTones?.[column.key] ?? column.cellTone ?? "default";
-
-                  return (
-                    <td
-                      key={`${row.key}-${column.key}`}
-                      className={cn(
-                        "report-matrix__cell",
-                        getAlignClass(column.align),
-                        column.isSectionStart && "report-matrix__section-start",
-                        tone !== "default" && `report-matrix__cell--${tone}`,
-                      )}
-                    >
-                      {renderValue(row.values[column.key])}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
+          <tbody>{bodyRows.map(renderMatrixRow)}</tbody>
+          {totalRows.length ? (
+            <tfoot className="report-matrix__footer">
+              {totalRows.map(renderMatrixRow)}
+            </tfoot>
+          ) : null}
         </table>
       </div>
     </section>

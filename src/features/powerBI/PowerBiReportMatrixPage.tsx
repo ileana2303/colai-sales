@@ -8,6 +8,7 @@ import { ReportMatrixTable } from "@/features/powerBI/ReportMatrixTable";
 import {
   buildReportMatrixRows,
   createReportMatrixSections,
+  createReportMatrixSectionSummaries,
   reportMatrixLeadingColumns,
   type PowerBiMatrixSourceRow,
 } from "@/features/powerBI/reportMatrixData";
@@ -121,10 +122,19 @@ export function PowerBiReportMatrixPage({
     ...matrixQueryOptions,
   });
   const headerLabel = data?.headerLabel || brandLabel;
+  const sectionSummaries = useMemo(
+    () => (data ? createReportMatrixSectionSummaries(data.currentRows) : {}),
+    [data],
+  );
 
   const sections = useMemo(
-    () => createReportMatrixSections({ currentYear, previousYear }),
-    [currentYear, previousYear],
+    () =>
+      createReportMatrixSections({
+        currentYear,
+        previousYear,
+        summaries: sectionSummaries,
+      }),
+    [currentYear, previousYear, sectionSummaries],
   );
   const rows = useMemo(
     () =>

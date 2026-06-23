@@ -4,9 +4,11 @@ import {
   type ReportMatrixRow,
   type ReportMatrixRowMetrics,
   type ReportMatrixSection,
+  type ReportMatrixSectionSummary,
   type ReportMatrixTone,
 } from "@/features/powerBI/ReportMatrixTable";
 import {
+  getMonthLabel,
   getMonthIndex,
   getYearComparisonTone,
 } from "@/lib/bi-reports/reportUtils";
@@ -20,6 +22,7 @@ export type PowerBiMatrixSourceRow = {
   sellerName?: string | null;
   month?: string | null;
   closedMonthStatus?: string | null;
+  currency?: number | null;
   tcy?: number | null;
   vcy?: number | null;
   vlc?: number | null;
@@ -39,6 +42,7 @@ type MatrixAggregate = {
   team: string;
   sellerCode: string;
   sellerName: string;
+  currency: number | null;
   tcyAll: number;
   vcyAll: number;
   tcyClosed: number;
@@ -64,11 +68,36 @@ type MatrixRowOptions = {
 };
 
 const EMPTY_VALUE = "-";
+const TOTAL_CURRENCY_BUCKETS = [0, 1] as const;
+const englishShortMonthLabels = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+] as const;
+
+type TotalCurrencyBucket = (typeof TOTAL_CURRENCY_BUCKETS)[number];
+
+type ReportMatrixSectionSummaries = Partial<
+  Record<"current-year" | "previous-period", ReportMatrixSectionSummary>
+>;
 
 const currencyFormatter = new Intl.NumberFormat("el-GR", {
   currency: "EUR",
   maximumFractionDigits: 0,
   style: "currency",
+});
+
+const numberFormatter = new Intl.NumberFormat("el-GR", {
+  maximumFractionDigits: 0,
 });
 
 export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
@@ -77,9 +106,13 @@ export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
   { key: "seller", label: "Seller Name - Seller code", width: 168 },
 ];
 
-function formatCurrency(value: number | null | undefined) {
+function formatMatrixValue(
+  value: number | null | undefined,
+  aggregate: MatrixAggregate,
+) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
   if (value === 0) return "0";
+  if (aggregate.currency === 0) return numberFormatter.format(value);
   return currencyFormatter.format(value);
 }
 
@@ -97,9 +130,13 @@ function formatCoverPercent(target: number, result: number) {
   return formatMatrixPercent(result / target);
 }
 
-function formatGapDiff(result: number, target: number) {
+function formatGapDiff(
+  result: number,
+  target: number,
+  aggregate: MatrixAggregate,
+) {
   if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
-  return formatCurrency(result - target);
+  return formatMatrixValue(result - target, aggregate);
 }
 
 function formatYearComparison(current: number, previous: number) {
@@ -108,10 +145,14 @@ function formatYearComparison(current: number, previous: number) {
   return formatMatrixPercent(current / previous);
 }
 
-function formatYearDiff(current: number, previous: number) {
+function formatYearDiff(
+  current: number,
+  previous: number,
+  aggregate: MatrixAggregate,
+) {
   if (!Number.isFinite(current) || !Number.isFinite(previous))
     return EMPTY_VALUE;
-  return formatCurrency(current - previous);
+  return formatMatrixValue(current - previous, aggregate);
 }
 
 function buildMetricCellTones(values: {
@@ -145,6 +186,7 @@ function metricsFromAggregate(
   aggregate: MatrixAggregate,
 ): ReportMatrixRowMetrics {
   return {
+    currency: aggregate.currency,
     tcyAll: aggregate.tcyAll,
     vcyAll: aggregate.vcyAll,
     tcyClosed: aggregate.tcyClosed,
@@ -165,6 +207,7 @@ function aggregateFromMetrics(
     team: "",
     sellerCode: "",
     sellerName: "",
+    currency: metrics.currency,
     tcyAll: metrics.tcyAll,
     vcyAll: metrics.vcyAll,
     tcyClosed: metrics.tcyClosed,
@@ -176,21 +219,62 @@ function aggregateFromMetrics(
   };
 }
 
-export function buildReportMatrixTotalRow(
+export function buildReportMatrixTotalRows(
   rows: ReportMatrixRow[],
-): ReportMatrixRow | null {
+): ReportMatrixRow[] {
   const aggregates = rows
     .filter((row) => !row.isTotal && row.rowKind !== "category" && row.metrics)
     .map((row) => aggregateFromMetrics(row.metrics!));
 
-  if (!aggregates.length) return null;
+  if (!aggregates.length) return [];
 
-  return aggregateToMatrixRow(buildTotalAggregate(aggregates), true);
+  const aggregatesByCurrency = new Map<
+    TotalCurrencyBucket,
+    MatrixAggregate[]
+  >();
+
+  for (const aggregate of aggregates) {
+    const currency = getTotalCurrencyBucket(aggregate.currency);
+    const existing = aggregatesByCurrency.get(currency);
+
+    if (existing) {
+      existing.push(aggregate);
+    } else {
+      aggregatesByCurrency.set(currency, [aggregate]);
+    }
+  }
+
+  const visibleCurrencies = TOTAL_CURRENCY_BUCKETS.filter(
+    (currency) => (aggregatesByCurrency.get(currency) ?? []).length > 0,
+  );
+
+  return visibleCurrencies.map((currency) => {
+    const totalAggregate = buildTotalAggregate(
+      aggregatesByCurrency.get(currency) ?? [],
+    );
+
+    totalAggregate.group1 = getTotalRowLabel(
+      currency,
+      visibleCurrencies.length > 1,
+    );
+    totalAggregate.group2 = "Σύνολο";
+    totalAggregate.team = "";
+    totalAggregate.sellerCode = "";
+    totalAggregate.sellerName = "";
+    totalAggregate.currency = currency;
+
+    return aggregateToMatrixRow(totalAggregate, true, {
+      key: visibleCurrencies.length > 1 ? `total:${currency}` : "total",
+    });
+  });
 }
 
-function formatOptionalCurrency(value: number | null) {
+function formatOptionalMatrixValue(
+  value: number | null,
+  aggregate: MatrixAggregate,
+) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
-  return formatCurrency(value);
+  return formatMatrixValue(value, aggregate);
 }
 
 function isClosedMonth(status?: string | null) {
@@ -199,6 +283,10 @@ function isClosedMonth(status?: string | null) {
 
 function getMonthSortIndex(month: string) {
   return getMonthIndex(month) ?? Number.MAX_SAFE_INTEGER;
+}
+
+function getShortMonthLabel(index: number) {
+  return englishShortMonthLabels[index] ?? getMonthLabel(String(index + 1));
 }
 
 function toText(value: string | null | undefined) {
@@ -224,6 +312,34 @@ function addNumber(current: number, value: number | null | undefined) {
   return value == null || !Number.isFinite(value) ? current : current + value;
 }
 
+function normalizeCurrency(value: number | null | undefined) {
+  return value == null || !Number.isFinite(value) ? null : value;
+}
+
+function getTotalCurrencyBucket(
+  value: number | null | undefined,
+): TotalCurrencyBucket {
+  return normalizeCurrency(value) === 0 ? 0 : 1;
+}
+
+function getTotalRowLabel(
+  currency: TotalCurrencyBucket,
+  showCurrencyLabel: boolean,
+) {
+  if (!showCurrencyLabel) return "Σύνολα";
+  return currency === 0 ? "Σύνολα χωρίς νόμισμα" : "Σύνολα (€)";
+}
+
+function applyAggregateCurrency(
+  aggregate: Pick<MatrixAggregate, "currency">,
+  value: number | null | undefined,
+) {
+  const nextCurrency = normalizeCurrency(value);
+  if (aggregate.currency == null && nextCurrency != null) {
+    aggregate.currency = nextCurrency;
+  }
+}
+
 function ensureAggregate(
   aggregates: Map<string, MatrixAggregate>,
   row: PowerBiMatrixSourceRow,
@@ -234,6 +350,7 @@ function ensureAggregate(
     if (!existing.sellerName && row.sellerName) {
       existing.sellerName = toText(row.sellerName);
     }
+    applyAggregateCurrency(existing, row.currency);
     return existing;
   }
 
@@ -243,6 +360,7 @@ function ensureAggregate(
     team: toText(row.team),
     sellerCode: toText(row.sellerCode),
     sellerName: toText(row.sellerName),
+    currency: normalizeCurrency(row.currency),
     tcyAll: 0,
     vcyAll: 0,
     tcyClosed: 0,
@@ -269,12 +387,16 @@ function renderSeller(aggregate: MatrixAggregate) {
 }
 
 function getCategoryLabel(aggregate: MatrixAggregate, isTotal = false) {
-  if (isTotal) return "Σύνολα";
+  if (isTotal) return aggregate.group1 || "Σύνολα";
   return aggregate.group1 || "-";
 }
 
 function getCategoryRowKey(category: string) {
   return `category:${normalizeKeyPart(category)}`;
+}
+
+function getTeamRowKey(category: string, team: string) {
+  return `team:${normalizeKeyPart(category)}|${normalizeKeyPart(team)}`;
 }
 
 function getCategoryOrderIndex(
@@ -303,7 +425,18 @@ function mergeOpenMonthMaps(
   return merged;
 }
 
+function resolveAggregateCurrency(aggregates: MatrixAggregate[]) {
+  const resolved = { currency: null as number | null };
+
+  for (const aggregate of aggregates) {
+    applyAggregateCurrency(resolved, aggregate.currency);
+  }
+
+  return resolved.currency;
+}
+
 function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
+  const currency = resolveAggregateCurrency(aggregates);
   const total = aggregates.reduce<MatrixAggregate>(
     (sum, aggregate) => ({
       ...sum,
@@ -322,6 +455,7 @@ function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
       team: "-",
       sellerCode: "-",
       sellerName: "",
+      currency,
       tcyAll: 0,
       vcyAll: 0,
       tcyClosed: 0,
@@ -388,7 +522,7 @@ function aggregateToMatrixRow(
         .filter(Boolean)
         .join(" - ") || "-";
   const rowKind = options.rowKind ?? (isTotal ? "total" : "detail");
-  const includeFilterValues = !isTotal && rowKind !== "category";
+  const includeFilterValues = !isTotal && rowKind === "detail";
   const previousDiffValue = closedPeriod.result - closedPeriod.target;
   const currentDiffValue = aggregate.vTrend - aggregate.tcyAll;
   const yearDiffValue = closedPeriod.result - aggregate.vlc;
@@ -432,24 +566,35 @@ function aggregateToMatrixRow(
     }),
     values: {
       currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
-      currentDiff: formatGapDiff(aggregate.vTrend, aggregate.tcyAll),
-      currentTarget: formatCurrency(aggregate.tcyAll),
-      currentTrend: formatCurrency(aggregate.vTrend),
-      extraMonthlyTarget: formatOptionalCurrency(
+      currentDiff: formatGapDiff(aggregate.vTrend, aggregate.tcyAll, aggregate),
+      currentTarget: formatMatrixValue(aggregate.tcyAll, aggregate),
+      currentTrend: formatMatrixValue(aggregate.vTrend, aggregate),
+      extraMonthlyTarget: formatOptionalMatrixValue(
         monthlyTargets.extraMonthlyTarget,
+        aggregate,
       ),
-      monthlyTarget: formatOptionalCurrency(monthlyTargets.monthlyTarget),
-      newMonthlyTarget: formatOptionalCurrency(monthlyTargets.newMonthlyTarget),
+      monthlyTarget: formatOptionalMatrixValue(
+        monthlyTargets.monthlyTarget,
+        aggregate,
+      ),
+      newMonthlyTarget: formatOptionalMatrixValue(
+        monthlyTargets.newMonthlyTarget,
+        aggregate,
+      ),
       previousCover: formatCoverPercent(
         closedPeriod.target,
         closedPeriod.result,
       ),
-      previousDiff: formatGapDiff(closedPeriod.result, closedPeriod.target),
-      previousResult: formatCurrency(closedPeriod.result),
-      previousTarget: formatCurrency(closedPeriod.target),
+      previousDiff: formatGapDiff(
+        closedPeriod.result,
+        closedPeriod.target,
+        aggregate,
+      ),
+      previousResult: formatMatrixValue(closedPeriod.result, aggregate),
+      previousTarget: formatMatrixValue(closedPeriod.target, aggregate),
       yearComparison: formatYearComparison(closedPeriod.result, aggregate.vlc),
-      yearDiff: formatYearDiff(closedPeriod.result, aggregate.vlc),
-      yearResult: formatCurrency(aggregate.vlc),
+      yearDiff: formatYearDiff(closedPeriod.result, aggregate.vlc, aggregate),
+      yearResult: formatMatrixValue(aggregate.vlc, aggregate),
     },
   };
 }
@@ -492,6 +637,53 @@ export function buildReportMatrixCategoryRows(
         seller: false,
       },
       rowKind: "category",
+    });
+  });
+}
+
+export function buildReportMatrixTeamRows(
+  rows: ReportMatrixRow[],
+): ReportMatrixRow[] {
+  const groupedRows = new Map<
+    string,
+    { category: string; team: string; childRows: ReportMatrixRow[] }
+  >();
+
+  for (const row of rows) {
+    if (row.isTotal || row.rowKind === "category" || !row.metrics) continue;
+
+    const category = row.filterValues?.category || String(row.category ?? "-");
+    const team = row.filterValues?.team || "";
+    const key = getTeamRowKey(category, team);
+    const existing = groupedRows.get(key);
+
+    if (existing) {
+      existing.childRows.push(row);
+    } else {
+      groupedRows.set(key, { category, team, childRows: [row] });
+    }
+  }
+
+  return [...groupedRows.entries()].map(([key, value]) => {
+    const childAggregates = value.childRows.map((row) =>
+      aggregateFromMetrics(row.metrics!),
+    );
+    const aggregate = buildTotalAggregate(childAggregates);
+
+    aggregate.group1 = value.category;
+    aggregate.group2 = "Σύνολο";
+    aggregate.team = value.team;
+    aggregate.sellerCode = "";
+    aggregate.sellerName = "";
+
+    return aggregateToMatrixRow(aggregate, false, {
+      childCount: value.childRows.length,
+      key,
+      leadingValues: {
+        seller: false,
+      },
+      parentKey: getCategoryRowKey(value.category),
+      rowKind: "team",
     });
   });
 }
@@ -565,7 +757,7 @@ export function buildReportMatrixRows({
 
   const detailRows = sortedAggregates.map((aggregate) =>
     aggregateToMatrixRow(aggregate, false, {
-      parentKey: getCategoryRowKey(getCategoryLabel(aggregate)),
+      parentKey: getTeamRowKey(getCategoryLabel(aggregate), aggregate.team),
       rowKind: "detail",
     }),
   );
@@ -579,13 +771,17 @@ export function buildReportMatrixRows({
 export function createReportMatrixSections({
   currentYear,
   previousYear,
+  summaries,
 }: {
   currentYear: number;
   previousYear: number;
+  summaries?: ReportMatrixSectionSummaries;
 }): ReportMatrixSection[] {
+  const resolvedPreviousYear = previousYear || currentYear - 1;
   const sections = [
     {
       key: "previous-period",
+      summary: summaries?.["previous-period"],
       title: "Απολογισμός Προηγούμενου Διαστήματος",
       columns: [
         {
@@ -610,24 +806,25 @@ export function createReportMatrixSections({
       columns: [
         {
           key: "yearResult",
-          label: `Αποτέλεσμα ${previousYear}`,
+          label: `Αποτέλεσμα ${resolvedPreviousYear}`,
           headerTone: "danger",
           width: 84,
         },
         {
           key: "yearComparison",
-          label: `% ${currentYear} vs ${previousYear}`,
+          label: `% ${currentYear} vs ${resolvedPreviousYear}`,
           width: 68,
         },
         {
           key: "yearDiff",
-          label: `# ${currentYear} vs ${previousYear}`,
+          label: `# ${currentYear} vs ${resolvedPreviousYear}`,
           width: 68,
         },
       ],
     },
     {
       key: "current-year",
+      summary: summaries?.["current-year"],
       title: "Προσέγγιση Τρέχοντος Έτους",
       columns: [
         {
@@ -678,4 +875,93 @@ export function createReportMatrixSections({
       width: column.width ?? 82,
     })),
   }));
+}
+
+function getUniqueMonthIndexes(
+  rows: PowerBiMatrixSourceRow[],
+  matcher: (row: PowerBiMatrixSourceRow) => boolean,
+) {
+  const monthIndexes = new Set<number>();
+
+  for (const row of rows) {
+    if (!matcher(row)) continue;
+
+    const month = toText(row.month);
+    const monthIndex = month ? getMonthIndex(month) : null;
+    if (monthIndex != null) {
+      monthIndexes.add(monthIndex);
+    }
+  }
+
+  return [...monthIndexes].sort((left, right) => left - right);
+}
+
+function formatMonthRange(startIndex: number, endIndex: number) {
+  if (startIndex === endIndex) {
+    return getShortMonthLabel(startIndex);
+  }
+
+  return `${getShortMonthLabel(startIndex)} - ${getShortMonthLabel(endIndex)}`;
+}
+
+export function createReportMatrixSectionSummaries(
+  rows: PowerBiMatrixSourceRow[],
+): ReportMatrixSectionSummaries {
+  if (!rows.length) return {};
+
+  const closedMonthIndexes = getUniqueMonthIndexes(rows, (row) =>
+    isClosedMonth(row.closedMonthStatus),
+  );
+  const openMonthIndexes = getUniqueMonthIndexes(rows, (row) => {
+    const status = toText(row.closedMonthStatus);
+    return Boolean(status) && !isClosedMonth(status);
+  });
+
+  const lastClosedMonthIndex = closedMonthIndexes.at(-1) ?? null;
+  const currentMonthIndex =
+    openMonthIndexes[0] ??
+    (lastClosedMonthIndex != null && lastClosedMonthIndex < 11
+      ? lastClosedMonthIndex + 1
+      : null);
+  const remainingMonths = openMonthIndexes.length;
+
+  const previousPeriodSummary =
+    closedMonthIndexes.length && lastClosedMonthIndex != null
+      ? ({
+          details: [
+            `Last closed: ${getShortMonthLabel(lastClosedMonthIndex)}`,
+            currentMonthIndex != null
+              ? `Current month: ${getShortMonthLabel(currentMonthIndex)}`
+              : "Current month: -",
+          ],
+          label: "Closed period",
+          tone: "primary",
+          value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+        } satisfies ReportMatrixSectionSummary)
+      : undefined;
+
+  const currentYearSummary =
+    remainingMonths > 0
+      ? ({
+          details:
+            currentMonthIndex != null
+              ? [
+                  `${formatMonthRange(
+                    currentMonthIndex,
+                    openMonthIndexes.at(-1) ?? currentMonthIndex,
+                  )}`,
+                ]
+              : undefined,
+          label: "Remaining months",
+          tone: "success",
+          value: `${remainingMonths} ${
+            remainingMonths === 1 ? "month" : "months"
+          }`,
+        } satisfies ReportMatrixSectionSummary)
+      : undefined;
+
+  return {
+    "current-year": currentYearSummary,
+    "previous-period": previousPeriodSummary,
+  };
 }
