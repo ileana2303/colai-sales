@@ -80,6 +80,44 @@ export function formatNullableRatioPercent(value: number | null) {
   return value == null ? "-" : `${formatPercentGR(value * 100)}%`;
 }
 
+export type ValueTone = "danger" | "success";
+
+export function getSignedValueTone(
+  value: number | null | undefined,
+): ValueTone | undefined {
+  if (value == null || !Number.isFinite(value) || value === 0) return undefined;
+  return value > 0 ? "success" : "danger";
+}
+
+export function getCoverRatioTone(
+  ratio: number | null | undefined,
+): ValueTone | undefined {
+  if (ratio == null || !Number.isFinite(ratio)) return undefined;
+  return getSignedValueTone(ratio - 1);
+}
+
+export function getTargetGapTone(
+  actual: number | null | undefined,
+  target: number | null | undefined,
+): ValueTone | undefined {
+  if (
+    actual == null ||
+    target == null ||
+    !Number.isFinite(actual) ||
+    !Number.isFinite(target)
+  ) {
+    return undefined;
+  }
+
+  return getSignedValueTone(actual - target);
+}
+
+export function getValueToneClassName(tone?: ValueTone) {
+  if (tone === "success") return "app-value--success";
+  if (tone === "danger") return "app-value--danger";
+  return undefined;
+}
+
 export function getMonthLabel(month: string) {
   const trimmed = month.trim();
   const monthIndex = getMonthIndex(trimmed);

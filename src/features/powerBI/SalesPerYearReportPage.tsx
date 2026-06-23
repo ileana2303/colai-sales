@@ -16,6 +16,7 @@ import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
   ReportHeader,
+  ReportToneValue,
   TargetBar,
   ValuePill,
 } from "@/features/powerBI/ReportShared";
@@ -23,9 +24,15 @@ import {
   formatNullableCurrency,
   formatNullableNumber,
   formatNullableRatioPercent,
+  getCoverRatioTone,
+  getSignedValueTone,
+  getTargetGapTone,
+  getValueToneClassName,
   getMonthIndex,
   getMonthLabel,
+  type ValueTone,
 } from "@/lib/bi-reports/reportUtils";
+import { cn } from "@/lib/utils";
 import type {
   SalesPerYearCoverSummary,
   SalesPerYearMonthlyRow,
@@ -83,6 +90,7 @@ function SalesPerYearTargetPanel({
     coverage ??
     (actual != null && target != null && target > 0 ? actual / target : null);
   const width = ratio == null ? 0 : Math.min(100, Math.max(0, ratio * 100));
+  const ratioTone = getCoverRatioTone(ratio);
 
   return (
     <div className="app-card p-5">
@@ -109,10 +117,13 @@ function SalesPerYearTargetPanel({
           </div>
         </div>
         <span
-          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium",
+            getValueToneClassName(ratioTone),
+          )}
           style={{
             background: `${accent}1f`,
-            color: accent,
+            color: ratioTone ? undefined : accent,
             border: `1px solid ${accent}33`,
           }}
         >
@@ -164,6 +175,8 @@ function SalesPerYearProductCard({
   coverage: number | null;
   accent: string;
 }) {
+  const coverageTone = getCoverRatioTone(coverage);
+
   return (
     <div className="app-card p-5">
       <div className="flex items-start justify-between gap-3">
@@ -172,10 +185,13 @@ function SalesPerYearProductCard({
           <div className="text-sm text-muted-foreground">Πωλήσεις vs στόχος</div>
         </div>
         <span
-          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium",
+            getValueToneClassName(coverageTone),
+          )}
           style={{
             background: `${accent}1f`,
-            color: accent,
+            color: coverageTone ? undefined : accent,
             border: `1px solid ${accent}33`,
           }}
         >
@@ -220,24 +236,28 @@ function SalesPerYearCoverSummaryCards({
         value={formatNullableRatioPercent(summary.hospitalCoverAll)}
         icon="bi-hospital"
         accent="#2563eb"
+        tone={getCoverRatioTone(summary.hospitalCoverAll)}
       />
       <MetricCard
         label="WC Trend All"
         value={formatNullableRatioPercent(summary.wcCoverAll)}
         icon="bi-clipboard2-pulse"
         accent="#16a34a"
+        tone={getCoverRatioTone(summary.wcCoverAll)}
       />
       <MetricCard
         label="CC Trend All"
         value={formatNullableRatioPercent(summary.ccCoverAll)}
         icon="bi-droplet-half"
         accent="#dc2626"
+        tone={getCoverRatioTone(summary.ccCoverAll)}
       />
       <MetricCard
         label="Total Trend All"
         value={formatNullableRatioPercent(summary.totalCoverAll)}
         icon="bi-bullseye"
         accent="#7c3aed"
+        tone={getCoverRatioTone(summary.totalCoverAll)}
       />
     </section>
   );
@@ -251,6 +271,7 @@ function SalesPerYearMonthCard({
   index: number;
 }) {
   const accent = ["#2563eb", "#16a34a", "#dc2626", "#7c3aed"][index % 4];
+  const coverTone = getCoverRatioTone(row.totalClpSalesCoverCM);
 
   return (
     <div className="app-card p-5">
@@ -262,10 +283,13 @@ function SalesPerYearMonthCard({
           </div>
         </div>
         <span
-          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium",
+            getValueToneClassName(coverTone),
+          )}
           style={{
             background: `${accent}1f`,
-            color: accent,
+            color: coverTone ? undefined : accent,
             border: `1px solid ${accent}33`,
           }}
         >
@@ -327,6 +351,73 @@ function SalesPerYearMonthCard({
   );
 }
 
+function SalesPerYearMonthlyCompactTable({
+  rows,
+}: {
+  rows: SalesPerYearMonthlyRow[];
+}) {
+  if (!rows.length) return null;
+
+  return (
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="font-semibold">Αναλυτικά στοιχεία ανά μήνα</div>
+          <div className="text-sm text-muted-foreground">
+            Καλύψεις στόχου από Power BI
+          </div>
+        </div>
+        <AppIcon name="bi-table" className="text-muted-foreground" size={18} />
+      </div>
+
+      <div className="mt-3">
+        <Table>
+          <TableHeader>
+            <TableRow className="text-muted-foreground hover:bg-transparent">
+              <TableHead>Μήνας</TableHead>
+              <TableHead className="text-right">% Hospital</TableHead>
+              <TableHead className="text-right">% WC</TableHead>
+              <TableHead className="text-right">% CC</TableHead>
+              <TableHead className="text-right">% Total CLP</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.month}>
+                <TableCell className="font-semibold">
+                  {getMonthLabel(row.month)}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  <ReportToneValue tone={getCoverRatioTone(row.hospitalSalesCoverCM)}>
+                    {formatNullableRatioPercent(row.hospitalSalesCoverCM)}
+                  </ReportToneValue>
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  <ReportToneValue tone={getCoverRatioTone(row.wcSalesCoverCM)}>
+                    {formatNullableRatioPercent(row.wcSalesCoverCM)}
+                  </ReportToneValue>
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  <ReportToneValue tone={getCoverRatioTone(row.ccNhSalesCoverCM)}>
+                    {formatNullableRatioPercent(row.ccNhSalesCoverCM)}
+                  </ReportToneValue>
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  <ReportToneValue
+                    tone={getCoverRatioTone(row.totalClpSalesCoverCM)}
+                  >
+                    {formatNullableRatioPercent(row.totalClpSalesCoverCM)}
+                  </ReportToneValue>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
 function SalesPerYearMonthlyBreakdown({
   rows,
 }: {
@@ -357,12 +448,14 @@ function SalesPerYearMonthlyBreakdown({
           index={index}
         />
       ))}
+
+      <SalesPerYearMonthlyCompactTable rows={rows} />
     </section>
   );
 }
 
 function SalesPerYearDetailsTable({ row }: { row: SalesPerYearRow }) {
-  const details = [
+  const details: Array<{ label: string; tone?: ValueTone; value: string }> = [
     {
       label: "Total Coloplast Sales",
       value: formatNullableCurrency(row.totalColoplastSales),
@@ -373,20 +466,31 @@ function SalesPerYearDetailsTable({ row }: { row: SalesPerYearRow }) {
     },
     {
       label: "Total CLP Sales Forecast",
+      tone: getTargetGapTone(row.totalClpSalesForecast, row.totalClpTarget),
       value: formatNullableCurrency(row.totalClpSalesForecast),
     },
     {
       label: "% Total CLP Cover",
+      tone: getCoverRatioTone(row.totalClpCover),
       value: formatNullableRatioPercent(row.totalClpCover),
     },
     { label: "OC PER", value: formatNullableNumber(row.ocPer) },
     { label: "OC PER Target", value: formatNullableNumber(row.ocPerTarget) },
     {
       label: "OC PER Forecast",
+      tone: getTargetGapTone(row.ocPerForecast, row.ocPerTarget),
       value: formatNullableNumber(row.ocPerForecast),
     },
-    { label: "% OC Cover", value: formatNullableRatioPercent(row.ocCover) },
-    { label: "IC PER NEW", value: formatNullableNumber(row.icPerNew) },
+    {
+      label: "% OC Cover",
+      tone: getCoverRatioTone(row.ocCover),
+      value: formatNullableRatioPercent(row.ocCover),
+    },
+    {
+      label: "IC PER NEW",
+      tone: getTargetGapTone(row.icPerNew, row.icPerTargetNew),
+      value: formatNullableNumber(row.icPerNew),
+    },
     {
       label: "IC PER Target New",
       value: formatNullableNumber(row.icPerTargetNew),
@@ -401,6 +505,7 @@ function SalesPerYearDetailsTable({ row }: { row: SalesPerYearRow }) {
     },
     {
       label: "% COVER GENADYNE",
+      tone: getCoverRatioTone(row.genadyneCover),
       value: formatNullableRatioPercent(row.genadyneCover),
     },
     { label: "UNO Sales", value: formatNullableCurrency(row.unoSales) },
@@ -408,7 +513,11 @@ function SalesPerYearDetailsTable({ row }: { row: SalesPerYearRow }) {
       label: "UNO Target Sales",
       value: formatNullableCurrency(row.unoTargetSales),
     },
-    { label: "% COVER UNO", value: formatNullableRatioPercent(row.unoCover) },
+    {
+      label: "% COVER UNO",
+      tone: getCoverRatioTone(row.unoCover),
+      value: formatNullableRatioPercent(row.unoCover),
+    },
   ];
 
   return (
@@ -436,7 +545,7 @@ function SalesPerYearDetailsTable({ row }: { row: SalesPerYearRow }) {
                   {item.label}
                 </TableCell>
                 <TableCell className="text-right font-semibold">
-                  {item.value}
+                  <ReportToneValue tone={item.tone}>{item.value}</ReportToneValue>
                 </TableCell>
               </TableRow>
             ))}
@@ -504,18 +613,21 @@ export function SalesPerYearReportPage() {
               value={formatNullableRatioPercent(row.totalClpCover)}
               icon="bi-bullseye"
               accent="#16a34a"
+              tone={getCoverRatioTone(row.totalClpCover)}
             />
             <MetricCard
               label="% OC Cover"
               value={formatNullableRatioPercent(row.ocCover)}
               icon="bi-pie-chart"
               accent="#2563eb"
+              tone={getCoverRatioTone(row.ocCover)}
             />
             <MetricCard
               label="IC PER NEW"
               value={formatNullableNumber(row.icPerNew)}
               icon="bi-person-plus"
               accent="#f97316"
+              tone={getTargetGapTone(row.icPerNew, row.icPerTargetNew)}
             />
           </section>
 
@@ -553,7 +665,13 @@ export function SalesPerYearReportPage() {
             actualLabel="IC PER NEW"
             actual={row.icPerNew}
             target={row.icPerTargetNew}
-            coverage={undefined}
+            coverage={
+              row.icPerNew != null &&
+              row.icPerTargetNew != null &&
+              row.icPerTargetNew > 0
+                ? row.icPerNew / row.icPerTargetNew
+                : null
+            }
             formatValue={(value) => formatNullableNumber(value)}
           />
 

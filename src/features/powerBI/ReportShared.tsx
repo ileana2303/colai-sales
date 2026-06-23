@@ -1,9 +1,17 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { AppIcon } from "@/components/ui/app-icon";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { formatNullableRatioPercent } from "@/lib/bi-reports/reportUtils";
+import {
+  formatNullableRatioPercent,
+  getCoverRatioTone,
+  getValueToneClassName,
+  type ValueTone,
+} from "@/lib/bi-reports/reportUtils";
+import { cn } from "@/lib/utils";
 
 export function ReportHeader({
   title,
@@ -43,16 +51,32 @@ export function ReportHeader({
   );
 }
 
+export function ReportToneValue({
+  children,
+  className,
+  tone,
+}: {
+  children: ReactNode;
+  className?: string;
+  tone?: ValueTone;
+}) {
+  return (
+    <span className={cn(getValueToneClassName(tone), className)}>{children}</span>
+  );
+}
+
 export function MetricCard({
   label,
   value,
   icon,
   accent,
+  tone,
 }: {
   label: string;
   value: string;
   icon: string;
   accent: string;
+  tone?: ValueTone;
 }) {
   return (
     <div className="app-card h-full p-5">
@@ -74,7 +98,7 @@ export function MetricCard({
           {label}
         </div>
         <div
-          className="mt-1.5 text-lg font-bold"
+          className={cn("mt-1.5 text-lg font-bold", getValueToneClassName(tone))}
           style={{ letterSpacing: "-0.01em" }}
         >
           {value}
@@ -114,12 +138,13 @@ export function TargetBar({
     coverage ??
     (actual != null && target != null && target > 0 ? actual / target : null);
   const width = ratio == null ? 0 : Math.min(100, Math.max(0, ratio * 100));
+  const ratioTone = getCoverRatioTone(ratio);
 
   return (
     <div>
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="font-semibold">{label}</span>
-        <span className="shrink-0 text-muted-foreground">
+        <span className={cn("shrink-0 text-muted-foreground", getValueToneClassName(ratioTone))}>
           {formatNullableRatioPercent(ratio)}
         </span>
       </div>

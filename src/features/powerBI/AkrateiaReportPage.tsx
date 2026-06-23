@@ -16,6 +16,7 @@ import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
   ReportHeader,
+  ReportToneValue,
   TargetBar,
   ValuePill,
 } from "@/features/powerBI/ReportShared";
@@ -26,10 +27,13 @@ import {
   formatNullableInt,
   formatNullableNumber,
   formatNullableRatioPercent,
+  getCoverRatioTone,
+  getValueToneClassName,
   getMonthIndex,
   getMonthLabel,
   sumNullable,
 } from "@/lib/bi-reports/reportUtils";
+import { cn } from "@/lib/utils";
 import type {
   AkrateiaCoverSummary,
   AkrateiaPermanentRow,
@@ -82,6 +86,7 @@ function AkrateiaMonthCard({
     row.ccNewSales == null && row.ccRepSales == null
       ? null
       : (row.ccNewSales ?? 0) + (row.ccRepSales ?? 0);
+  const coverTone = getCoverRatioTone(row.ccSalesCoverCM);
 
   return (
     <div className="app-card p-5">
@@ -91,10 +96,13 @@ function AkrateiaMonthCard({
           <div className="text-sm text-muted-foreground">CC sales και targets</div>
         </div>
         <span
-          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium",
+            getValueToneClassName(coverTone),
+          )}
           style={{
             background: `${accent}1f`,
-            color: accent,
+            color: coverTone ? undefined : accent,
             border: `1px solid ${accent}33`,
           }}
         >
@@ -170,24 +178,28 @@ function AkrateiaCoverSummaryCards({
         value={formatNullableRatioPercent(summary.ccSalesCover)}
         icon="bi-cash-stack"
         accent="#dc2626"
+        tone={getCoverRatioTone(summary.ccSalesCover)}
       />
       <MetricCard
         label="% CC NEW PER Cover"
         value={formatNullableRatioPercent(summary.ccNewPerCover)}
         icon="bi-person-plus"
         accent="#7c3aed"
+        tone={getCoverRatioTone(summary.ccNewPerCover)}
       />
       <MetricCard
         label="% CC REP PER Cover"
         value={formatNullableRatioPercent(summary.ccRepPerCover)}
         icon="bi-arrow-repeat"
         accent="#2563eb"
+        tone={getCoverRatioTone(summary.ccRepPerCover)}
       />
       <MetricCard
         label="% CC PER Cover"
         value={formatNullableRatioPercent(summary.ccPerCover)}
         icon="bi-bullseye"
         accent="#16a34a"
+        tone={getCoverRatioTone(summary.ccPerCover)}
       />
     </section>
   );
@@ -201,6 +213,7 @@ function PermanentMonthCard({
   index: number;
 }) {
   const accent = accentColors[(index + 1) % accentColors.length];
+  const coverTone = getCoverRatioTone(row.peCover);
 
   return (
     <div className="app-card p-5">
@@ -210,10 +223,13 @@ function PermanentMonthCard({
           <div className="text-sm text-muted-foreground">Μόνιμοι και στόχος</div>
         </div>
         <span
-          className="inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium"
+          className={cn(
+            "inline-flex shrink-0 items-center rounded-full px-1.5 py-1 text-[10px] leading-none font-medium",
+            getValueToneClassName(coverTone),
+          )}
           style={{
             background: `${accent}1f`,
-            color: accent,
+            color: coverTone ? undefined : accent,
             border: `1px solid ${accent}33`,
           }}
         >
@@ -245,6 +261,57 @@ function PermanentMonthCard({
           accent={accent}
           formatValue={formatNullableCurrency}
         />
+      </div>
+    </div>
+  );
+}
+
+function PermanentCompactTable({ rows }: { rows: AkrateiaPermanentRow[] }) {
+  if (!rows.length) return null;
+
+  return (
+    <div className="app-card p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="font-semibold">Αναλυτικά στοιχεία μόνιμων</div>
+          <div className="text-sm text-muted-foreground">
+            Μηνιαίες τιμές από Power BI
+          </div>
+        </div>
+        <AppIcon name="bi-table" className="text-muted-foreground" size={18} />
+      </div>
+
+      <div className="mt-3">
+        <Table>
+          <TableHeader>
+            <TableRow className="text-muted-foreground hover:bg-transparent">
+              <TableHead>Μήνας</TableHead>
+              <TableHead className="text-right">Μόνιμοι</TableHead>
+              <TableHead className="text-right">Στόχος</TableHead>
+              <TableHead className="text-right">% PE Cover</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.month}>
+                <TableCell className="font-semibold">
+                  {getMonthLabel(row.month)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatNullableCurrency(row.monimoiSales)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatNullableCurrency(row.monimoiSalesTarget)}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  <ReportToneValue tone={getCoverRatioTone(row.peCover)}>
+                    {formatNullableRatioPercent(row.peCover)}
+                  </ReportToneValue>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -288,6 +355,7 @@ function AkrateiaCompactTable({ rows }: { rows: AkrateiaRow[] }) {
               <TableHead className="text-right">CC REP</TableHead>
               <TableHead className="text-right">Sales</TableHead>
               <TableHead className="text-right">EKTEL</TableHead>
+              <TableHead className="text-right">% CC Cover</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -307,6 +375,11 @@ function AkrateiaCompactTable({ rows }: { rows: AkrateiaRow[] }) {
                 </TableCell>
                 <TableCell className="text-right">
                   {formatNullableInt(row.ccEktel)}
+                </TableCell>
+                <TableCell className="text-right font-semibold">
+                  <ReportToneValue tone={getCoverRatioTone(row.ccSalesCoverCM)}>
+                    {formatNullableRatioPercent(row.ccSalesCoverCM)}
+                  </ReportToneValue>
                 </TableCell>
               </TableRow>
             ))}
@@ -384,6 +457,7 @@ export function AkrateiaReportPage() {
               value={formatNullableRatioPercent(totalSalesCover)}
               icon="bi-bullseye"
               accent="#16a34a"
+              tone={getCoverRatioTone(totalSalesCover)}
             />
             <MetricCard
               label="Sales"
@@ -417,6 +491,8 @@ export function AkrateiaReportPage() {
           />
 
           <PermanentMonthlyBreakdown rows={visiblePermanentRecords} />
+
+          <PermanentCompactTable rows={visiblePermanentRecords} />
 
           <ReportSectionTitle
             title="Κάλυψη ανά Κατηγορία"

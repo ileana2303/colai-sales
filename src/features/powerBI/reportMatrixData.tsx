@@ -8,6 +8,7 @@ import {
 } from "@/features/powerBI/ReportMatrixTable";
 import {
   getMonthIndex,
+  getSignedValueTone,
 } from "@/lib/bi-reports/reportUtils";
 
 export type PowerBiMatrixSourceRow = {
@@ -108,24 +109,25 @@ function formatYearDiff(current: number, previous: number) {
   return formatCurrency(current - previous);
 }
 
-function getDiffTone(value: number): ReportMatrixTone | undefined {
-  if (!Number.isFinite(value) || value === 0) return undefined;
-  return value > 0 ? "success" : "danger";
-}
-
-function buildDiffCellTones(values: {
+function buildMetricCellTones(values: {
   currentDiff: number;
   previousDiff: number;
   yearDiff: number;
 }) {
   const cellTones: Record<string, ReportMatrixTone> = {};
+  const pairs: Array<
+    [diffKey: string, percentKey: string, value: number]
+  > = [
+    ["previousDiff", "previousCover", values.previousDiff],
+    ["currentDiff", "currentCover", values.currentDiff],
+    ["yearDiff", "yearComparison", values.yearDiff],
+  ];
 
-  for (const [key, value] of Object.entries(values) as Array<
-    [keyof typeof values, number]
-  >) {
-    const tone = getDiffTone(value);
+  for (const [diffKey, percentKey, value] of pairs) {
+    const tone = getSignedValueTone(value);
     if (tone) {
-      cellTones[key] = tone;
+      cellTones[diffKey] = tone;
+      cellTones[percentKey] = tone;
     }
   }
 
@@ -403,7 +405,7 @@ function aggregateToMatrixRow(
       team: aggregate.team || "-",
       seller: isTotal ? EMPTY_VALUE : renderSeller(aggregate),
     },
-    cellTones: buildDiffCellTones({
+    cellTones: buildMetricCellTones({
       currentDiff: currentDiffValue,
       previousDiff: previousDiffValue,
       yearDiff: yearDiffValue,

@@ -496,6 +496,14 @@ html.dark .app-header-user__role {
   padding: 1rem 1.125rem;
 }
 
+.app-value--success {
+  color: #15803d;
+}
+
+.app-value--danger {
+  color: #dc2626;
+}
+
 .app-list-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
