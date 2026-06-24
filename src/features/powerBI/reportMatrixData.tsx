@@ -73,24 +73,30 @@ type MatrixRowOptions = {
 const EMPTY_VALUE = "-";
 const TOTAL_CURRENCY_BUCKETS = [0, 1] as const;
 const englishShortMonthLabels = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Ιαν",
+  "Φεβ",
+  "Μαρ",
+  "Απρ",
+  "Μάιος",
+  "Ιουν",
+  "Ιουλ",
+  "Αυγ",
+  "Σεπ",
+  "Οκτ",
+  "Νοε",
+  "Δεκ",
 ] as const;
 
 type TotalCurrencyBucket = (typeof TOTAL_CURRENCY_BUCKETS)[number];
 
 type ReportMatrixSectionSummaries = Partial<
-  Record<"current-year" | "previous-period", ReportMatrixSectionSummary>
+  Record<
+    | "closed-months"
+    | "current-year"
+    | "monthly-target"
+    | "previous-period",
+    ReportMatrixSectionSummary
+  >
 >;
 
 type CurrencySplitRowOptions = {
@@ -1086,6 +1092,7 @@ export function createReportMatrixSections({
     },
     {
       key: "year-comparison",
+      summary: summaries?.["closed-months"],
       title: "Σύγκριση με Ίδιο Διάστημα Προηγούμενου Έτους",
       columns: [
         {
@@ -1132,6 +1139,7 @@ export function createReportMatrixSections({
     },
     {
       key: "monthly-target",
+      summary: summaries?.["monthly-target"],
       title: "Μηνιαία Προσαρμογή Στόχου",
       tone: "rose",
       columns: [
@@ -1208,19 +1216,35 @@ export function createReportMatrixSectionSummaries(
       ? lastClosedMonthIndex + 1
       : null);
   const remainingMonths = openMonthIndexes.length;
+  const currentMonthStatus =
+    currentMonthIndex != null && openMonthIndexes.includes(currentMonthIndex)
+      ? "Ανοιχτός"
+      : currentMonthIndex != null &&
+          closedMonthIndexes.includes(currentMonthIndex)
+        ? "Κλειστός"
+        : "-";
 
   const previousPeriodSummary =
     closedMonthIndexes.length && lastClosedMonthIndex != null
       ? ({
           details: [
-            `Last closed: ${getShortMonthLabel(lastClosedMonthIndex)}`,
-            currentMonthIndex != null
-              ? `Current month: ${getShortMonthLabel(currentMonthIndex)}`
-              : "Current month: -",
+            `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
           ],
-          label: "Closed period",
+          label: "Κλειστή περίοδος",
           tone: "primary",
           value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+        } satisfies ReportMatrixSectionSummary)
+      : undefined;
+
+  const closedMonthsSummary =
+    closedMonthIndexes.length && lastClosedMonthIndex != null
+      ? ({
+          details: [
+            formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+          ],
+          label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
+          tone: "primary",
+          value: String(closedMonthIndexes.length),
         } satisfies ReportMatrixSectionSummary)
       : undefined;
 
@@ -1236,16 +1260,26 @@ export function createReportMatrixSectionSummaries(
                   )}`,
                 ]
               : undefined,
-          label: "Remaining months",
+          label: "Υπόλοιποι μήνες",
           tone: "success",
           value: `${remainingMonths} ${
-            remainingMonths === 1 ? "month" : "months"
+            remainingMonths === 1 ? "μήνας" : "μήνες"
           }`,
         } satisfies ReportMatrixSectionSummary)
       : undefined;
 
+  const monthlyTargetSummary = {
+    details: [`Κατάσταση: ${currentMonthStatus}`],
+    label: "Τρέχων μήνας",
+    tone: "primary",
+    value:
+      currentMonthIndex != null ? getShortMonthLabel(currentMonthIndex) : "-",
+  } satisfies ReportMatrixSectionSummary;
+
   return {
+    "closed-months": closedMonthsSummary,
     "current-year": currentYearSummary,
+    "monthly-target": monthlyTargetSummary,
     "previous-period": previousPeriodSummary,
   };
 }
