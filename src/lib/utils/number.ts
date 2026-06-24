@@ -13,17 +13,15 @@ export function formatCurrencyGR(value: unknown): string {
 }
 
 const intFmt = new Intl.NumberFormat("el-GR", { maximumFractionDigits: 0 });
-const pctFmt = new Intl.NumberFormat("el-GR", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
 
 export function formatIntGR(value: number): string {
   return intFmt.format(Number.isFinite(value) ? value : 0);
 }
 
+/** Percent values always round to whole numbers (e.g. 93,898 → "93"). */
 export function formatPercentGR(value: number): string {
-  return pctFmt.format(Number.isFinite(value) ? value : 0);
+  if (!Number.isFinite(value)) return intFmt.format(0);
+  return intFmt.format(Math.round(value));
 }
 
 export function parseGreekDecimal(value: unknown): number {

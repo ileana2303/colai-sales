@@ -1,4 +1,16 @@
 import {
+  normalizeCurrentYearSalesRows,
+  type CurrentYearSalesRow,
+} from "@/lib/bi-reports/currentYearSales";
+import {
+  normalizeLastYearSalesRows,
+  type LastYearSalesRow,
+} from "@/lib/bi-reports/lastYearSales";
+import {
+  normalizeTrendSalesRows,
+  type TrendSalesRow,
+} from "@/lib/bi-reports/trendSales";
+import {
   escapeDaxString,
   joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
@@ -83,18 +95,16 @@ export function buildBbmSalesLastYearQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "Area", \'U Sales Person\'[Area],',
-    '  "Team", \'U Sales Person\'[Team],',
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "SellerName", \'U Sales Person\'[Πωλητής],',
     '  "Group1", \'U Item Family Code\'[ItemFamilyCode (groups)],',
     '  "Group2", \'UBussiness\'[BusinessUnit],',
     '  "Month", \'U Months\'[Month],',
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
-    '  "VLC", [VCY]',
+    '  "Currency", 1,',
+    '  "VLY", [VCY]',
     ")",
-    "ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]",
+    "ORDER BY [SellerCode], [Group1], [Group2], [Month]",
   ]);
 }
 
@@ -123,10 +133,7 @@ export function buildBbmSales2026Query(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "Area", \'U Sales Person\'[Area],',
-    '  "Team", \'U Sales Person\'[Team],',
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "SellerName", \'U Sales Person\'[Πωλητής],',
     '  "Group1", \'U Item Family Code\'[ItemFamilyCode (groups)],',
     '  "Group2", \'UBussiness\'[BusinessUnit],',
     '  "Month", \'U Months\'[Month],',
@@ -137,7 +144,7 @@ export function buildBbmSales2026Query(areaName: string): string {
     '  "VCY", [VCY],',
     '  "TCY", [TCY]',
     ")",
-    "ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]",
+    "ORDER BY [SellerCode], [Group1], [Group2], [Month]",
   ]);
 }
 
@@ -164,83 +171,32 @@ export function buildBbmTrendQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "Area", \'U Sales Person\'[Area],',
-    '  "Team", \'U Sales Person\'[Team],',
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
     '  "Group1", \'U Item Family Code\'[ItemFamilyCode (groups)],',
     '  "Group2", \'UBussiness\'[BusinessUnit],',
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
-    '  "VTrend", [VTrend],',
-    '  "CURRENCY", [CURRENCY]',
+    '  "Currency", [CURRENCY],',
+    '  "VTrend", [VTrend]',
     ")",
-    "ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]",
+    "ORDER BY [SellerCode], [Group1], [Group2]",
   ]);
 }
 
 export function normalizeBbmSales2025Rows(
   response: PowerBiExecuteQueriesResponse,
-): BbmSalesRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => {
-    const vlc =
-      readNumber(row, "VLC") ??
-      readNumber(row, "VLY") ??
-      readNumber(row, "VCY");
-
-    return {
-      area: readString(row, "Area"),
-      team: readString(row, "Team"),
-      sellerCode: readString(row, "SellerCode"),
-      sellerName: readString(row, "SellerName"),
-      group1: readString(row, "Group1"),
-      group2: readString(row, "Group2"),
-      month: readString(row, "Month"),
-      reportCode: readString(row, "REPORT_CODE"),
-      reportDesc: readString(row, "REPORT_DESC"),
-      vcy: vlc,
-      vlc,
-    };
-  });
+): LastYearSalesRow[] {
+  return normalizeLastYearSalesRows(response);
 }
 
 export function normalizeBbmSales2026Rows(
   response: PowerBiExecuteQueriesResponse,
-): BbmSalesRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    sellerName: readString(row, "SellerName"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    month: readString(row, "Month"),
-    closedMonthStatus: readString(row, "ClosedMonthStatus"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vcy: readNumber(row, "VCY"),
-    vlc: null,
-    tcy: readNumber(row, "TCY"),
-  }));
+): CurrentYearSalesRow[] {
+  return normalizeCurrentYearSalesRows(response);
 }
 
 export function normalizeBbmTrendRows(
   response: PowerBiExecuteQueriesResponse,
-): BbmTrendRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    vTrend: readNumber(row, "VTrend"),
-  }));
+): TrendSalesRow[] {
+  return normalizeTrendSalesRows(response);
 }

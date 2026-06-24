@@ -1,4 +1,16 @@
 import {
+  normalizeCurrentYearSalesRows,
+  type CurrentYearSalesRow,
+} from "@/lib/bi-reports/currentYearSales";
+import {
+  normalizeLastYearSalesRows,
+  type LastYearSalesRow,
+} from "@/lib/bi-reports/lastYearSales";
+import {
+  normalizeTrendSalesRows,
+  type TrendSalesRow,
+} from "@/lib/bi-reports/trendSales";
+import {
   escapeDaxString,
   joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
@@ -67,20 +79,24 @@ function readNumber(row: Record<string, unknown>, key: string): number | null {
   return toNullableNumber(row[`[${key}]`] ?? row[key]);
 }
 
-function getCovidienSalesQueryContext(areaName: string) {
-  const area = escapeDaxString(areaName);
-  const businessUnit = escapeDaxString(COVIDIEN_BUSINESS_UNIT);
-  const excludedDocumentTypes = quoteDaxStrings(
-    COVIDIEN_EXCLUDED_DOCUMENT_TYPES,
-  );
-  const familyGroups = quoteDaxStrings(COVIDIEN_FAMILY_GROUPS);
-
-  return { area, businessUnit, excludedDocumentTypes, familyGroups };
+function getCovidienQueryConstants() {
+  return {
+    businessUnit: escapeDaxString(COVIDIEN_BUSINESS_UNIT),
+    excludedDocumentTypes: quoteDaxStrings(COVIDIEN_EXCLUDED_DOCUMENT_TYPES),
+    familyGroups: quoteDaxStrings(COVIDIEN_FAMILY_GROUPS),
+  };
 }
 
-export function buildCovidienSalesLastYearQuery(areaName: string): string {
-  const { area, businessUnit, excludedDocumentTypes, familyGroups } =
-    getCovidienSalesQueryContext(areaName);
+function getCovidienSalesQueryContext(areaName: string) {
+  return {
+    area: escapeDaxString(areaName),
+    ...getCovidienQueryConstants(),
+  };
+}
+
+export function buildCovidienSalesLastYearQuery(_areaName: string): string {
+  const { businessUnit, excludedDocumentTypes, familyGroups } =
+    getCovidienQueryConstants();
 
   return joinDaxQuery([
     "DEFINE",
@@ -91,7 +107,6 @@ export function buildCovidienSalesLastYearQuery(areaName: string): string {
     "  'U Sales Person'[Πωλητής],",
     "  'U Family'[Family Group],",
     "  'U Months'[Month],",
-    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
     "  FILTER('Calendar', 'Calendar'[Year] = 2025),",
     '  "REPORT_CODE", "P07VALL-VLY",',
@@ -103,10 +118,7 @@ export function buildCovidienSalesLastYearQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    "  \"Area\", 'U Sales Person'[Area],",
-    "  \"Team\", 'U Sales Person'[Team],",
-    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
-    "  \"SellerName\", 'U Sales Person'[Πωλητής],",
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
     "  \"Group1\", 'U Family'[Family Group],",
     '  "Group2", "COVIDIEN",',
     "  \"Month\", 'U Months'[Month],",
@@ -115,7 +127,7 @@ export function buildCovidienSalesLastYearQuery(areaName: string): string {
     '  "Currency", [Currency],',
     '  "VLY", [VLY]',
     ")",
-    "ORDER BY [Area], [Team], [SellerName], [Group1], [Month]",
+    "ORDER BY [SellerCode], [Group1], [Month]",
   ]);
 }
 
@@ -145,10 +157,7 @@ export function buildCovidienSalesQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    "  \"Area\", 'U Sales Person'[Area],",
-    "  \"Team\", 'U Sales Person'[Team],",
     "  \"SellerCode\", 'U Sales Person'[SellerCode],",
-    "  \"SellerName\", 'U Sales Person'[Πωλητής],",
     "  \"Group1\", 'U Family'[Family Group],",
     '  "Group2", "COVIDIEN",',
     "  \"Month\", 'U Months'[Month],",
@@ -159,7 +168,7 @@ export function buildCovidienSalesQuery(areaName: string): string {
     '  "VCY", [VCY],',
     '  "TCY", [TCY]',
     ")",
-    "ORDER BY [Area], [Team], [SellerName], [Group1], [Month]",
+    "ORDER BY [SellerCode], [Group1], [Month]",
   ]);
 }
 
@@ -184,8 +193,6 @@ export function buildCovidienTrendQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    "  \"Area\", 'U Sales Person'[Area],",
-    "  \"Team\", 'U Sales Person'[Team],",
     "  \"SellerCode\", 'U Sales Person'[SellerCode],",
     "  \"Group1\", 'U Family'[Family Group],",
     '  "Group2", "COVIDIEN",',
@@ -194,77 +201,24 @@ export function buildCovidienTrendQuery(areaName: string): string {
     '  "Currency", [Currency],',
     '  "VTrend", [VTrend]',
     ")",
-    "ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]",
+    "ORDER BY [SellerCode], [Group1], [Group2]",
   ]);
 }
 
 export function normalizeCovidienSales2025Rows(
   response: PowerBiExecuteQueriesResponse,
-): CovidienSalesRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => {
-    const vlc =
-      readNumber(row, "VLC") ??
-      readNumber(row, "VLY") ??
-      readNumber(row, "VCY");
-
-    return {
-      area: readString(row, "Area"),
-      team: readString(row, "Team"),
-      sellerCode: readString(row, "SellerCode"),
-      sellerName: readString(row, "SellerName"),
-      group1: readString(row, "Group1"),
-      group2: readString(row, "Group2"),
-      month: readString(row, "Month"),
-      closedMonthStatus: "",
-      reportCode: readString(row, "REPORT_CODE"),
-      reportDesc: readString(row, "REPORT_DESC"),
-      currency: readNumber(row, "Currency"),
-      vcy: vlc,
-      vlc,
-      tcy: null,
-    };
-  });
+): LastYearSalesRow[] {
+  return normalizeLastYearSalesRows(response);
 }
 
 export function normalizeCovidienSalesRows(
   response: PowerBiExecuteQueriesResponse,
-): CovidienSalesRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    sellerName: readString(row, "SellerName"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    month: readString(row, "Month"),
-    closedMonthStatus: readString(row, "ClosedMonthStatus"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vcy: readNumber(row, "VCY"),
-    vlc: null,
-    tcy: readNumber(row, "TCY"),
-  }));
+): CurrentYearSalesRow[] {
+  return normalizeCurrentYearSalesRows(response);
 }
 
 export function normalizeCovidienTrendRows(
   response: PowerBiExecuteQueriesResponse,
-): CovidienTrendRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vTrend: readNumber(row, "VTrend"),
-  }));
+): TrendSalesRow[] {
+  return normalizeTrendSalesRows(response);
 }

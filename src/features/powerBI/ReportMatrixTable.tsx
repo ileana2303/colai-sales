@@ -447,8 +447,7 @@ export function ReportMatrixTable({
     [comparisonDetailRows],
   );
   const group3Rows = useMemo(
-    () =>
-      hasGroup3 ? buildReportMatrixGroup3Rows(comparisonDetailRows) : [],
+    () => (hasGroup3 ? buildReportMatrixGroup3Rows(comparisonDetailRows) : []),
     [comparisonDetailRows, hasGroup3],
   );
   const teamRows = useMemo(
@@ -599,7 +598,7 @@ export function ReportMatrixTable({
         return sellerRows.length ? [row, ...sellerRows] : [row];
       }
 
-      if (!canExpandTeam(row) || !expandedTeamKeys.has(row.key)) {
+      if (canExpandTeam(row) && !expandedTeamKeys.has(row.key)) {
         return [row];
       }
 
@@ -614,17 +613,18 @@ export function ReportMatrixTable({
         return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
       }
 
-      if (!canExpandGroup3(row) || expandedGroup3Keys.has(row.key)) {
-        return [row, ...expandedTeamRows];
+      if (canExpandGroup3(row) && !expandedGroup3Keys.has(row.key)) {
+        return [row];
       }
 
-      return [row];
+      return [row, ...expandedTeamRows];
     };
 
     const renderCategoryBranch = (row: ReportMatrixRow) => {
       if (hasGroup3) {
         const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
-        const expandedGroup3Rows = groupedGroup3Rows.flatMap(renderGroup3Branch);
+        const expandedGroup3Rows =
+          groupedGroup3Rows.flatMap(renderGroup3Branch);
 
         if (effectiveSellerFilter) {
           return expandedGroup3Rows.length
@@ -632,11 +632,11 @@ export function ReportMatrixTable({
             : [row];
         }
 
-        if (!canExpandCategory(row) || expandedCategoryKeys.has(row.key)) {
-          return [row, ...expandedGroup3Rows];
+        if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
+          return [row];
         }
 
-        return [row];
+        return [row, ...expandedGroup3Rows];
       }
 
       const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
@@ -646,7 +646,7 @@ export function ReportMatrixTable({
         return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
       }
 
-      if (!canExpandCategory(row) || !expandedCategoryKeys.has(row.key)) {
+      if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
         return [row];
       }
 

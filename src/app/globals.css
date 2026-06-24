@@ -827,7 +827,6 @@ html.dark .app-header-user__role {
 .report-matrix__detail-label {
   display: block;
   min-width: 0;
-  padding-left: 1.35rem;
 }
 
 .report-matrix__section-heading {

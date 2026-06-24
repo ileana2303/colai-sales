@@ -1,4 +1,16 @@
 import {
+  normalizeCurrentYearSalesRows,
+  type CurrentYearSalesRow,
+} from "@/lib/bi-reports/currentYearSales";
+import {
+  normalizeLastYearSalesRows,
+  type LastYearSalesRow,
+} from "@/lib/bi-reports/lastYearSales";
+import {
+  normalizeTrendSalesRows,
+  type TrendSalesRow,
+} from "@/lib/bi-reports/trendSales";
+import {
   joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
@@ -113,10 +125,7 @@ function buildPorgesSalesCurrentYearBaseQuery(_areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "Area", \'U Sales Person\'[Area],',
-    '  "Team", \'U Sales Person\'[Team],',
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "SellerName", \'U Sales Person\'[Πωλητής],',
     '  "Group1", \'U Item Family Code\'[Porges Group],',
     '  "Group2", \'U Item Family Code\'[Porges SUB],',
     '  "Group3", \'U Item Family Code\'[ItemFamilyCode (groups)],',
@@ -128,7 +137,7 @@ function buildPorgesSalesCurrentYearBaseQuery(_areaName: string): string {
     '  "VCY", [VCY],',
     '  "TCY", [TCY]',
     ")",
-    "ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Group3], [Month]",
+    "ORDER BY [SellerCode], [Group1], [Group2], [Group3], [Month]",
   ]);
 }
 
@@ -161,10 +170,7 @@ export function buildPorgesTrendQuery(_areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "Area", \'U Sales Person\'[Area],',
-    '  "Team", \'U Sales Person\'[Team],',
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "SellerName", \'U Sales Person\'[Πωλητής],',
     '  "Group1", \'U Item Family Code\'[Porges Group],',
     '  "Group2", \'U Item Family Code\'[Porges SUB],',
     '  "Group3", \'U Item Family Code\'[ItemFamilyCode (groups)],',
@@ -173,71 +179,24 @@ export function buildPorgesTrendQuery(_areaName: string): string {
     '  "Currency", [Currency],',
     '  "VTrend", [VTrend]',
     ")",
-    "ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Group3]",
+    "ORDER BY [SellerCode], [Group1], [Group2], [Group3]",
   ]);
 }
 
 export function normalizePorgesSales2025Rows(
   response: PowerBiExecuteQueriesResponse,
-): PorgesSalesRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    sellerName: readString(row, "SellerName"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    group3: readOptionalString(row, "Group3"),
-    month: readString(row, "Month"),
-    closedMonthStatus: "",
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vcy: readNumber(row, "VLY") ?? readNumber(row, "VCY"),
-    tcy: null,
-  }));
+): LastYearSalesRow[] {
+  return normalizeLastYearSalesRows(response);
 }
 
 export function normalizePorgesSalesRows(
   response: PowerBiExecuteQueriesResponse,
-): PorgesSalesRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    sellerName: readString(row, "SellerName"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    group3: readOptionalString(row, "Group3"),
-    month: readString(row, "Month"),
-    closedMonthStatus: readString(row, "ClosedMonthStatus"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vcy: readNumber(row, "VCY"),
-    tcy: readNumber(row, "TCY"),
-  }));
+): CurrentYearSalesRow[] {
+  return normalizeCurrentYearSalesRows(response);
 }
 
 export function normalizePorgesTrendRows(
   response: PowerBiExecuteQueriesResponse,
-): PorgesTrendRow[] {
-  const rows = response.results?.[0]?.tables?.[0]?.rows ?? [];
-
-  return rows.map((row) => ({
-    area: readString(row, "Area"),
-    team: readString(row, "Team"),
-    sellerCode: readString(row, "SellerCode"),
-    group1: readString(row, "Group1"),
-    group2: readString(row, "Group2"),
-    group3: readOptionalString(row, "Group3"),
-    reportCode: readString(row, "REPORT_CODE"),
-    reportDesc: readString(row, "REPORT_DESC"),
-    currency: readNumber(row, "Currency"),
-    vTrend: readNumber(row, "VTrend"),
-  }));
+): TrendSalesRow[] {
+  return normalizeTrendSalesRows(response);
 }

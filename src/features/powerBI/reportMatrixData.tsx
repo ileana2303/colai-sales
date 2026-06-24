@@ -16,6 +16,7 @@ import {
   findPowerBiSellerByCode,
   type PowerBiSellerRow,
 } from "@/lib/bi-reports/sellers";
+import { formatPercentGR } from "@/lib/utils/number";
 import type { ReactNode } from "react";
 
 export type PowerBiMatrixSourceRow = {
@@ -30,6 +31,7 @@ export type PowerBiMatrixSourceRow = {
   currency?: number | null;
   tcy?: number | null;
   vcy?: number | null;
+  vly?: number | null;
   vlc?: number | null;
   vTrend?: number | null;
 };
@@ -166,10 +168,7 @@ function formatMatrixValue(
 function formatMatrixPercent(ratio: number | null | undefined) {
   if (ratio == null || !Number.isFinite(ratio)) return EMPTY_VALUE;
   if (ratio === 0) return "0%";
-  return `${new Intl.NumberFormat("el-GR", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(ratio * 100)}%`;
+  return `${formatPercentGR(ratio * 100)}%`;
 }
 
 function formatCoverPercent(target: number, result: number) {
@@ -409,7 +408,7 @@ function buildLyByMatrixMonth(previousRows: PowerBiMatrixSourceRow[]) {
     if (!month) continue;
 
     const key = `${getMatrixKey(row)}|${monthLookupKey(month)}`;
-    lookup.set(key, (lookup.get(key) ?? 0) + (row.vcy ?? 0));
+    lookup.set(key, (lookup.get(key) ?? 0) + (row.vly ?? row.vcy ?? 0));
   }
 
   return lookup;

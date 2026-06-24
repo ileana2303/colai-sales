@@ -27,6 +27,9 @@ export type BiReportPowerBiTargetKey =
   | "porges_sales_last_year"
   | "porges_sales_current_year"
   | "porges_trend_current_year"
+  | "amoena_sales_last_year"
+  | "amoena_sales_current_year"
+  | "amoena_trend_current_year"
   | "sellers";
 
 const MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID =
@@ -72,6 +75,10 @@ const BI_REPORT_DATASET_IDS: Record<BiReportPowerBiTargetKey, string> = {
     MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
   porges_trend_current_year:
     MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  amoena_sales_current_year:
+    MAVROGENIS_AMOENA_ABBOTT_SALES_REPORTS_CURRENT_YEAR,
+  amoena_sales_last_year: MAVROGENIS_AMOENA_ABBOTT_SALES_REPORTS_LAST_YEAR,
+  amoena_trend_current_year: MAVROGENIS_BBM_SALES_REPORTS_ALL,
   sellers: MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
 };
 
