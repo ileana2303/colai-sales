@@ -720,6 +720,13 @@ html.dark .app-header-user__role {
   position: sticky;
 }
 
+.report-matrix__group2-cell {
+  position: sticky;
+  z-index: 7;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
 .report-matrix__brand-cell {
   z-index: 10;
   border-right: 1px solid var(--border);
@@ -964,6 +971,42 @@ html.dark .app-header-user__role {
   background: color-mix(in oklch, var(--muted) 46%, var(--background) 54%);
 }
 
+.report-matrix__row--group2 td,
+.report-matrix__row--group2 .report-matrix__cell,
+.report-matrix__row--group2 .report-matrix__category-cell,
+.report-matrix__row--group2 .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--muted) 84%, var(--background) 16%);
+}
+
+.report-matrix__row--group2 .report-matrix__group2-cell {
+  background: color-mix(in oklch, #bbf7d0 70%, var(--background) 30%);
+  font-weight: 900;
+}
+
+.report-matrix__row--group2 .report-matrix__group2-cell {
+  color: #052e16;
+}
+
+.report-matrix tbody tr.report-matrix__row--group2:hover td,
+.report-matrix tbody tr.report-matrix__row--group2:hover .report-matrix__cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--group2:hover
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--group2:hover
+  .report-matrix__dimension-cell {
+  background: color-mix(in oklch, var(--muted) 84%, var(--background) 16%);
+}
+
+.report-matrix
+  tbody
+  tr.report-matrix__row--group2:hover
+  .report-matrix__group2-cell {
+  background: color-mix(in oklch, #bbf7d0 70%, var(--background) 30%);
+}
+
 .report-matrix__row--category td,
 .report-matrix__row--category .report-matrix__category-cell,
 .report-matrix__row--category .report-matrix__dimension-cell {
@@ -1113,6 +1156,20 @@ html[data-bs-theme="dark"]
   .report-matrix__row--category
   .report-matrix__dimension-cell {
   background: color-mix(in oklch, #1e3a8a 36%, var(--background) 64%);
+}
+
+html.dark .report-matrix__row--group2 .report-matrix__group2-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group2
+  .report-matrix__group2-cell {
+  background: color-mix(in oklch, #14532d 54%, var(--background) 46%);
+}
+
+html.dark .report-matrix__row--group2 .report-matrix__group2-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group2
+  .report-matrix__group2-cell {
+  color: #dcfce7;
 }
 
 html.dark .report-matrix__row--team td,

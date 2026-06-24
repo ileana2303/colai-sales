@@ -90,6 +90,16 @@ type ReportMatrixSectionSummaries = Partial<
   Record<"current-year" | "previous-period", ReportMatrixSectionSummary>
 >;
 
+type CurrencySplitRowOptions = {
+  aggregates: MatrixAggregate[];
+  keyPrefix: string;
+  labelResolver: (
+    currency: TotalCurrencyBucket,
+    showCurrencyLabel: boolean,
+  ) => string;
+  parentKey?: string;
+};
+
 const currencyFormatter = new Intl.NumberFormat("el-GR", {
   currency: "EUR",
   maximumFractionDigits: 0,
@@ -226,46 +236,10 @@ export function buildReportMatrixTotalRows(
     .filter((row) => !row.isTotal && row.rowKind !== "category" && row.metrics)
     .map((row) => aggregateFromMetrics(row.metrics!));
 
-  if (!aggregates.length) return [];
-
-  const aggregatesByCurrency = new Map<
-    TotalCurrencyBucket,
-    MatrixAggregate[]
-  >();
-
-  for (const aggregate of aggregates) {
-    const currency = getTotalCurrencyBucket(aggregate.currency);
-    const existing = aggregatesByCurrency.get(currency);
-
-    if (existing) {
-      existing.push(aggregate);
-    } else {
-      aggregatesByCurrency.set(currency, [aggregate]);
-    }
-  }
-
-  const visibleCurrencies = TOTAL_CURRENCY_BUCKETS.filter(
-    (currency) => (aggregatesByCurrency.get(currency) ?? []).length > 0,
-  );
-
-  return visibleCurrencies.map((currency) => {
-    const totalAggregate = buildTotalAggregate(
-      aggregatesByCurrency.get(currency) ?? [],
-    );
-
-    totalAggregate.group1 = getTotalRowLabel(
-      currency,
-      visibleCurrencies.length > 1,
-    );
-    totalAggregate.group2 = "Σύνολο";
-    totalAggregate.team = "";
-    totalAggregate.sellerCode = "";
-    totalAggregate.sellerName = "";
-    totalAggregate.currency = currency;
-
-    return aggregateToMatrixRow(totalAggregate, true, {
-      key: visibleCurrencies.length > 1 ? `total:${currency}` : "total",
-    });
+  return buildCurrencySplitTotalRows({
+    aggregates,
+    keyPrefix: "total",
+    labelResolver: getTotalRowLabel,
   });
 }
 
@@ -391,12 +365,20 @@ function getCategoryLabel(aggregate: MatrixAggregate, isTotal = false) {
   return aggregate.group1 || "-";
 }
 
-function getCategoryRowKey(category: string) {
-  return `category:${normalizeKeyPart(category)}`;
+function getGroup2Label(aggregate: MatrixAggregate) {
+  return aggregate.group2 || "";
 }
 
-function getTeamRowKey(category: string, team: string) {
-  return `team:${normalizeKeyPart(category)}|${normalizeKeyPart(team)}`;
+function getGroup2RowKey(group2: string) {
+  return `group2:${normalizeKeyPart(group2) || "EMPTY"}`;
+}
+
+function getCategoryRowKey(group2: string, category: string) {
+  return `category:${normalizeKeyPart(group2)}|${normalizeKeyPart(category)}`;
+}
+
+function getTeamRowKey(group2: string, category: string, team: string) {
+  return `team:${normalizeKeyPart(group2)}|${normalizeKeyPart(category)}|${normalizeKeyPart(team)}`;
 }
 
 function getCategoryOrderIndex(
@@ -469,6 +451,77 @@ function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
 
   total.openMonthTcyByMonth = mergeOpenMonthMaps(aggregates);
   return total;
+}
+
+function buildCurrencySplitTotalRows({
+  aggregates,
+  keyPrefix,
+  labelResolver,
+  parentKey,
+}: CurrencySplitRowOptions): ReportMatrixRow[] {
+  if (!aggregates.length) return [];
+
+  const aggregatesByCurrency = new Map<
+    TotalCurrencyBucket,
+    MatrixAggregate[]
+  >();
+
+  for (const aggregate of aggregates) {
+    const currency = getTotalCurrencyBucket(aggregate.currency);
+    const existing = aggregatesByCurrency.get(currency);
+
+    if (existing) {
+      existing.push(aggregate);
+    } else {
+      aggregatesByCurrency.set(currency, [aggregate]);
+    }
+  }
+
+  const visibleCurrencies = TOTAL_CURRENCY_BUCKETS.filter(
+    (currency) => (aggregatesByCurrency.get(currency) ?? []).length > 0,
+  );
+
+  return visibleCurrencies.map((currency) => {
+    const totalAggregate = buildTotalAggregate(
+      aggregatesByCurrency.get(currency) ?? [],
+    );
+
+    totalAggregate.group1 = labelResolver(
+      currency,
+      visibleCurrencies.length > 1,
+    );
+    totalAggregate.group2 = "Σύνολο";
+    totalAggregate.team = "";
+    totalAggregate.sellerCode = "";
+    totalAggregate.sellerName = "";
+    totalAggregate.currency = currency;
+
+    return aggregateToMatrixRow(totalAggregate, true, {
+      key:
+        visibleCurrencies.length > 1 ? `${keyPrefix}:${currency}` : keyPrefix,
+      parentKey,
+      rowKind: "total",
+    });
+  });
+}
+
+function createEmptyMetricValues(): ReportMatrixRow["values"] {
+  return {
+    currentCover: false,
+    currentDiff: false,
+    currentTarget: false,
+    currentTrend: false,
+    extraMonthlyTarget: false,
+    monthlyTarget: false,
+    newMonthlyTarget: false,
+    previousCover: false,
+    previousDiff: false,
+    previousResult: false,
+    previousTarget: false,
+    yearComparison: false,
+    yearDiff: false,
+    yearResult: false,
+  };
 }
 
 function getClosedPeriodMetrics(aggregate: MatrixAggregate) {
@@ -545,6 +598,7 @@ function aggregateToMatrixRow(
     filterValues: includeFilterValues
       ? {
           category,
+          group2: aggregate.group2,
           team: aggregate.team || "",
           seller: `${aggregate.sellerCode}|${aggregate.sellerName}`,
           sellerLabel,
@@ -599,68 +653,74 @@ function aggregateToMatrixRow(
   };
 }
 
-export function buildReportMatrixCategoryRows(
-  rows: ReportMatrixRow[],
-): ReportMatrixRow[] {
-  const groupedRows = new Map<string, ReportMatrixRow[]>();
-
-  for (const row of rows) {
-    if (row.isTotal || row.rowKind === "category" || !row.metrics) continue;
-
-    const category = row.filterValues?.category || String(row.category ?? "-");
-    const existing = groupedRows.get(category);
-
-    if (existing) {
-      existing.push(row);
-    } else {
-      groupedRows.set(category, [row]);
-    }
-  }
-
-  return [...groupedRows.entries()].map(([category, childRows]) => {
-    const childAggregates = childRows.map((row) =>
-      aggregateFromMetrics(row.metrics!),
-    );
-    const aggregate = buildTotalAggregate(childAggregates);
-
-    aggregate.group1 = category;
-    aggregate.group2 = "Σύνολο";
-    aggregate.team = "";
-    aggregate.sellerCode = "";
-    aggregate.sellerName = "";
-
-    return aggregateToMatrixRow(aggregate, false, {
-      childCount: childRows.length,
-      key: getCategoryRowKey(category),
-      leadingValues: {
-        team: false,
-        seller: false,
-      },
-      rowKind: "category",
-    });
-  });
-}
-
-export function buildReportMatrixTeamRows(
+export function buildReportMatrixGroup2Rows(
   rows: ReportMatrixRow[],
 ): ReportMatrixRow[] {
   const groupedRows = new Map<
     string,
-    { category: string; team: string; childRows: ReportMatrixRow[] }
+    { group2: string; childRows: ReportMatrixRow[] }
   >();
 
   for (const row of rows) {
-    if (row.isTotal || row.rowKind === "category" || !row.metrics) continue;
+    if (row.isTotal || row.rowKind === "group2" || !row.metrics) continue;
 
-    const category = row.filterValues?.category || String(row.category ?? "-");
-    const team = row.filterValues?.team || "";
-    const key = getTeamRowKey(category, team);
+    const group2 = row.filterValues?.group2 || "";
+    if (!group2) continue;
+
+    const key = getGroup2RowKey(group2);
     const existing = groupedRows.get(key);
 
     if (existing) {
       existing.childRows.push(row);
     } else {
-      groupedRows.set(key, { category, team, childRows: [row] });
+      groupedRows.set(key, { group2, childRows: [row] });
+    }
+  }
+
+  return [...groupedRows.entries()].map(([key, value]) => ({
+    key,
+    category: value.group2,
+    childCount: new Set(
+      value.childRows.map(
+        (row) => row.filterValues?.category || String(row.category ?? "-"),
+      ),
+    ).size,
+    leadingValues: {
+      team: false,
+      seller: false,
+    },
+    rowKind: "group2",
+    values: createEmptyMetricValues(),
+  }));
+}
+
+export function buildReportMatrixCategoryRows(
+  rows: ReportMatrixRow[],
+): ReportMatrixRow[] {
+  const groupedRows = new Map<
+    string,
+    { category: string; group2: string; childRows: ReportMatrixRow[] }
+  >();
+
+  for (const row of rows) {
+    if (
+      row.isTotal ||
+      row.rowKind === "category" ||
+      row.rowKind === "group2" ||
+      !row.metrics
+    ) {
+      continue;
+    }
+
+    const category = row.filterValues?.category || String(row.category ?? "-");
+    const group2 = row.filterValues?.group2 || "";
+    const key = getCategoryRowKey(group2, category);
+    const existing = groupedRows.get(key);
+
+    if (existing) {
+      existing.childRows.push(row);
+    } else {
+      groupedRows.set(key, { category, group2, childRows: [row] });
     }
   }
 
@@ -671,7 +731,68 @@ export function buildReportMatrixTeamRows(
     const aggregate = buildTotalAggregate(childAggregates);
 
     aggregate.group1 = value.category;
-    aggregate.group2 = "Σύνολο";
+    aggregate.group2 = value.group2;
+    aggregate.team = "";
+    aggregate.sellerCode = "";
+    aggregate.sellerName = "";
+
+    return aggregateToMatrixRow(aggregate, false, {
+      childCount: value.childRows.length,
+      key,
+      leadingValues: {
+        team: false,
+        seller: false,
+      },
+      parentKey: value.group2 ? getGroup2RowKey(value.group2) : undefined,
+      rowKind: "category",
+    });
+  });
+}
+
+export function buildReportMatrixTeamRows(
+  rows: ReportMatrixRow[],
+): ReportMatrixRow[] {
+  const groupedRows = new Map<
+    string,
+    {
+      category: string;
+      group2: string;
+      team: string;
+      childRows: ReportMatrixRow[];
+    }
+  >();
+
+  for (const row of rows) {
+    if (
+      row.isTotal ||
+      row.rowKind === "category" ||
+      row.rowKind === "group2" ||
+      !row.metrics
+    ) {
+      continue;
+    }
+
+    const category = row.filterValues?.category || String(row.category ?? "-");
+    const group2 = row.filterValues?.group2 || "";
+    const team = row.filterValues?.team || "";
+    const key = getTeamRowKey(group2, category, team);
+    const existing = groupedRows.get(key);
+
+    if (existing) {
+      existing.childRows.push(row);
+    } else {
+      groupedRows.set(key, { category, group2, team, childRows: [row] });
+    }
+  }
+
+  return [...groupedRows.entries()].map(([key, value]) => {
+    const childAggregates = value.childRows.map((row) =>
+      aggregateFromMetrics(row.metrics!),
+    );
+    const aggregate = buildTotalAggregate(childAggregates);
+
+    aggregate.group1 = value.category;
+    aggregate.group2 = value.group2;
     aggregate.team = value.team;
     aggregate.sellerCode = "";
     aggregate.sellerName = "";
@@ -682,10 +803,41 @@ export function buildReportMatrixTeamRows(
       leadingValues: {
         seller: false,
       },
-      parentKey: getCategoryRowKey(value.category),
+      parentKey: getCategoryRowKey(value.group2, value.category),
       rowKind: "team",
     });
   });
+}
+
+export function buildReportMatrixGroup2TotalRows(
+  rows: ReportMatrixRow[],
+): ReportMatrixRow[] {
+  const groupedRows = new Map<string, MatrixAggregate[]>();
+
+  for (const row of rows) {
+    if (!row.metrics) continue;
+
+    const group2 = toText(row.filterValues?.group2);
+    if (!group2) continue;
+
+    const existing = groupedRows.get(group2);
+    const aggregate = aggregateFromMetrics(row.metrics);
+
+    if (existing) {
+      existing.push(aggregate);
+    } else {
+      groupedRows.set(group2, [aggregate]);
+    }
+  }
+
+  return [...groupedRows.entries()].flatMap(([group2, aggregates]) =>
+    buildCurrencySplitTotalRows({
+      aggregates,
+      keyPrefix: `group2-total:${normalizeKeyPart(group2)}`,
+      labelResolver: getTotalRowLabel,
+      parentKey: getGroup2RowKey(group2),
+    }),
+  );
 }
 
 export function buildReportMatrixRows({
@@ -730,6 +882,12 @@ export function buildReportMatrixRows({
   }
 
   const sortedAggregates = [...aggregates.values()].sort((left, right) => {
+    const group2Compare = getGroup2Label(left).localeCompare(
+      getGroup2Label(right),
+      "el",
+    );
+    if (group2Compare !== 0) return group2Compare;
+
     const leftOrder = getCategoryOrderIndex(categoryOrder, left.group1);
     const rightOrder = getCategoryOrderIndex(categoryOrder, right.group1);
     if (leftOrder !== rightOrder) {
@@ -757,7 +915,11 @@ export function buildReportMatrixRows({
 
   const detailRows = sortedAggregates.map((aggregate) =>
     aggregateToMatrixRow(aggregate, false, {
-      parentKey: getTeamRowKey(getCategoryLabel(aggregate), aggregate.team),
+      parentKey: getTeamRowKey(
+        getGroup2Label(aggregate),
+        getCategoryLabel(aggregate),
+        aggregate.team,
+      ),
       rowKind: "detail",
     }),
   );

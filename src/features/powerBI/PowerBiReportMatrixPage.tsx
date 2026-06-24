@@ -43,8 +43,15 @@ const matrixQueryOptions = {
   retry: 1,
 } as const;
 
-function getGroup2Label(rows: PowerBiMatrixSourceRow[]) {
-  return rows.find((row) => row.group2?.trim())?.group2?.trim() ?? "";
+function getUniqueGroup2Label(...rowGroups: PowerBiMatrixSourceRow[][]) {
+  const labels = new Set(
+    rowGroups
+      .flat()
+      .map((row) => row.group2?.trim() ?? "")
+      .filter(Boolean),
+  );
+
+  return labels.size === 1 ? [...labels][0]! : "";
 }
 
 async function fetchMatrixPayload({
@@ -80,10 +87,11 @@ async function fetchMatrixPayload({
 
   return {
     area: current.area ?? previous.area ?? trend.area ?? "",
-    headerLabel:
-      getGroup2Label(current.records) ||
-      getGroup2Label(previous.records) ||
-      getGroup2Label(trend.records),
+    headerLabel: getUniqueGroup2Label(
+      current.records,
+      previous.records,
+      trend.records,
+    ),
     currentRows: current.records,
     previousRows: previous.records,
     trendRows: trend.records,
