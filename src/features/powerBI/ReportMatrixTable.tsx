@@ -15,9 +15,11 @@ import type { FilterOption } from "@/features/powerBI/PowerBiTable/types";
 import { exportReportMatrixToExcel } from "@/features/powerBI/reportMatrixExport";
 import {
   buildReportMatrixGroup2Rows,
+  buildReportMatrixGroup3Rows,
   buildReportMatrixCategoryRows,
   buildReportMatrixTeamRows,
   buildReportMatrixTotalRows,
+  reportMatrixDetailRowsHaveGroup3,
 } from "@/features/powerBI/reportMatrixData";
 
 export type ReportMatrixTone =
@@ -79,6 +81,7 @@ export type ReportMatrixRow = {
   filterValues?: {
     category: string;
     group2: string;
+    group3?: string;
     seller: string;
     sellerLabel: string;
     team: string;
@@ -86,7 +89,7 @@ export type ReportMatrixRow = {
   leadingValues?: Record<string, ReactNode>;
   metrics?: ReportMatrixRowMetrics;
   parentKey?: string;
-  rowKind?: "category" | "detail" | "group2" | "team" | "total";
+  rowKind?: "category" | "detail" | "group2" | "group3" | "team" | "total";
   values: Record<string, ReactNode>;
   cellTones?: Record<string, ReportMatrixTone>;
   isTotal?: boolean;
@@ -200,6 +203,10 @@ function canExpandGroup2(row: ReportMatrixRow) {
   return row.rowKind === "group2" && (row.childCount ?? 0) > 1;
 }
 
+function canExpandGroup3(row: ReportMatrixRow) {
+  return row.rowKind === "group3" && (row.childCount ?? 0) > 1;
+}
+
 function canExpandTeam(row: ReportMatrixRow) {
   return row.rowKind === "team" && (row.childCount ?? 0) > 1;
 }
@@ -256,6 +263,9 @@ export function ReportMatrixTable({
   const [teamFilter, setTeamFilter] = useState("");
   const [sellerFilter, setSellerFilter] = useState("");
   const [expandedGroup2Keys, setExpandedGroup2Keys] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [expandedGroup3Keys, setExpandedGroup3Keys] = useState<Set<string>>(
     () => new Set(),
   );
   const [expandedCategoryKeys, setExpandedCategoryKeys] = useState<Set<string>>(
@@ -411,6 +421,10 @@ export function ReportMatrixTable({
     selectedSellerTeams,
     teamFilter,
   ]);
+  const hasGroup3 = useMemo(
+    () => reportMatrixDetailRowsHaveGroup3(detailRows),
+    [detailRows],
+  );
   const hasMultipleGroup2 = useMemo(() => {
     const group2Values = new Set(
       detailRows
@@ -432,6 +446,11 @@ export function ReportMatrixTable({
     () => buildReportMatrixCategoryRows(comparisonDetailRows),
     [comparisonDetailRows],
   );
+  const group3Rows = useMemo(
+    () =>
+      hasGroup3 ? buildReportMatrixGroup3Rows(comparisonDetailRows) : [],
+    [comparisonDetailRows, hasGroup3],
+  );
   const teamRows = useMemo(
     () => buildReportMatrixTeamRows(comparisonDetailRows),
     [comparisonDetailRows],
@@ -444,6 +463,15 @@ export function ReportMatrixTable({
             .filter((row) => canExpandCategory(row))
             .map((row) => row.key),
     [categoryRows, effectiveSellerFilter],
+  );
+  const expandableGroup3Keys = useMemo(
+    () =>
+      effectiveSellerFilter
+        ? []
+        : group3Rows
+            .filter((row) => canExpandGroup3(row))
+            .map((row) => row.key),
+    [effectiveSellerFilter, group3Rows],
   );
   const expandableTeamKeys = useMemo(
     () =>
@@ -464,12 +492,32 @@ export function ReportMatrixTable({
   const hasExpandableRows =
     expandableGroup2Keys.length > 0 ||
     expandableCategoryKeys.length > 0 ||
+    expandableGroup3Keys.length > 0 ||
     expandableTeamKeys.length > 0;
   const areAllExpandableRowsExpanded =
     hasExpandableRows &&
     expandableGroup2Keys.every((key) => expandedGroup2Keys.has(key)) &&
     expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key)) &&
+    expandableGroup3Keys.every((key) => expandedGroup3Keys.has(key)) &&
     expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
+
+  const group3RowsByCategory = useMemo(() => {
+    const groupedRows = new Map<string, ReportMatrixRow[]>();
+
+    for (const row of group3Rows) {
+      const parentKey = row.parentKey;
+      if (!parentKey) continue;
+
+      const existing = groupedRows.get(parentKey);
+      if (existing) {
+        existing.push(row);
+      } else {
+        groupedRows.set(parentKey, [row]);
+      }
+    }
+
+    return groupedRows;
+  }, [group3Rows]);
 
   const teamRowsByCategory = useMemo(() => {
     const groupedRows = new Map<string, ReportMatrixRow[]>();
@@ -507,6 +555,24 @@ export function ReportMatrixTable({
     return groupedRows;
   }, [categoryRows]);
 
+  const teamRowsByGroup3 = useMemo(() => {
+    const groupedRows = new Map<string, ReportMatrixRow[]>();
+
+    for (const row of teamRows) {
+      const parentKey = row.parentKey;
+      if (!parentKey) continue;
+
+      const existing = groupedRows.get(parentKey);
+      if (existing) {
+        existing.push(row);
+      } else {
+        groupedRows.set(parentKey, [row]);
+      }
+    }
+
+    return groupedRows;
+  }, [teamRows]);
+
   const detailRowsByTeam = useMemo(() => {
     const groupedRows = new Map<string, ReportMatrixRow[]>();
 
@@ -526,22 +592,55 @@ export function ReportMatrixTable({
   }, [filteredDetailRows]);
 
   const bodyRows = useMemo(() => {
-    const renderCategoryBranch = (row: ReportMatrixRow) => {
-      const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
+    const renderTeamBranch = (row: ReportMatrixRow) => {
+      const sellerRows = detailRowsByTeam.get(row.key) ?? [];
 
-      const expandedTeamRows = categoryTeamRows.flatMap((teamRow) => {
-        const sellerRows = detailRowsByTeam.get(teamRow.key) ?? [];
+      if (effectiveSellerFilter) {
+        return sellerRows.length ? [row, ...sellerRows] : [row];
+      }
+
+      if (!canExpandTeam(row) || !expandedTeamKeys.has(row.key)) {
+        return [row];
+      }
+
+      return [row, ...sellerRows];
+    };
+
+    const renderGroup3Branch = (row: ReportMatrixRow) => {
+      const group3TeamRows = teamRowsByGroup3.get(row.key) ?? [];
+      const expandedTeamRows = group3TeamRows.flatMap(renderTeamBranch);
+
+      if (effectiveSellerFilter) {
+        return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
+      }
+
+      if (!canExpandGroup3(row) || expandedGroup3Keys.has(row.key)) {
+        return [row, ...expandedTeamRows];
+      }
+
+      return [row];
+    };
+
+    const renderCategoryBranch = (row: ReportMatrixRow) => {
+      if (hasGroup3) {
+        const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
+        const expandedGroup3Rows = groupedGroup3Rows.flatMap(renderGroup3Branch);
 
         if (effectiveSellerFilter) {
-          return sellerRows.length ? [teamRow, ...sellerRows] : [teamRow];
+          return expandedGroup3Rows.length
+            ? [row, ...expandedGroup3Rows]
+            : [row];
         }
 
-        if (!canExpandTeam(teamRow) || !expandedTeamKeys.has(teamRow.key)) {
-          return [teamRow];
+        if (!canExpandCategory(row) || expandedCategoryKeys.has(row.key)) {
+          return [row, ...expandedGroup3Rows];
         }
 
-        return [teamRow, ...sellerRows];
-      });
+        return [row];
+      }
+
+      const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
+      const expandedTeamRows = categoryTeamRows.flatMap(renderTeamBranch);
 
       if (effectiveSellerFilter) {
         return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
@@ -590,10 +689,14 @@ export function ReportMatrixTable({
     effectiveSellerFilter,
     expandedGroup2Keys,
     expandedCategoryKeys,
+    expandedGroup3Keys,
     expandedTeamKeys,
     group2Rows,
+    group3RowsByCategory,
+    hasGroup3,
     hasMultipleGroup2,
     teamRowsByCategory,
+    teamRowsByGroup3,
   ]);
 
   const totalRows = useMemo(
@@ -636,7 +739,22 @@ export function ReportMatrixTable({
     setSellerFilter("");
     setExpandedGroup2Keys(new Set());
     setExpandedCategoryKeys(new Set());
+    setExpandedGroup3Keys(new Set());
     setExpandedTeamKeys(new Set());
+  }
+
+  function toggleGroup3(rowKey: string) {
+    setExpandedGroup3Keys((current) => {
+      const next = new Set(current);
+
+      if (next.has(rowKey)) {
+        next.delete(rowKey);
+      } else {
+        next.add(rowKey);
+      }
+
+      return next;
+    });
   }
 
   function toggleGroup2(rowKey: string) {
@@ -671,17 +789,20 @@ export function ReportMatrixTable({
     const shouldCollapse =
       expandableGroup2Keys.every((key) => expandedGroup2Keys.has(key)) &&
       expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key)) &&
+      expandableGroup3Keys.every((key) => expandedGroup3Keys.has(key)) &&
       expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
 
     if (shouldCollapse) {
       setExpandedGroup2Keys(new Set());
       setExpandedCategoryKeys(new Set());
+      setExpandedGroup3Keys(new Set());
       setExpandedTeamKeys(new Set());
       return;
     }
 
     setExpandedGroup2Keys(new Set(expandableGroup2Keys));
     setExpandedCategoryKeys(new Set(expandableCategoryKeys));
+    setExpandedGroup3Keys(new Set(expandableGroup3Keys));
     setExpandedTeamKeys(new Set(expandableTeamKeys));
   }
 
@@ -728,6 +849,32 @@ export function ReportMatrixTable({
     columnKey: string,
     content: ReactNode,
   ) {
+    if (columnKey === "category" && row.rowKind === "group3") {
+      if (effectiveSellerFilter || !canExpandGroup3(row)) {
+        return content;
+      }
+
+      const isExpanded = expandedGroup3Keys.has(row.key);
+
+      return (
+        <button
+          type="button"
+          className="report-matrix__category-toggle"
+          aria-expanded={isExpanded}
+          onClick={() => toggleGroup3(row.key)}
+        >
+          <AppIcon
+            name={isExpanded ? "bi-chevron-down" : "bi-chevron-right"}
+            className="report-matrix__category-toggle-icon"
+            size={16}
+          />
+          <span className="report-matrix__category-toggle-label">
+            {content}
+          </span>
+        </button>
+      );
+    }
+
     if (columnKey === "category" && row.rowKind === "category") {
       if (effectiveSellerFilter || !canExpandCategory(row)) {
         return content;
@@ -796,6 +943,7 @@ export function ReportMatrixTable({
         className={cn(
           isGroup2Row && "report-matrix__row--group2",
           row.rowKind === "category" && "report-matrix__row--category",
+          row.rowKind === "group3" && "report-matrix__row--group3",
           row.rowKind === "team" && "report-matrix__row--team",
           row.rowKind === "detail" && "report-matrix__row--detail",
           row.isTotal && "report-matrix__row--total",

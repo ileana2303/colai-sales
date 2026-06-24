@@ -1,4 +1,4 @@
-import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
+import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext";
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
   buildBbmTrendQuery,
@@ -10,29 +10,18 @@ import {
   PowerBiRequestError,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const jar = await cookies();
-  const token = jar.get(cookieName)?.value;
-  if (!token) {
-    return NextResponse.json(
-      { ok: false, message: "Not authenticated" },
-      { status: 401, headers: POWERBI_NO_CACHE_HEADERS },
-    );
+  const auth = await getPowerBiRouteAuthContext();
+  if (!auth.ok) {
+    return auth.response;
   }
 
-  const userInfo = decodeUserInfoCookie(jar.get(userCookieName)?.value);
-  const area = userInfo?.area?.trim();
-  if (!area) {
-    return NextResponse.json(
-      { ok: false, message: "Missing area for authenticated user" },
-      { status: 400, headers: POWERBI_NO_CACHE_HEADERS },
-    );
-  }
+  const { token, reportContext } = auth;
+  const area = reportContext.area;
 
   let data: PowerBiExecuteQueriesResponse;
   try {

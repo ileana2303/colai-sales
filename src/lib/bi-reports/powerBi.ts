@@ -37,7 +37,7 @@ type AmsaPowerBiTokenResponse = {
   token_data?: string;
 };
 
-type PowerBiTokenOptions = {
+export type PowerBiTokenOptions = {
   amsaAccessToken?: string | null;
 };
 

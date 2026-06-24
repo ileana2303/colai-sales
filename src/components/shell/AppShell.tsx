@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { useAuthStore } from "@/stores/authStore";
+import { useSellersStore } from "@/stores/sellersStore";
 import { ChevronDown } from "@/icons/lucide/chevron-down";
 import type { ApiUserInfo } from "@/types/api/schemas";
 
@@ -28,15 +29,28 @@ function getInitials(userInfos: ApiUserInfo | null) {
   return initials || "?";
 }
 
-function getUserMeta(userInfos: ApiUserInfo | null) {
+function getUserMeta(
+  userInfos: ApiUserInfo | null,
+  matchedSeller: {
+    area: string;
+    team: string;
+    salesPerson: string;
+  } | null,
+) {
   if (!userInfos) return "Σύνδεση ενεργή";
+
+  const areaTeam = matchedSeller
+    ? [matchedSeller.area, matchedSeller.team].filter(Boolean).join(" · ")
+    : null;
 
   const parts = [
     userInfos.username?.trim(),
     userInfos.sellerCode?.trim() ? `Κωδ. ${userInfos.sellerCode.trim()}` : null,
-    userInfos.area?.trim() || userInfos.team?.trim()
-      ? [userInfos.area, userInfos.team].filter(Boolean).join(" · ")
-      : null,
+    areaTeam ||
+      (userInfos.area?.trim() || userInfos.team?.trim()
+        ? [userInfos.area, userInfos.team].filter(Boolean).join(" · ")
+        : null),
+    matchedSeller?.salesPerson?.trim() || null,
   ].filter(Boolean);
 
   return parts.length && parts.join(" · ");
@@ -46,6 +60,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const logoutMutation = useLogout();
   const userInfos = useAuthStore((s) => s.userInfos);
+  const matchedSeller = useSellersStore((s) => s.matched);
 
   const fullName =
     [userInfos?.fname, userInfos?.lname].filter(Boolean).join(" ") ||
@@ -55,7 +70,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   React.useEffect(() => setMounted(true), []);
 
   const displayName = mounted ? fullName : "Λογαριασμός";
-  const displayMeta = mounted ? getUserMeta(userInfos) : "Φόρτωση…";
+  const displayMeta = mounted ? getUserMeta(userInfos, matchedSeller) : "Φόρτωση…";
   const initials = mounted ? getInitials(userInfos) : "?";
 
   const onLogout = async () => {

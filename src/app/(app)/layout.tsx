@@ -1,5 +1,6 @@
 import AppShell from "@/components/shell/AppShell";
 import AuthHydrator from "@/features/auth/components/AuthHydrator";
+import SellersHydrator from "@/features/auth/components/SellersHydrator";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -16,6 +17,7 @@ export default async function AppLayout({
   return (
     <AppShell>
       <AuthHydrator />
+      <SellersHydrator />
       {children}
     </AppShell>
   );

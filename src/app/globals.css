@@ -1018,6 +1018,21 @@ html.dark .app-header-user__role {
   color: var(--muted-foreground);
 }
 
+.report-matrix__row--group3 td,
+.report-matrix__row--group3 .report-matrix__category-cell,
+.report-matrix__row--group3 .report-matrix__dimension-cell {
+  background: color-mix(in oklch, #e0f2fe 52%, var(--background) 48%);
+  font-weight: 820;
+}
+
+.report-matrix__row--group3 .report-matrix__category-cell {
+  padding-left: 1.25rem;
+}
+
+.report-matrix__row--group3 .report-matrix__dimension-cell {
+  color: var(--muted-foreground);
+}
+
 .report-matrix__row--team td,
 .report-matrix__row--team .report-matrix__category-cell,
 .report-matrix__row--team .report-matrix__dimension-cell {
@@ -1156,6 +1171,19 @@ html[data-bs-theme="dark"]
   .report-matrix__row--category
   .report-matrix__dimension-cell {
   background: color-mix(in oklch, #1e3a8a 36%, var(--background) 64%);
+}
+
+html.dark .report-matrix__row--group3 td,
+html[data-bs-theme="dark"] .report-matrix__row--group3 td,
+html.dark .report-matrix__row--group3 .report-matrix__category-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group3
+  .report-matrix__category-cell,
+html.dark .report-matrix__row--group3 .report-matrix__dimension-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group3
+  .report-matrix__dimension-cell {
+  background: color-mix(in oklch, #1e40af 28%, var(--background) 72%);
 }
 
 html.dark .report-matrix__row--group2 .report-matrix__group2-cell,

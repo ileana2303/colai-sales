@@ -10,6 +10,7 @@ import type {
   CovidienTrendRow,
 } from "@/lib/bi-reports/covidien";
 import type { PorgesSalesRow, PorgesTrendRow } from "@/lib/bi-reports/porges";
+import type { PowerBiSellerRow } from "@/lib/bi-reports/sellers";
 
 const NO_CACHE_HEADERS = {
   "Cache-Control": "no-cache",
@@ -103,5 +104,19 @@ export function fetchPorgesTrendsReport() {
   return fetchPowerBi<AreaReportResponse<PorgesTrendRow>>(
     "/api/powerbi/porges-trend-current-year",
     "Failed to load Porges trends",
+  );
+}
+
+export type PowerBiSellersResponse = {
+  ok: true;
+  report: "sellers";
+  matched: PowerBiSellerRow | null;
+  records: PowerBiSellerRow[];
+};
+
+export function fetchPowerBiSellers() {
+  return fetchPowerBi<PowerBiSellersResponse>(
+    "/api/powerbi/sellers",
+    "Failed to load Power BI sellers",
   );
 }

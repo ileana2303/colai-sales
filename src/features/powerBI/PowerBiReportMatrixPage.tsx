@@ -15,6 +15,7 @@ import {
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
+import { useSellersStore } from "@/stores/sellersStore";
 
 type MatrixReportPayload = {
   area: string;
@@ -111,6 +112,7 @@ export function PowerBiReportMatrixPage({
   reportKey,
   trendPath,
 }: PowerBiReportMatrixPageProps) {
+  const sellersCatalog = useSellersStore((state) => state.records);
   const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: powerBiKeys.reportMatrix(
       reportKey,
@@ -152,9 +154,10 @@ export function PowerBiReportMatrixPage({
             currentRows: data.currentRows,
             previousRows: data.previousRows,
             trendRows: data.trendRows,
+            sellersCatalog,
           })
         : [],
-    [categoryOrder, data],
+    [categoryOrder, data, sellersCatalog],
   );
   return (
     <div className="app-page">
