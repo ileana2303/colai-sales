@@ -11,50 +11,66 @@ export type BiReportPowerBiTargetKey =
   | "sales"
   | "sales_year"
   | "akrateia"
-  | "akrateia_sales_2025"
-  | "akrateia_sales_2026"
-  | "akrateia_trend_2026"
-  | "bbm_sales_2025"
-  | "bbm_sales_2026"
-  | "bbm_trends_2026"
+  | "akrateia_sales_last_year"
+  | "akrateia_sales_current_year"
+  | "akrateia_trend_current_year"
+  | "bbm_sales_last_year"
+  | "bbm_sales_current_year"
+  | "bbm_trends_current_year"
   | "coloplast_sales_2023"
-  | "coloplast_sales_2025"
-  | "coloplast_sales_2026"
-  | "coloplast_trend_2026"
-  | "covidien_sales_2025"
-  | "covidien_sales_2026"
-  | "covidien_trend_2026"
-  | "porges_sales_2025"
-  | "porges_sales_2026"
-  | "porges_trend_2026";
+  | "coloplast_sales_last_year"
+  | "coloplast_sales_current_year"
+  | "coloplast_trend_current_year"
+  | "covidien_sales_last_year"
+  | "covidien_sales_current_year"
+  | "covidien_trend_current_year"
+  | "porges_sales_last_year"
+  | "porges_sales_current_year"
+  | "porges_trend_current_year";
 
 const MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID =
   "e928997c-ad45-4320-a7d6-b35a8fa8e510";
-const MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID =
+
+const MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID =
   "8dcec3c5-33d2-445f-9c1b-fa934a3eec1f";
-const MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID =
+const MAVROGENIS_SALES_REPORTS_LAST_YEAR_CLP_DATASET_ID =
   "5f39f3a4-1245-4510-bbb3-c20b394afd7f";
+
+const MAVROGENIS_BBM_SALES_REPORTS_ALL = "26e3306d-333c-4383-89b1-736498c0e29e";
+
+const MAVROGENIS_AMOENA_ABBOTT_SALES_REPORTS_CURRENT_YEAR =
+  "3703e49b-ad53-4001-8b5e-2374268d1483";
+const MAVROGENIS_AMOENA_ABBOTT_SALES_REPORTS_LAST_YEAR =
+  "3a917ebc-e44b-4f6c-8b4a-26a76d9b6e02";
 
 const BI_REPORT_DATASET_IDS: Record<BiReportPowerBiTargetKey, string> = {
   sales: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   sales_year: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   akrateia: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
-  akrateia_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
-  akrateia_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  akrateia_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  bbm_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
-  bbm_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  bbm_trends_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
+  akrateia_sales_last_year: MAVROGENIS_SALES_REPORTS_LAST_YEAR_CLP_DATASET_ID,
+  akrateia_sales_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  akrateia_trend_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  bbm_sales_last_year: MAVROGENIS_BBM_SALES_REPORTS_ALL,
+  bbm_sales_current_year: MAVROGENIS_BBM_SALES_REPORTS_ALL,
+  bbm_trends_current_year: MAVROGENIS_BBM_SALES_REPORTS_ALL,
   coloplast_sales_2023: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
-  coloplast_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
-  coloplast_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  coloplast_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  covidien_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
-  covidien_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  covidien_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  porges_sales_2025: MAVROGENIS_SALES_REPORTS_2025_CLP_DATASET_ID,
-  porges_sales_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
-  porges_trend_2026: MAVROGENIS_SALES_REPORTS_2026_CLP_DATASET_ID,
+  coloplast_sales_last_year: MAVROGENIS_SALES_REPORTS_LAST_YEAR_CLP_DATASET_ID,
+  coloplast_sales_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  coloplast_trend_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  covidien_sales_last_year: MAVROGENIS_SALES_REPORTS_LAST_YEAR_CLP_DATASET_ID,
+  covidien_sales_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  covidien_trend_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  porges_sales_last_year: MAVROGENIS_SALES_REPORTS_LAST_YEAR_CLP_DATASET_ID,
+  porges_sales_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
+  porges_trend_current_year:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
 };
 
 export type MonthlySalesRow = {

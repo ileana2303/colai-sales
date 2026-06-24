@@ -1,5 +1,7 @@
 import {
   escapeDaxString,
+  indentDaxArgs,
+  joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -194,9 +196,31 @@ export function buildAkrateiaSales2026Queries(areaName: string): string[] {
       `"CURRENCY", ${category.currency}`,
     ];
 
-    return `DEFINE VAR __Base = SUMMARIZECOLUMNS(${args.join(
-      ", ",
-    )}) VAR __Filtered = FILTER(__Base, [TCY] > 0 && NOT(ISBLANK([TCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", COALESCE('U Sales Person'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"), "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", [Group1], "Group2", [Group2], "Month", 'U Months'[Month], "ClosedMonthStatus", 'U Months'[Status of Closed Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VCY", [VCY], "TCY", [TCY], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerName], [Month]`;
+    return joinDaxQuery([
+      "DEFINE",
+      "VAR __Base = SUMMARIZECOLUMNS(",
+      `  ${indentDaxArgs(args)}`,
+      ")",
+      "VAR __Filtered = FILTER(__Base, [TCY] > 0 && NOT(ISBLANK([TCY])))",
+      "EVALUATE",
+      "SELECTCOLUMNS(",
+      "  __Filtered,",
+      '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
+      '  "Team", \'U Sales Person\'[Team],',
+      '  "SellerCode", \'U Sales Person\'[SellerCode],',
+      '  "SellerName", \'U Sales Person\'[Πωλητής],',
+      '  "Group1", [Group1],',
+      '  "Group2", [Group2],',
+      '  "Month", \'U Months\'[Month],',
+      '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+      '  "REPORT_CODE", [REPORT_CODE],',
+      '  "REPORT_DESC", [REPORT_DESC],',
+      '  "VCY", [VCY],',
+      '  "TCY", [TCY],',
+      '  "CURRENCY", [CURRENCY]',
+      ")",
+      "ORDER BY [Area], [Team], [SellerName], [Month]",
+    ]);
   });
 }
 
@@ -211,9 +235,29 @@ export function buildAkrateiaSales2025Queries(areaName: string): string[] {
       `"CURRENCY", ${category.currency}`,
     ];
 
-    return `DEFINE VAR __Base = SUMMARIZECOLUMNS(${args.join(
-      ", ",
-    )}) VAR __Filtered = FILTER(__Base, [VLY] > 0 && NOT(ISBLANK([VLY])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", COALESCE('U Sales Person'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"), "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", [Group1], "Group2", [Group2], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VLY", [VLY], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerName], [Month]`;
+    return joinDaxQuery([
+      "DEFINE",
+      "VAR __Base = SUMMARIZECOLUMNS(",
+      `  ${indentDaxArgs(args)}`,
+      ")",
+      "VAR __Filtered = FILTER(__Base, [VLY] > 0 && NOT(ISBLANK([VLY])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter])))",
+      "EVALUATE",
+      "SELECTCOLUMNS(",
+      "  __Filtered,",
+      '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
+      '  "Team", \'U Sales Person\'[Team],',
+      '  "SellerCode", \'U Sales Person\'[SellerCode],',
+      '  "SellerName", \'U Sales Person\'[Πωλητής],',
+      '  "Group1", [Group1],',
+      '  "Group2", [Group2],',
+      '  "Month", \'U Months\'[Month],',
+      '  "REPORT_CODE", [REPORT_CODE],',
+      '  "REPORT_DESC", [REPORT_DESC],',
+      '  "VLY", [VLY],',
+      '  "CURRENCY", [CURRENCY]',
+      ")",
+      "ORDER BY [Area], [Team], [SellerName], [Month]",
+    ]);
   });
 }
 
@@ -228,9 +272,28 @@ export function buildAkrateiaTrend2026Queries(areaName: string): string[] {
       `"CURRENCY", ${category.currency}`,
     ];
 
-    return `DEFINE VAR __Base = SUMMARIZECOLUMNS(${args.join(
-      ", ",
-    )}) VAR __Filtered = FILTER(__Base, [VTREND] > 0 && NOT(ISBLANK([VTREND])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", COALESCE('U Sales Person'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"), "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", [Group1], "Group2", [Group2], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VTREND", [VTREND], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerName]`;
+    return joinDaxQuery([
+      "DEFINE",
+      "VAR __Base = SUMMARIZECOLUMNS(",
+      `  ${indentDaxArgs(args)}`,
+      ")",
+      "VAR __Filtered = FILTER(__Base, [VTREND] > 0 && NOT(ISBLANK([VTREND])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter])))",
+      "EVALUATE",
+      "SELECTCOLUMNS(",
+      "  __Filtered,",
+      '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
+      '  "Team", \'U Sales Person\'[Team],',
+      '  "SellerCode", \'U Sales Person\'[SellerCode],',
+      '  "SellerName", \'U Sales Person\'[Πωλητής],',
+      '  "Group1", [Group1],',
+      '  "Group2", [Group2],',
+      '  "REPORT_CODE", [REPORT_CODE],',
+      '  "REPORT_DESC", [REPORT_DESC],',
+      '  "VTREND", [VTREND],',
+      '  "CURRENCY", [CURRENCY]',
+      ")",
+      "ORDER BY [Area], [Team], [SellerName]",
+    ]);
   });
 }
 

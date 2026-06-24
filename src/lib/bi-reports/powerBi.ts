@@ -102,6 +102,14 @@ export function escapeDaxString(value: string): string {
   return value.replaceAll('"', '""');
 }
 
+export function joinDaxQuery(lines: readonly string[]): string {
+  return lines.join("\n");
+}
+
+export function indentDaxArgs(args: readonly string[]): string {
+  return args.join(",\n  ");
+}
+
 export function getDefaultPowerBiWorkspaceId(): string {
   return (
     process.env.POWERBI_GROUP_ID?.trim() ||

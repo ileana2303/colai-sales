@@ -1,5 +1,6 @@
 import {
   escapeDaxString,
+  joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -77,24 +78,124 @@ function getCovidienSalesQueryContext(areaName: string) {
   return { area, businessUnit, excludedDocumentTypes, familyGroups };
 }
 
-export function buildCovidienSales2025Query(areaName: string): string {
+export function buildCovidienSalesLastYearQuery(areaName: string): string {
   const { area, businessUnit, excludedDocumentTypes, familyGroups } =
     getCovidienSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VLY", "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit LY", "Currency", 1, "VCY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}}))) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VLC", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Month]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    "  'U Sales Person'[Area],",
+    "  'U Sales Person'[Team],",
+    "  'U Sales Person'[SellerCode],",
+    "  'U Sales Person'[Πωλητής],",
+    "  'U Family'[Family Group],",
+    "  'U Months'[Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
+    "  FILTER('Calendar', 'Calendar'[Year] = 2025),",
+    '  "REPORT_CODE", "P07VALL-VLY",',
+    '  "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit LY",',
+    '  "Currency", 1,',
+    `  "VLY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}}))`,
+    ")",
+    "VAR __Filtered = FILTER(__Base, [VLY] > 0)",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    "  \"Area\", 'U Sales Person'[Area],",
+    "  \"Team\", 'U Sales Person'[Team],",
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+    "  \"SellerName\", 'U Sales Person'[Πωλητής],",
+    "  \"Group1\", 'U Family'[Family Group],",
+    '  "Group2", "COVIDIEN",',
+    "  \"Month\", 'U Months'[Month],",
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "Currency", [Currency],',
+    '  "VLY", [VLY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName], [Group1], [Month]",
+  ]);
 }
 
 export function buildCovidienSalesQuery(areaName: string): string {
   const { area, businessUnit, excludedDocumentTypes, familyGroups } =
     getCovidienSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Family'[Family Group], 'U Months'[Month], 'U Months'[Status of Closed Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VCYTRCY", "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit", "Currency", 1, "VCY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}})), "TCY", [Covidien Sales Target]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY])) || NOT(ISBLANK([TCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "Month", 'U Months'[Month], "ClosedMonthStatus", 'U Months'[Status of Closed Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VCY", [VCY], "TCY", [TCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Month]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    "  'U Sales Person'[Area],",
+    "  'U Sales Person'[Team],",
+    "  'U Sales Person'[SellerCode],",
+    "  'U Sales Person'[Πωλητής],",
+    "  'U Family'[Family Group],",
+    "  'U Months'[Month],",
+    "  'U Months'[Status of Closed Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
+    '  "REPORT_CODE", "P07VALL-VCYTRCY",',
+    '  "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit",',
+    '  "Currency", 1,',
+    `  "VCY", CALCULATE([Sales PROCON], ASP_EBS_SALES[BusinessUnit] = "${businessUnit}", NOT(ASP_EBS_SALES[DocumentType] IN {${excludedDocumentTypes}})),`,
+    '  "TCY", [Covidien Sales Target]',
+    ")",
+    "VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VCY])) || NOT(ISBLANK([TCY])))",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    "  \"Area\", 'U Sales Person'[Area],",
+    "  \"Team\", 'U Sales Person'[Team],",
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+    "  \"SellerName\", 'U Sales Person'[Πωλητής],",
+    "  \"Group1\", 'U Family'[Family Group],",
+    '  "Group2", "COVIDIEN",',
+    "  \"Month\", 'U Months'[Month],",
+    "  \"ClosedMonthStatus\", 'U Months'[Status of Closed Month],",
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "Currency", [Currency],',
+    '  "VCY", [VCY],',
+    '  "TCY", [TCY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName], [Group1], [Month]",
+  ]);
 }
 
 export function buildCovidienTrendQuery(areaName: string): string {
   const { area, familyGroups } = getCovidienSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Family'[Family Group], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}), "REPORT_CODE", "P07VALL-VTREND", "REPORT_DESC", "Covidien Sales Trend by AREA and by GROUP", "Currency", 1, "VTrend", [Covidien Sales Trend]) VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VTrend]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "Group1", 'U Family'[Family Group], "Group2", "COVIDIEN", "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VTrend", [VTrend]) ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    "  'U Sales Person'[Area],",
+    "  'U Sales Person'[Team],",
+    "  'U Sales Person'[SellerCode],",
+    "  'U Family'[Family Group],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
+    '  "REPORT_CODE", "P07VALL-VTREND",',
+    '  "REPORT_DESC", "Covidien Sales Trend by AREA and by GROUP",',
+    '  "Currency", 1,',
+    '  "VTrend", [Covidien Sales Trend]',
+    ")",
+    "VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VTrend])))",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    "  \"Area\", 'U Sales Person'[Area],",
+    "  \"Team\", 'U Sales Person'[Team],",
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+    "  \"Group1\", 'U Family'[Family Group],",
+    '  "Group2", "COVIDIEN",',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "Currency", [Currency],',
+    '  "VTrend", [VTrend]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]",
+  ]);
 }
 
 export function normalizeCovidienSales2025Rows(

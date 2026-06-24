@@ -1,6 +1,8 @@
 import type { BiReportPowerBiTargetKey } from "@/lib/bi-reports/biReports";
 import {
   escapeDaxString,
+  indentDaxArgs,
+  joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -107,7 +109,7 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     group2: "NEW",
     key: "wc-comfeel",
     label: "WC COMFEEL",
-    previousTargetKey: "coloplast_sales_2026",
+    previousTargetKey: "coloplast_sales_current_year",
     reportCode: "P01V01",
     reportDesc: "COMFEEL ",
     rowFilterTarget: "[NEW Total PER Target]",
@@ -263,12 +265,34 @@ function buildColoplastSales2026Query(
   ];
   const group1 = getGroup1SelectExpression(category);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS(${args.join(
-    ", ",
-  )}) VAR __Filtered = FILTER(__Base, [TCY] > 0 && NOT(ISBLANK([TCY]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", COALESCE('U Sales Person'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"), "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", ${group1}, "Group2", [Group2], "Month", 'U Months'[Month], "ClosedMonthStatus", 'U Months'[Status of Closed Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VCY", [VCY], "TCY", [TCY], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerName], [Month]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    `  ${indentDaxArgs(args)}`,
+    ")",
+    "VAR __Filtered = FILTER(__Base, [TCY] > 0 && NOT(ISBLANK([TCY])))",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
+    '  "Team", \'U Sales Person\'[Team],',
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    '  "SellerName", \'U Sales Person\'[Πωλητής],',
+    `  "Group1", ${group1},`,
+    '  "Group2", [Group2],',
+    '  "Month", \'U Months\'[Month],',
+    '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "VCY", [VCY],',
+    '  "TCY", [TCY],',
+    '  "CURRENCY", [CURRENCY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName], [Month]",
+  ]);
 }
 
-function buildColoplastSales2025Query(
+function buildColoplastSalesLastYearQuery(
   areaName: string,
   category: ColoplastCategory,
 ): string {
@@ -282,9 +306,29 @@ function buildColoplastSales2025Query(
   ];
   const group1 = getGroup1SelectExpression(category);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS(${args.join(
-    ", ",
-  )}) VAR __Filtered = FILTER(__Base, [VLY] > 0 && NOT(ISBLANK([VLY])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", COALESCE('U Sales Person'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"), "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", ${group1}, "Group2", [Group2], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VLY", [VLY], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerName], [Month]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    `  ${indentDaxArgs(args)}`,
+    ")",
+    "VAR __Filtered = FILTER(__Base, [VLY] > 0 && NOT(ISBLANK([VLY])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter])))",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
+    '  "Team", \'U Sales Person\'[Team],',
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    '  "SellerName", \'U Sales Person\'[Πωλητής],',
+    `  "Group1", ${group1},`,
+    '  "Group2", [Group2],',
+    '  "Month", \'U Months\'[Month],',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "VLY", [VLY],',
+    '  "CURRENCY", [CURRENCY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName], [Month]",
+  ]);
 }
 
 function buildColoplastTrend2026Query(
@@ -301,9 +345,28 @@ function buildColoplastTrend2026Query(
   ];
   const group1 = getGroup1SelectExpression(category);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS(${args.join(
-    ", ",
-  )}) VAR __Filtered = FILTER(__Base, [VTREND] > 0 && NOT(ISBLANK([VTREND])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", COALESCE('U Sales Person'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"), "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", ${group1}, "Group2", [Group2], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "VTREND", [VTREND], "CURRENCY", [CURRENCY]) ORDER BY [Area], [Team], [SellerName]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    `  ${indentDaxArgs(args)}`,
+    ")",
+    "VAR __Filtered = FILTER(__Base, [VTREND] > 0 && NOT(ISBLANK([VTREND])) && [TargetFilter] > 1 && NOT(ISBLANK([TargetFilter])))",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
+    '  "Team", \'U Sales Person\'[Team],',
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    '  "SellerName", \'U Sales Person\'[Πωλητής],',
+    `  "Group1", ${group1},`,
+    '  "Group2", [Group2],',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "VTREND", [VTREND],',
+    '  "CURRENCY", [CURRENCY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName]",
+  ]);
 }
 
 export function buildColoplastSales2026Queries(
@@ -312,7 +375,7 @@ export function buildColoplastSales2026Queries(
   return COLOPLAST_CATEGORIES.map((category) => ({
     label: category.label,
     query: buildColoplastSales2026Query(areaName, category),
-    targetKey: "coloplast_sales_2026",
+    targetKey: "coloplast_sales_current_year",
   }));
 }
 
@@ -321,8 +384,8 @@ export function buildColoplastSales2025Queries(
 ): ColoplastQuerySpec[] {
   return COLOPLAST_CATEGORIES.map((category) => ({
     label: category.label,
-    query: buildColoplastSales2025Query(areaName, category),
-    targetKey: category.previousTargetKey ?? "coloplast_sales_2025",
+    query: buildColoplastSalesLastYearQuery(areaName, category),
+    targetKey: category.previousTargetKey ?? "coloplast_sales_last_year",
   }));
 }
 
@@ -332,7 +395,7 @@ export function buildColoplastTrend2026Queries(
   return COLOPLAST_CATEGORIES.map((category) => ({
     label: category.label,
     query: buildColoplastTrend2026Query(areaName, category),
-    targetKey: category.trendTargetKey ?? "coloplast_trend_2026",
+    targetKey: category.trendTargetKey ?? "coloplast_trend_current_year",
   }));
 }
 

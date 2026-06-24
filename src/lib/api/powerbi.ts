@@ -73,7 +73,7 @@ export function fetchCovidienSalesReport(
 
 export function fetchCovidienTrendsReport() {
   return fetchPowerBi<AreaReportResponse<CovidienTrendRow>>(
-    "/api/powerbi/covidien-trend-2026",
+    "/api/powerbi/covidien-trend-current-year",
     "Failed to load Covidien trends",
   );
 }
@@ -87,7 +87,7 @@ export function fetchBbmSalesReport(apiPath: string, year: number | string) {
 
 export function fetchBbmTrendsReport() {
   return fetchPowerBi<AreaReportResponse<BbmTrendRow>>(
-    "/api/powerbi/bbm-trends-2026",
+    "/api/powerbi/bbm-trends-current-year",
     "Failed to load BBM trends",
   );
 }
@@ -101,7 +101,7 @@ export function fetchPorgesSalesReport(apiPath: string, year: number | string) {
 
 export function fetchPorgesTrendsReport() {
   return fetchPowerBi<AreaReportResponse<PorgesTrendRow>>(
-    "/api/powerbi/porges-trend-2026",
+    "/api/powerbi/porges-trend-current-year",
     "Failed to load Porges trends",
   );
 }

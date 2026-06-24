@@ -69,6 +69,7 @@ export type ReportMatrixRowMetrics = {
   vcyAll: number;
   vcyClosed: number;
   vlc: number;
+  vlcAll: number;
 };
 
 export type ReportMatrixRow = {

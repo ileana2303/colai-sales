@@ -1,5 +1,6 @@
 import {
   escapeDaxString,
+  joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -50,16 +51,89 @@ function getPorgesSalesQueryContext(areaName: string) {
   return { area: escapeDaxString(areaName) };
 }
 
-export function buildPorgesSales2025Query(areaName: string): string {
+export function buildPorgesSalesLastYearQuery(areaName: string): string {
   const { area } = getPorgesSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Item Family Code'[Porges Group], 'U Item Family Code'[Porges SUB], 'U Months'[Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), "REPORT_CODE", "P05VALL-VLY", "REPORT_DESC", "Porges Sales by Sales Person and Group LY", "Currency", 1, "VCY", [Sales]) VAR __Filtered = FILTER(__Base, [VCY] <> 0) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Item Family Code'[Porges Group], "Group2", 'U Item Family Code'[Porges SUB], "Month", 'U Months'[Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VLY", [VCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    "  'U Sales Person'[Area],",
+    "  'U Sales Person'[Team],",
+    "  'U Sales Person'[SellerCode],",
+    "  'U Sales Person'[Πωλητής],",
+    "  'U Item Family Code'[Porges Group],",
+    "  'U Item Family Code'[Porges SUB],",
+    "  'U Months'[Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    '  "REPORT_CODE", "P05VALL-VLY",',
+    '  "REPORT_DESC", "Porges Sales by Sales Person and Group LY",',
+    '  "Currency", 1,',
+    '  "VCY", [Sales]',
+    ")",
+    "VAR __Filtered = FILTER(__Base, [VCY] <> 0)",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    '  "Area", \'U Sales Person\'[Area],',
+    '  "Team", \'U Sales Person\'[Team],',
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    '  "SellerName", \'U Sales Person\'[Πωλητής],',
+    '  "Group1", \'U Item Family Code\'[Porges Group],',
+    '  "Group2", \'U Item Family Code\'[Porges SUB],',
+    '  "Month", \'U Months\'[Month],',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "Currency", [Currency],',
+    '  "VLY", [VCY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]",
+  ]);
 }
 
-function buildPorgesSales2026BaseQuery(areaName: string, rowFilter: string): string {
+function buildPorgesSales2026BaseQuery(
+  areaName: string,
+  rowFilter: string,
+): string {
   const { area } = getPorgesSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Sales Person'[Πωλητής], 'U Item Family Code'[Porges Group], 'U Item Family Code'[Porges SUB], 'U Months'[Month], 'U Months'[Status of Closed Month], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), "REPORT_CODE", "P05VALL-VCYTCY", "REPORT_DESC", "Porges Sales, Target and Trend by Sales Person and Group", "Currency", 1, "VCY", [Sales], "TCY", [SALES TARGET PORGES]) VAR __Filtered = FILTER(__Base, ${rowFilter}) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "SellerName", 'U Sales Person'[Πωλητής], "Group1", 'U Item Family Code'[Porges Group], "Group2", 'U Item Family Code'[Porges SUB], "Month", 'U Months'[Month], "ClosedMonthStatus", 'U Months'[Status of Closed Month], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VCY", [VCY], "TCY", [TCY]) ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    "  'U Sales Person'[Area],",
+    "  'U Sales Person'[Team],",
+    "  'U Sales Person'[SellerCode],",
+    "  'U Sales Person'[Πωλητής],",
+    "  'U Item Family Code'[Porges Group],",
+    "  'U Item Family Code'[Porges SUB],",
+    "  'U Months'[Month],",
+    "  'U Months'[Status of Closed Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    '  "REPORT_CODE", "P05VALL-VCYTCY",',
+    '  "REPORT_DESC", "Porges Sales, Target and Trend by Sales Person and Group",',
+    '  "Currency", 1,',
+    '  "VCY", [Sales],',
+    '  "TCY", [SALES TARGET PORGES]',
+    ")",
+    `VAR __Filtered = FILTER(__Base, ${rowFilter})`,
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    '  "Area", \'U Sales Person\'[Area],',
+    '  "Team", \'U Sales Person\'[Team],',
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    '  "SellerName", \'U Sales Person\'[Πωλητής],',
+    '  "Group1", \'U Item Family Code\'[Porges Group],',
+    '  "Group2", \'U Item Family Code\'[Porges SUB],',
+    '  "Month", \'U Months\'[Month],',
+    '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "Currency", [Currency],',
+    '  "VCY", [VCY],',
+    '  "TCY", [TCY]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerName], [Group1], [Group2], [Month]",
+  ]);
 }
 
 export function buildPorgesSalesQuery(areaName: string): string {
@@ -76,7 +150,37 @@ export function buildPorgesSalesTargetsTrendsQuery(areaName: string): string {
 export function buildPorgesTrendQuery(areaName: string): string {
   const { area } = getPorgesSalesQueryContext(areaName);
 
-  return `DEFINE VAR __Base = SUMMARIZECOLUMNS('U Sales Person'[Area], 'U Sales Person'[Team], 'U Sales Person'[SellerCode], 'U Item Family Code'[Porges Group], 'U Item Family Code'[Porges SUB], FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"), "REPORT_CODE", "P05VALL-VTREND", "REPORT_DESC", "Porges Sales Trend by Sales Person and Group", "Currency", 1, "VTrend", [Sales Trend], "TargetFilter", CALCULATE([SALES TARGET PORGES])) VAR __Filtered = FILTER(__Base, [VTrend] > 0 && NOT(ISBLANK([VTrend])) && [TargetFilter] > 0 && NOT(ISBLANK([TargetFilter]))) EVALUATE SELECTCOLUMNS(__Filtered, "Area", 'U Sales Person'[Area], "Team", 'U Sales Person'[Team], "SellerCode", 'U Sales Person'[SellerCode], "Group1", 'U Item Family Code'[Porges Group], "Group2", 'U Item Family Code'[Porges SUB], "REPORT_CODE", [REPORT_CODE], "REPORT_DESC", [REPORT_DESC], "Currency", [Currency], "VTrend", [VTrend]) ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]`;
+  return joinDaxQuery([
+    "DEFINE",
+    "VAR __Base = SUMMARIZECOLUMNS(",
+    "  'U Sales Person'[Area],",
+    "  'U Sales Person'[Team],",
+    "  'U Sales Person'[SellerCode],",
+    "  'U Item Family Code'[Porges Group],",
+    "  'U Item Family Code'[Porges SUB],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    '  "REPORT_CODE", "P05VALL-VTREND",',
+    '  "REPORT_DESC", "Porges Sales Trend by Sales Person and Group",',
+    '  "Currency", 1,',
+    '  "VTrend", [Sales Trend],',
+    '  "TargetFilter", CALCULATE([SALES TARGET PORGES])',
+    ")",
+    "VAR __Filtered = FILTER(__Base, [VTrend] > 0 && NOT(ISBLANK([VTrend])) && [TargetFilter] > 0 && NOT(ISBLANK([TargetFilter])))",
+    "EVALUATE",
+    "SELECTCOLUMNS(",
+    "  __Filtered,",
+    '  "Area", \'U Sales Person\'[Area],',
+    '  "Team", \'U Sales Person\'[Team],',
+    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    '  "Group1", \'U Item Family Code\'[Porges Group],',
+    '  "Group2", \'U Item Family Code\'[Porges SUB],',
+    '  "REPORT_CODE", [REPORT_CODE],',
+    '  "REPORT_DESC", [REPORT_DESC],',
+    '  "Currency", [Currency],',
+    '  "VTrend", [VTrend]',
+    ")",
+    "ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]",
+  ]);
 }
 
 export function normalizePorgesSales2025Rows(

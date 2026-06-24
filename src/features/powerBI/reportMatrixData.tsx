@@ -48,8 +48,10 @@ type MatrixAggregate = {
   tcyClosed: number;
   vcyClosed: number;
   vlc: number;
+  vlcAll: number;
   vTrend: number;
   openMonthTcyByMonth: Map<string, number>;
+  closedMonthKeys: Set<string>;
   hasClosedMonthStatus: boolean;
 };
 
@@ -61,6 +63,7 @@ type MonthlyTargetMetrics = {
 
 type MatrixRowOptions = {
   childCount?: number;
+  extraMonthlyTargetSum?: number | null;
   key?: string;
   parentKey?: string;
   rowKind?: ReportMatrixRow["rowKind"];
@@ -192,6 +195,13 @@ function buildMetricCellTones(values: {
   return Object.keys(cellTones).length ? cellTones : undefined;
 }
 
+export type MatrixLySales = {
+  /** 2025 sales summed for the same closed months as 2026. */
+  vlcSamePeriod: number;
+  /** 2025 sales summed for all months in the dataset. */
+  vlcAll: number;
+};
+
 function metricsFromAggregate(
   aggregate: MatrixAggregate,
 ): ReportMatrixRowMetrics {
@@ -202,6 +212,7 @@ function metricsFromAggregate(
     tcyClosed: aggregate.tcyClosed,
     vcyClosed: aggregate.vcyClosed,
     vlc: aggregate.vlc,
+    vlcAll: aggregate.vlcAll,
     vTrend: aggregate.vTrend,
     hasClosedMonthStatus: aggregate.hasClosedMonthStatus,
     openMonthTcyByMonth: Object.fromEntries(aggregate.openMonthTcyByMonth),
@@ -223,10 +234,26 @@ function aggregateFromMetrics(
     tcyClosed: metrics.tcyClosed,
     vcyClosed: metrics.vcyClosed,
     vlc: metrics.vlc,
+    vlcAll: metrics.vlcAll,
     vTrend: metrics.vTrend,
     hasClosedMonthStatus: metrics.hasClosedMonthStatus,
     openMonthTcyByMonth: new Map(Object.entries(metrics.openMonthTcyByMonth)),
+    closedMonthKeys: new Set(),
   };
+}
+
+function sumExtraMonthlyTarget(aggregates: MatrixAggregate[]): number | null {
+  let sum = 0;
+  let hasValue = false;
+
+  for (const aggregate of aggregates) {
+    const { extraMonthlyTarget } = computeMonthlyTargetMetrics(aggregate);
+    if (extraMonthlyTarget == null) continue;
+    hasValue = true;
+    sum += extraMonthlyTarget;
+  }
+
+  return hasValue ? sum : null;
 }
 
 export function buildReportMatrixTotalRows(
@@ -314,6 +341,78 @@ function applyAggregateCurrency(
   }
 }
 
+function getMatrixKeyFromAggregate(aggregate: MatrixAggregate) {
+  return [
+    aggregate.group2,
+    aggregate.group1,
+    aggregate.team,
+    aggregate.sellerCode || aggregate.sellerName || "",
+  ]
+    .map(normalizeKeyPart)
+    .join("|");
+}
+
+function monthLookupKey(month: string) {
+  const monthIndex = getMonthIndex(month);
+  if (monthIndex != null) return `m${monthIndex}`;
+  return month.trim().toLowerCase();
+}
+
+function buildLyByMatrixMonth(previousRows: PowerBiMatrixSourceRow[]) {
+  const lookup = new Map<string, number>();
+
+  for (const row of previousRows) {
+    const month = toText(row.month);
+    if (!month) continue;
+
+    const key = `${getMatrixKey(row)}|${monthLookupKey(month)}`;
+    lookup.set(key, (lookup.get(key) ?? 0) + (row.vlc ?? row.vcy ?? 0));
+  }
+
+  return lookup;
+}
+
+function sumAllLyForAggregate(
+  aggregate: MatrixAggregate,
+  lyByMatrixMonth: Map<string, number>,
+) {
+  const prefix = `${getMatrixKeyFromAggregate(aggregate)}|`;
+  let sum = 0;
+
+  for (const [key, value] of lyByMatrixMonth) {
+    if (key.startsWith(prefix)) sum += value;
+  }
+
+  return sum;
+}
+
+function sumSamePeriodLy(
+  aggregate: MatrixAggregate,
+  lyByMatrixMonth: Map<string, number>,
+) {
+  const matrixKey = getMatrixKeyFromAggregate(aggregate);
+
+  if (aggregate.hasClosedMonthStatus) {
+    let sum = 0;
+    for (const monthKey of aggregate.closedMonthKeys) {
+      sum += lyByMatrixMonth.get(`${matrixKey}|${monthKey}`) ?? 0;
+    }
+    return sum;
+  }
+
+  return sumAllLyForAggregate(aggregate, lyByMatrixMonth);
+}
+
+export function computeMatrixLySales(
+  aggregate: MatrixAggregate,
+  lyByMatrixMonth: Map<string, number>,
+): MatrixLySales {
+  return {
+    vlcAll: sumAllLyForAggregate(aggregate, lyByMatrixMonth),
+    vlcSamePeriod: sumSamePeriodLy(aggregate, lyByMatrixMonth),
+  };
+}
+
 function ensureAggregate(
   aggregates: Map<string, MatrixAggregate>,
   row: PowerBiMatrixSourceRow,
@@ -340,8 +439,10 @@ function ensureAggregate(
     tcyClosed: 0,
     vcyClosed: 0,
     vlc: 0,
+    vlcAll: 0,
     vTrend: 0,
     openMonthTcyByMonth: new Map(),
+    closedMonthKeys: new Set(),
     hasClosedMonthStatus: false,
   };
   aggregates.set(key, aggregate);
@@ -427,6 +528,7 @@ function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
       tcyClosed: sum.tcyClosed + aggregate.tcyClosed,
       vcyClosed: sum.vcyClosed + aggregate.vcyClosed,
       vlc: sum.vlc + aggregate.vlc,
+      vlcAll: sum.vlcAll + aggregate.vlcAll,
       vTrend: sum.vTrend + aggregate.vTrend,
       hasClosedMonthStatus:
         sum.hasClosedMonthStatus || aggregate.hasClosedMonthStatus,
@@ -443,8 +545,10 @@ function buildTotalAggregate(aggregates: MatrixAggregate[]): MatrixAggregate {
       tcyClosed: 0,
       vcyClosed: 0,
       vlc: 0,
+      vlcAll: 0,
       vTrend: 0,
       openMonthTcyByMonth: new Map(),
+      closedMonthKeys: new Set(),
       hasClosedMonthStatus: false,
     },
   );
@@ -482,9 +586,8 @@ function buildCurrencySplitTotalRows({
   );
 
   return visibleCurrencies.map((currency) => {
-    const totalAggregate = buildTotalAggregate(
-      aggregatesByCurrency.get(currency) ?? [],
-    );
+    const bucketAggregates = aggregatesByCurrency.get(currency) ?? [];
+    const totalAggregate = buildTotalAggregate(bucketAggregates);
 
     totalAggregate.group1 = labelResolver(
       currency,
@@ -497,6 +600,7 @@ function buildCurrencySplitTotalRows({
     totalAggregate.currency = currency;
 
     return aggregateToMatrixRow(totalAggregate, true, {
+      extraMonthlyTargetSum: sumExtraMonthlyTarget(bucketAggregates),
       key:
         visibleCurrencies.length > 1 ? `${keyPrefix}:${currency}` : keyPrefix,
       parentKey,
@@ -568,6 +672,10 @@ function aggregateToMatrixRow(
 ): ReportMatrixRow {
   const closedPeriod = getClosedPeriodMetrics(aggregate);
   const monthlyTargets = computeMonthlyTargetMetrics(aggregate);
+  const extraMonthlyTarget =
+    options.extraMonthlyTargetSum !== undefined
+      ? options.extraMonthlyTargetSum
+      : monthlyTargets.extraMonthlyTarget;
   const category = getCategoryLabel(aggregate, isTotal);
   const sellerLabel = isTotal
     ? EMPTY_VALUE
@@ -624,7 +732,7 @@ function aggregateToMatrixRow(
       currentTarget: formatMatrixValue(aggregate.tcyAll, aggregate),
       currentTrend: formatMatrixValue(aggregate.vTrend, aggregate),
       extraMonthlyTarget: formatOptionalMatrixValue(
-        monthlyTargets.extraMonthlyTarget,
+        extraMonthlyTarget,
         aggregate,
       ),
       monthlyTarget: formatOptionalMatrixValue(
@@ -738,6 +846,7 @@ export function buildReportMatrixCategoryRows(
 
     return aggregateToMatrixRow(aggregate, false, {
       childCount: value.childRows.length,
+      extraMonthlyTargetSum: sumExtraMonthlyTarget(childAggregates),
       key,
       leadingValues: {
         team: false,
@@ -799,6 +908,7 @@ export function buildReportMatrixTeamRows(
 
     return aggregateToMatrixRow(aggregate, false, {
       childCount: value.childRows.length,
+      extraMonthlyTargetSum: sumExtraMonthlyTarget(childAggregates),
       key,
       leadingValues: {
         seller: false,
@@ -862,6 +972,9 @@ export function buildReportMatrixRows({
       if (isClosedMonth(status)) {
         aggregate.tcyClosed = addNumber(aggregate.tcyClosed, row.tcy);
         aggregate.vcyClosed = addNumber(aggregate.vcyClosed, row.vcy);
+        if (month) {
+          aggregate.closedMonthKeys.add(monthLookupKey(month));
+        }
       } else if (month) {
         aggregate.openMonthTcyByMonth.set(
           month,
@@ -871,14 +984,21 @@ export function buildReportMatrixRows({
     }
   }
 
+  const lyByMatrixMonth = buildLyByMatrixMonth(previousRows);
+
   for (const row of previousRows) {
-    const aggregate = ensureAggregate(aggregates, row);
-    aggregate.vlc = addNumber(aggregate.vlc, row.vlc ?? row.vcy);
+    ensureAggregate(aggregates, row);
   }
 
   for (const row of trendRows) {
     const aggregate = ensureAggregate(aggregates, row);
     aggregate.vTrend = addNumber(aggregate.vTrend, row.vTrend);
+  }
+
+  for (const aggregate of aggregates.values()) {
+    const lySales = computeMatrixLySales(aggregate, lyByMatrixMonth);
+    aggregate.vlc = lySales.vlcSamePeriod;
+    aggregate.vlcAll = lySales.vlcAll;
   }
 
   const sortedAggregates = [...aggregates.values()].sort((left, right) => {
@@ -926,7 +1046,9 @@ export function buildReportMatrixRows({
 
   return [
     ...detailRows,
-    aggregateToMatrixRow(buildTotalAggregate(sortedAggregates), true),
+    aggregateToMatrixRow(buildTotalAggregate(sortedAggregates), true, {
+      extraMonthlyTargetSum: sumExtraMonthlyTarget(sortedAggregates),
+    }),
   ];
 }
 
