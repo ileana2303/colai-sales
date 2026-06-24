@@ -72,7 +72,7 @@ type MatrixRowOptions = {
 
 const EMPTY_VALUE = "-";
 const TOTAL_CURRENCY_BUCKETS = [0, 1] as const;
-const englishShortMonthLabels = [
+const greekShortMonthLabels = [
   "Ιαν",
   "Φεβ",
   "Μαρ",
@@ -293,7 +293,7 @@ function getMonthSortIndex(month: string) {
 }
 
 function getShortMonthLabel(index: number) {
-  return englishShortMonthLabels[index] ?? getMonthLabel(String(index + 1));
+  return greekShortMonthLabels[index] ?? getMonthLabel(String(index + 1));
 }
 
 function toText(value: string | null | undefined) {
@@ -686,8 +686,8 @@ function aggregateToMatrixRow(
   const sellerLabel = isTotal
     ? EMPTY_VALUE
     : [aggregate.sellerName, aggregate.sellerCode]
-        .filter(Boolean)
-        .join(" - ") || "-";
+      .filter(Boolean)
+      .join(" - ") || "-";
   const rowKind = options.rowKind ?? (isTotal ? "total" : "detail");
   const includeFilterValues = !isTotal && rowKind === "detail";
   const previousDiffValue = closedPeriod.result - closedPeriod.target;
@@ -700,23 +700,23 @@ function aggregateToMatrixRow(
       (isTotal
         ? "total"
         : [
-            aggregate.group2,
-            aggregate.group1,
-            aggregate.team,
-            aggregate.sellerCode,
-          ]
-            .map(normalizeKeyPart)
-            .join("|")),
+          aggregate.group2,
+          aggregate.group1,
+          aggregate.team,
+          aggregate.sellerCode,
+        ]
+          .map(normalizeKeyPart)
+          .join("|")),
     category,
     childCount: options.childCount,
     filterValues: includeFilterValues
       ? {
-          category,
-          group2: aggregate.group2,
-          team: aggregate.team || "",
-          seller: `${aggregate.sellerCode}|${aggregate.sellerName}`,
-          sellerLabel,
-        }
+        category,
+        group2: aggregate.group2,
+        team: aggregate.team || "",
+        seller: `${aggregate.sellerCode}|${aggregate.sellerName}`,
+        sellerLabel,
+      }
       : undefined,
     isTotal,
     parentKey: options.parentKey,
@@ -1220,52 +1220,51 @@ export function createReportMatrixSectionSummaries(
     currentMonthIndex != null && openMonthIndexes.includes(currentMonthIndex)
       ? "Ανοιχτός"
       : currentMonthIndex != null &&
-          closedMonthIndexes.includes(currentMonthIndex)
+        closedMonthIndexes.includes(currentMonthIndex)
         ? "Κλειστός"
         : "-";
 
   const previousPeriodSummary =
     closedMonthIndexes.length && lastClosedMonthIndex != null
       ? ({
-          details: [
-            `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
-          ],
-          label: "Κλειστή περίοδος",
-          tone: "primary",
-          value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
-        } satisfies ReportMatrixSectionSummary)
+        details: [
+          `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
+        ],
+        label: "Κλειστή περίοδος",
+        tone: "primary",
+        value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+      } satisfies ReportMatrixSectionSummary)
       : undefined;
 
   const closedMonthsSummary =
     closedMonthIndexes.length && lastClosedMonthIndex != null
       ? ({
-          details: [
-            formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
-          ],
-          label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
-          tone: "primary",
-          value: String(closedMonthIndexes.length),
-        } satisfies ReportMatrixSectionSummary)
+        details: [
+          formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+        ],
+        label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
+        tone: "primary",
+        value: String(closedMonthIndexes.length),
+      } satisfies ReportMatrixSectionSummary)
       : undefined;
 
   const currentYearSummary =
     remainingMonths > 0
       ? ({
-          details:
-            currentMonthIndex != null
-              ? [
-                  `${formatMonthRange(
-                    currentMonthIndex,
-                    openMonthIndexes.at(-1) ?? currentMonthIndex,
-                  )}`,
-                ]
-              : undefined,
-          label: "Υπόλοιποι μήνες",
-          tone: "success",
-          value: `${remainingMonths} ${
-            remainingMonths === 1 ? "μήνας" : "μήνες"
+        details:
+          currentMonthIndex != null
+            ? [
+              `${formatMonthRange(
+                currentMonthIndex,
+                openMonthIndexes.at(-1) ?? currentMonthIndex,
+              )}`,
+            ]
+            : undefined,
+        label: "Υπόλοιποι μήνες",
+        tone: "success",
+        value: `${remainingMonths} ${remainingMonths === 1 ? "μήνας" : "μήνες"
           }`,
-        } satisfies ReportMatrixSectionSummary)
+      } satisfies ReportMatrixSectionSummary)
       : undefined;
 
   const monthlyTargetSummary = {
