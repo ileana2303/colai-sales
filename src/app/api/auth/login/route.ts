@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import axios from "axios";
-import { cookieName, userCookieName } from "@/lib/auth";
+import {
+  cookieName,
+  encodeUserInfoCookie,
+  userCookieName,
+} from "@/lib/auth";
 import type { LoginResp } from "@/types/api/schemas";
 import type { LoginResponse } from "@/types/api/responses";
-
-function base64urlEncode(obj: unknown) {
-  return Buffer.from(JSON.stringify(obj), "utf8").toString("base64url");
-}
 
 export async function POST(req: Request) {
   const body = (await req.json()) as { username?: string; password?: string };
@@ -66,13 +66,18 @@ export async function POST(req: Request) {
     maxAge: expiresIn ?? undefined,
   });
 
-  (await jar).set(userCookieName, base64urlEncode(data.userInfos), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: expiresIn ?? undefined,
-  });
+  const userCookieValue = data.userInfos
+    ? encodeUserInfoCookie(data.userInfos)
+    : null;
+  if (userCookieValue) {
+    (await jar).set(userCookieName, userCookieValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: expiresIn ?? undefined,
+    });
+  }
 
   return NextResponse.json({ ok: true, ...data } satisfies LoginResponse);
 }

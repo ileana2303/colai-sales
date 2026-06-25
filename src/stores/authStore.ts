@@ -1,15 +1,17 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import type { ApiUserInfo } from "@/types/api/schemas";
+import type { SessionUserInfo } from "@/lib/sessionUser";
+
+export type AuthUserInfo = SessionUserInfo;
 
 export type AuthStatus = "unknown" | "authenticated" | "unauthenticated";
 
 type AuthState = {
   status: AuthStatus;
-  userInfos: ApiUserInfo | null;
+  userInfos: AuthUserInfo | null;
   error: string | null;
-  setAuthenticated: (userInfos: ApiUserInfo) => void;
+  setAuthenticated: (userInfos: AuthUserInfo) => void;
   setUnauthenticated: (error?: string | null) => void;
   reset: () => void;
 };

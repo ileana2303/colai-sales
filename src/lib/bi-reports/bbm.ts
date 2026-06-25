@@ -108,7 +108,7 @@ export function buildBbmSalesLastYearQuery(areaName: string): string {
   ]);
 }
 
-export function buildBbmSales2026Query(areaName: string): string {
+export function buildBbmSalesCurrentYearQuery(areaName: string): string {
   const { area, businessUnits } = getBbmSalesQueryContext(areaName);
 
   return joinDaxQuery([
@@ -183,13 +183,13 @@ export function buildBbmTrendQuery(areaName: string): string {
   ]);
 }
 
-export function normalizeBbmSales2025Rows(
+export function normalizeBbmSalesLastYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): LastYearSalesRow[] {
   return normalizeLastYearSalesRows(response);
 }
 
-export function normalizeBbmSales2026Rows(
+export function normalizeBbmSalesCurrentYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): CurrentYearSalesRow[] {
   return normalizeCurrentYearSalesRows(response);

@@ -1,8 +1,8 @@
 import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext";
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
-  buildColoplastSales2025Queries,
-  normalizeColoplastSales2025Rows,
+  buildColoplastSalesLastYearQueries,
+  normalizeColoplastSalesLastYearRows,
 } from "@/lib/bi-reports/coloplast";
 import {
   executePowerBiQuery,
@@ -26,7 +26,7 @@ export async function GET() {
   let data: PowerBiExecuteQueriesResponse[];
   try {
     const tokenOptions = { amsaAccessToken: token };
-    const specs = buildColoplastSales2025Queries(area);
+    const specs = buildColoplastSalesLastYearQueries(area);
 
     data = await Promise.all(
       specs.map(async (spec) => {
@@ -65,7 +65,7 @@ export async function GET() {
       report: "coloplast_sales_last_year",
       year: 2025,
       area,
-      records: data.flatMap(normalizeColoplastSales2025Rows),
+      records: data.flatMap(normalizeColoplastSalesLastYearRows),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );

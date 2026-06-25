@@ -260,7 +260,7 @@ function getGroup1SelectExpression(category: ColoplastCategory) {
   return category.group1Expression ?? "[Group1]";
 }
 
-function buildColoplastSales2026Query(
+function buildColoplastSalesCurrentYearQuery(
   areaName: string,
   category: ColoplastCategory,
 ): string {
@@ -286,11 +286,11 @@ function buildColoplastSales2026Query(
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
     `  "Group1", ${group1},`,
     '  "Group2", [Group2],',
-    '  "Month", \'U Months\'[Month],',
-    '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+    "  \"Month\", 'U Months'[Month],",
+    "  \"ClosedMonthStatus\", 'U Months'[Status of Closed Month],",
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
     '  "Currency", [CURRENCY],',
@@ -324,10 +324,10 @@ function buildColoplastSalesLastYearQuery(
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
     `  "Group1", ${group1},`,
     '  "Group2", [Group2],',
-    '  "Month", \'U Months\'[Month],',
+    "  \"Month\", 'U Months'[Month],",
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
     '  "Currency", [CURRENCY],',
@@ -337,7 +337,7 @@ function buildColoplastSalesLastYearQuery(
   ]);
 }
 
-function buildColoplastTrend2026Query(
+function buildColoplastTrendCurrentYearQuery(
   areaName: string,
   category: ColoplastCategory,
 ): string {
@@ -360,7 +360,7 @@ function buildColoplastTrend2026Query(
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
     `  "Group1", ${group1},`,
     '  "Group2", [Group2],',
     '  "REPORT_CODE", [REPORT_CODE],',
@@ -372,17 +372,17 @@ function buildColoplastTrend2026Query(
   ]);
 }
 
-export function buildColoplastSales2026Queries(
+export function buildColoplastSalesCurrentYearQueries(
   areaName: string,
 ): ColoplastQuerySpec[] {
   return COLOPLAST_CATEGORIES.map((category) => ({
     label: category.label,
-    query: buildColoplastSales2026Query(areaName, category),
+    query: buildColoplastSalesCurrentYearQuery(areaName, category),
     targetKey: "coloplast_sales_current_year",
   }));
 }
 
-export function buildColoplastSales2025Queries(
+export function buildColoplastSalesLastYearQueries(
   areaName: string,
 ): ColoplastQuerySpec[] {
   return COLOPLAST_CATEGORIES.map((category) => ({
@@ -392,29 +392,29 @@ export function buildColoplastSales2025Queries(
   }));
 }
 
-export function buildColoplastTrend2026Queries(
+export function buildColoplastTrendCurrentYearQueries(
   areaName: string,
 ): ColoplastQuerySpec[] {
   return COLOPLAST_CATEGORIES.map((category) => ({
     label: category.label,
-    query: buildColoplastTrend2026Query(areaName, category),
+    query: buildColoplastTrendCurrentYearQuery(areaName, category),
     targetKey: category.trendTargetKey ?? "coloplast_trend_current_year",
   }));
 }
 
-export function normalizeColoplastSales2025Rows(
+export function normalizeColoplastSalesLastYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): LastYearSalesRow[] {
   return normalizeLastYearSalesRows(response);
 }
 
-export function normalizeColoplastSales2026Rows(
+export function normalizeColoplastSalesCurrentYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): CurrentYearSalesRow[] {
   return normalizeCurrentYearSalesRows(response);
 }
 
-export function normalizeColoplastTrend2026Rows(
+export function normalizeColoplastTrendCurrentYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): TrendSalesRow[] {
   return normalizeTrendSalesRows(response);

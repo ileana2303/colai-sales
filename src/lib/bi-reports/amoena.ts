@@ -11,11 +11,14 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  escapeDaxString,
   joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
-export function buildAmoenaSalesCurrentYearQuery(_areaName: string): string {
+export function buildAmoenaSalesCurrentYearQuery(areaName: string): string {
+  const area = escapeDaxString(areaName);
+
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
@@ -23,6 +26,7 @@ export function buildAmoenaSalesCurrentYearQuery(_areaName: string): string {
     "  'U Trade Family AMOENA'[Trader Family AMOENA],",
     "  'U Months'[Month],",
     "  'U Months'[Status of Closed Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     "  FILTER('UBussiness', 'UBussiness'[BusinessUnit] = \"AMOENA\"),",
     '  "Group2", "ALL",',
     '  "REPORT_CODE", "P03V01-VCYTCY",',
@@ -50,13 +54,16 @@ export function buildAmoenaSalesCurrentYearQuery(_areaName: string): string {
   ]);
 }
 
-export function buildAmoenaSalesLastYearQuery(_areaName: string): string {
+export function buildAmoenaSalesLastYearQuery(areaName: string): string {
+  const area = escapeDaxString(areaName);
+
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
     "  'U Sales Person'[SellerCode],",
     "  'U Trade Family AMOENA'[Trader Family AMOENA],",
     "  'U Months'[Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     "  FILTER('UBussiness', 'UBussiness'[BusinessUnit] = \"AMOENA\"),",
     "  FILTER('Calendar', 'Calendar'[Year] = 2025),",
     '  "Group2", "ALL",',
@@ -82,7 +89,9 @@ export function buildAmoenaSalesLastYearQuery(_areaName: string): string {
   ]);
 }
 
-export function buildAmoenaTrendQuery(_areaName: string): string {
+export function buildAmoenaTrendQuery(areaName: string): string {
+  const area = escapeDaxString(areaName);
+
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
@@ -91,6 +100,7 @@ export function buildAmoenaTrendQuery(_areaName: string): string {
     "  'U Sales Person'[SellerCode],",
     "  'U Sales Person'[Πωλητής],",
     "  'U Trade Family AMOENA'[Trader Family AMOENA],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     "  FILTER('UBussiness', 'UBussiness'[BusinessUnit] = \"AMOENA\"),",
     '  "Group2", "ALL",',
     '  "REPORT_CODE", "P03V01-VTREND",',

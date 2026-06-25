@@ -1,14 +1,14 @@
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
 import {
   fetchPowerBiSellersCatalog,
-  findPowerBiSellerByCode,
+  findPowerBiSellersByArea,
   type PowerBiSellerRow,
   resolveReportSellerContext,
   type ResolvedReportSellerContext,
 } from "@/lib/bi-reports/sellers";
 import { POWERBI_NO_CACHE_HEADERS } from "@/lib/bi-reports/powerBi";
-import { normalizeSellerCode } from "@/lib/sellerAccess";
 import type { ApiUserInfo } from "@/types/api/schemas";
+import type { SessionUserInfo } from "@/lib/sessionUser";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -58,7 +58,7 @@ export async function getPowerBiRouteAuthContext(): Promise<PowerBiRouteAuthResu
     return {
       ok: false,
       response: badRequestResponse(
-        "Missing Power BI seller mapping for authenticated user",
+        "Missing area or sellers for authenticated user",
       ),
     };
   }
@@ -76,6 +76,7 @@ export async function getPowerBiSellersRouteContext(): Promise<
       ok: true;
       token: string;
       userInfo: ApiUserInfo | null;
+      area: string;
       records: PowerBiSellerRow[];
       matched: PowerBiSellerRow | null;
     }
@@ -89,17 +90,18 @@ export async function getPowerBiSellersRouteContext(): Promise<
 
   const userInfo = decodeUserInfoCookie(jar.get(userCookieName)?.value);
   const tokenOptions = { amsaAccessToken: token };
-  const records = await fetchPowerBiSellersCatalog(tokenOptions);
-  const sellerCode = normalizeSellerCode(userInfo?.sellerCode);
-  const matched = sellerCode
-    ? findPowerBiSellerByCode(records, sellerCode)
-    : null;
+  const allRecords = await fetchPowerBiSellersCatalog(tokenOptions);
+  const area = userInfo?.area?.trim() ?? "";
+  const records = area
+    ? findPowerBiSellersByArea(allRecords, area)
+    : allRecords;
 
   return {
     ok: true,
     token,
     userInfo,
+    area,
     records,
-    matched,
+    matched: null,
   };
 }

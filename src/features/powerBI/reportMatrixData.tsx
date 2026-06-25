@@ -16,6 +16,7 @@ import {
   findPowerBiSellerByCode,
   type PowerBiSellerRow,
 } from "@/lib/bi-reports/sellers";
+import { normalizeSellerCode } from "@/lib/sellerAccess";
 import { formatPercentGR } from "@/lib/utils/number";
 import type { ReactNode } from "react";
 
@@ -62,6 +63,24 @@ export function enrichMatrixRowsWithSellers(
       team: match.team || row.team,
       sellerName: match.salesPerson || row.sellerName,
     };
+  });
+}
+
+function filterMatrixRowsBySellersCatalog(
+  rows: PowerBiMatrixSourceRow[],
+  sellersCatalog: PowerBiSellerRow[],
+): PowerBiMatrixSourceRow[] {
+  if (!sellersCatalog.length) return rows;
+
+  const allowedSellerCodes = new Set(
+    sellersCatalog
+      .map((seller) => normalizeSellerCode(seller.sellerCode))
+      .filter(Boolean),
+  );
+
+  return rows.filter((row) => {
+    const sellerCode = normalizeSellerCode(row.sellerCode);
+    return !sellerCode || allowedSellerCodes.has(sellerCode);
   });
 }
 
@@ -155,13 +174,27 @@ export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
   { key: "seller", label: "Seller Name - Seller code", width: 168 },
 ];
 
+function usesPlainNumberFormat(
+  aggregate: MatrixAggregate,
+  isTotal: boolean,
+) {
+  return isTotal && aggregate.currency === 0;
+}
+
 function formatMatrixValue(
   value: number | null | undefined,
   aggregate: MatrixAggregate,
+  isTotal = false,
 ) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
-  if (value === 0) return "0";
-  if (aggregate.currency === 0) return numberFormatter.format(value);
+  if (value === 0) {
+    return usesPlainNumberFormat(aggregate, isTotal)
+      ? "0"
+      : currencyFormatter.format(0);
+  }
+  if (usesPlainNumberFormat(aggregate, isTotal)) {
+    return numberFormatter.format(value);
+  }
   return currencyFormatter.format(value);
 }
 
@@ -180,9 +213,10 @@ function formatGapDiff(
   result: number,
   target: number,
   aggregate: MatrixAggregate,
+  isTotal = false,
 ) {
   if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
-  return formatMatrixValue(result - target, aggregate);
+  return formatMatrixValue(result - target, aggregate, isTotal);
 }
 
 function formatYearComparison(current: number, previous: number) {
@@ -195,10 +229,11 @@ function formatYearDiff(
   current: number,
   previous: number,
   aggregate: MatrixAggregate,
+  isTotal = false,
 ) {
   if (!Number.isFinite(current) || !Number.isFinite(previous))
     return EMPTY_VALUE;
-  return formatMatrixValue(current - previous, aggregate);
+  return formatMatrixValue(current - previous, aggregate, isTotal);
 }
 
 function buildMetricCellTones(values: {
@@ -313,9 +348,10 @@ export function buildReportMatrixTotalRows(
 function formatOptionalMatrixValue(
   value: number | null,
   aggregate: MatrixAggregate,
+  isTotal = false,
 ) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
-  return formatMatrixValue(value, aggregate);
+  return formatMatrixValue(value, aggregate, isTotal);
 }
 
 function isClosedMonth(status?: string | null) {
@@ -803,20 +839,28 @@ function aggregateToMatrixRow(
     }),
     values: {
       currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
-      currentDiff: formatGapDiff(aggregate.vTrend, aggregate.tcyAll, aggregate),
-      currentTarget: formatMatrixValue(aggregate.tcyAll, aggregate),
-      currentTrend: formatMatrixValue(aggregate.vTrend, aggregate),
+      currentDiff: formatGapDiff(
+        aggregate.vTrend,
+        aggregate.tcyAll,
+        aggregate,
+        isTotal,
+      ),
+      currentTarget: formatMatrixValue(aggregate.tcyAll, aggregate, isTotal),
+      currentTrend: formatMatrixValue(aggregate.vTrend, aggregate, isTotal),
       extraMonthlyTarget: formatOptionalMatrixValue(
         extraMonthlyTarget,
         aggregate,
+        isTotal,
       ),
       monthlyTarget: formatOptionalMatrixValue(
         monthlyTargets.monthlyTarget,
         aggregate,
+        isTotal,
       ),
       newMonthlyTarget: formatOptionalMatrixValue(
         monthlyTargets.newMonthlyTarget,
         aggregate,
+        isTotal,
       ),
       previousCover: formatCoverPercent(
         closedPeriod.target,
@@ -826,12 +870,18 @@ function aggregateToMatrixRow(
         closedPeriod.result,
         closedPeriod.target,
         aggregate,
+        isTotal,
       ),
-      previousResult: formatMatrixValue(closedPeriod.result, aggregate),
-      previousTarget: formatMatrixValue(closedPeriod.target, aggregate),
+      previousResult: formatMatrixValue(closedPeriod.result, aggregate, isTotal),
+      previousTarget: formatMatrixValue(closedPeriod.target, aggregate, isTotal),
       yearComparison: formatYearComparison(closedPeriod.result, aggregate.vlc),
-      yearDiff: formatYearDiff(closedPeriod.result, aggregate.vlc, aggregate),
-      yearResult: formatMatrixValue(aggregate.vlc, aggregate),
+      yearDiff: formatYearDiff(
+        closedPeriod.result,
+        aggregate.vlc,
+        aggregate,
+        isTotal,
+      ),
+      yearResult: formatMatrixValue(aggregate.vlc, aggregate, isTotal),
     },
   };
 }
@@ -1110,16 +1160,28 @@ export function buildReportMatrixRows({
   trendRows,
   sellersCatalog = [],
 }: BuildReportMatrixRowsInput): ReportMatrixRow[] {
-  const enrichedCurrentRows = enrichMatrixRowsWithSellers(
+  const scopedCurrentRows = filterMatrixRowsBySellersCatalog(
     currentRows,
     sellersCatalog,
   );
-  const enrichedPreviousRows = enrichMatrixRowsWithSellers(
+  const scopedPreviousRows = filterMatrixRowsBySellersCatalog(
     previousRows,
     sellersCatalog,
   );
-  const enrichedTrendRows = enrichMatrixRowsWithSellers(
+  const scopedTrendRows = filterMatrixRowsBySellersCatalog(
     trendRows,
+    sellersCatalog,
+  );
+  const enrichedCurrentRows = enrichMatrixRowsWithSellers(
+    scopedCurrentRows,
+    sellersCatalog,
+  );
+  const enrichedPreviousRows = enrichMatrixRowsWithSellers(
+    scopedPreviousRows,
+    sellersCatalog,
+  );
+  const enrichedTrendRows = enrichMatrixRowsWithSellers(
+    scopedTrendRows,
     sellersCatalog,
   );
   const aggregates = new Map<string, MatrixAggregate>();

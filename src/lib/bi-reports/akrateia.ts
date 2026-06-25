@@ -194,7 +194,7 @@ function buildBaseArgs(
   return args;
 }
 
-export function buildAkrateiaSales2026Queries(areaName: string): string[] {
+export function buildAkrateiaSalesCurrentYearQueries(areaName: string): string[] {
   return AKRATEIA_CATEGORIES.map((category) => {
     const args = [
       ...buildBaseArgs(areaName, category, {
@@ -233,7 +233,7 @@ export function buildAkrateiaSales2026Queries(areaName: string): string[] {
   });
 }
 
-export function buildAkrateiaSales2025Queries(areaName: string): string[] {
+export function buildAkrateiaSalesLastYearQueries(areaName: string): string[] {
   return AKRATEIA_CATEGORIES.map((category) => {
     const args = [
       ...buildBaseArgs(areaName, category, { includeMonth: true }),
@@ -267,7 +267,7 @@ export function buildAkrateiaSales2025Queries(areaName: string): string[] {
   });
 }
 
-export function buildAkrateiaTrend2026Queries(areaName: string): string[] {
+export function buildAkrateiaTrendCurrentYearQueries(areaName: string): string[] {
   return AKRATEIA_CATEGORIES.map((category) => {
     const args = [
       ...buildBaseArgs(areaName, category, {}),
@@ -300,19 +300,19 @@ export function buildAkrateiaTrend2026Queries(areaName: string): string[] {
   });
 }
 
-export function normalizeAkrateiaSales2025Rows(
+export function normalizeAkrateiaSalesLastYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): LastYearSalesRow[] {
   return normalizeLastYearSalesRows(response);
 }
 
-export function normalizeAkrateiaSales2026Rows(
+export function normalizeAkrateiaSalesCurrentYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): CurrentYearSalesRow[] {
   return normalizeCurrentYearSalesRows(response);
 }
 
-export function normalizeAkrateiaTrend2026Rows(
+export function normalizeAkrateiaTrendCurrentYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): TrendSalesRow[] {
   return normalizeTrendSalesRows(response);

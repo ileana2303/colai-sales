@@ -1,8 +1,8 @@
 import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext";
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
-  buildBbmSales2026Query,
-  normalizeBbmSales2026Rows,
+  buildBbmSalesCurrentYearQuery,
+  normalizeBbmSalesCurrentYearRows,
 } from "@/lib/bi-reports/bbm";
 import {
   executePowerBiQuery,
@@ -26,7 +26,7 @@ export async function GET() {
   let data: PowerBiExecuteQueriesResponse;
   try {
     data = await executePowerBiQuery(
-      buildBbmSales2026Query(area),
+      buildBbmSalesCurrentYearQuery(area),
       resolveBiReportPowerBiTarget("bbm_sales_current_year"),
       { amsaAccessToken: token },
     );
@@ -47,7 +47,7 @@ export async function GET() {
       report: "bbm_sales_current_year",
       year: 2026,
       area,
-      records: normalizeBbmSales2026Rows(data),
+      records: normalizeBbmSalesCurrentYearRows(data),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );

@@ -110,6 +110,7 @@ export function fetchPorgesTrendsReport() {
 export type PowerBiSellersResponse = {
   ok: true;
   report: "sellers";
+  area: string;
   matched: PowerBiSellerRow | null;
   records: PowerBiSellerRow[];
 };

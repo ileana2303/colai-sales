@@ -18,6 +18,7 @@ export async function GET() {
       {
         ok: true,
         report: "sellers",
+        area: context.area,
         matched: context.matched,
         records: context.records,
       },

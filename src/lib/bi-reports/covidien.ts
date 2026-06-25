@@ -94,9 +94,9 @@ function getCovidienSalesQueryContext(areaName: string) {
   };
 }
 
-export function buildCovidienSalesLastYearQuery(_areaName: string): string {
-  const { businessUnit, excludedDocumentTypes, familyGroups } =
-    getCovidienQueryConstants();
+export function buildCovidienSalesLastYearQuery(areaName: string): string {
+  const { area, businessUnit, excludedDocumentTypes, familyGroups } =
+    getCovidienSalesQueryContext(areaName);
 
   return joinDaxQuery([
     "DEFINE",
@@ -107,6 +107,7 @@ export function buildCovidienSalesLastYearQuery(_areaName: string): string {
     "  'U Sales Person'[Πωλητής],",
     "  'U Family'[Family Group],",
     "  'U Months'[Month],",
+    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
     "  FILTER('Calendar', 'Calendar'[Year] = 2025),",
     '  "REPORT_CODE", "P07VALL-VLY",',
@@ -205,7 +206,7 @@ export function buildCovidienTrendQuery(areaName: string): string {
   ]);
 }
 
-export function normalizeCovidienSales2025Rows(
+export function normalizeCovidienSalesLastYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): LastYearSalesRow[] {
   return normalizeLastYearSalesRows(response);

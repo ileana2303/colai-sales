@@ -2,8 +2,8 @@ import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
   AKRATEIA_CATEGORY_ORDER,
-  buildAkrateiaTrend2026Queries,
-  normalizeAkrateiaTrend2026Rows,
+  buildAkrateiaTrendCurrentYearQueries,
+  normalizeAkrateiaTrendCurrentYearRows,
 } from "@/lib/bi-reports/akrateia";
 import {
   executePowerBiQuery,
@@ -30,7 +30,7 @@ export async function GET() {
     const tokenOptions = { amsaAccessToken: token };
 
     data = await Promise.all(
-      buildAkrateiaTrend2026Queries(area).map(async (query, index) => {
+      buildAkrateiaTrendCurrentYearQueries(area).map(async (query, index) => {
         try {
           return await executePowerBiQuery(query, target, tokenOptions);
         } catch (err) {
@@ -65,7 +65,7 @@ export async function GET() {
       report: "akrateia_trend_current_year",
       year: 2026,
       area,
-      records: data.flatMap(normalizeAkrateiaTrend2026Rows),
+      records: data.flatMap(normalizeAkrateiaTrendCurrentYearRows),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );

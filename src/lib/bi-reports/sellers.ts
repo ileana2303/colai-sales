@@ -10,6 +10,7 @@ import {
 } from "@/lib/bi-reports/powerBi";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import type { ApiUserInfo } from "@/types/api/schemas";
+import type { SessionUserInfo } from "@/lib/sessionUser";
 
 export type PowerBiSellerRow = {
   sellerCode: string;
@@ -68,6 +69,24 @@ export function normalizePowerBiSellerRows(
   }));
 }
 
+function normalizeArea(area: string | null | undefined): string {
+  return String(area ?? "")
+    .trim()
+    .toLocaleUpperCase("el-GR");
+}
+
+export function findPowerBiSellersByArea(
+  records: PowerBiSellerRow[],
+  area: string,
+): PowerBiSellerRow[] {
+  const normalizedTarget = normalizeArea(area);
+  if (!normalizedTarget) return [];
+
+  return records.filter(
+    (row) => normalizeArea(row.area) === normalizedTarget,
+  );
+}
+
 export function findPowerBiSellerByCode(
   records: PowerBiSellerRow[],
   sellerCode: string,
@@ -110,31 +129,20 @@ export async function fetchPowerBiSellersCatalog(
 }
 
 export async function resolveReportSellerContext(
-  userInfo: ApiUserInfo | null,
+  userInfo: SessionUserInfo | ApiUserInfo | null,
   tokenOptions: PowerBiTokenOptions,
 ): Promise<ResolvedReportSellerContext | null> {
-  const sellerCode = normalizeSellerCode(userInfo?.sellerCode);
-
-  if (sellerCode) {
-    const records = await fetchPowerBiSellersCatalog(tokenOptions);
-    const match = findPowerBiSellerByCode(records, sellerCode);
-    if (match?.area) {
-      return {
-        area: match.area,
-        team: match.team,
-        sellerCode: match.sellerCode,
-        sellerName: match.salesPerson,
-      };
-    }
-  }
-
   const area = userInfo?.area?.trim();
   if (!area) return null;
 
+  const records = await fetchPowerBiSellersCatalog(tokenOptions);
+  const areaSellers = findPowerBiSellersByArea(records, area);
+  if (!areaSellers.length) return null;
+
   return {
     area,
-    team: userInfo?.team?.trim() ?? "",
-    sellerCode: sellerCode ?? "",
+    team: userInfo?.team?.trim() ?? areaSellers[0]?.team ?? "",
+    sellerCode: normalizeSellerCode(userInfo?.sellerCode) ?? "",
     sellerName: getUserDisplayName(userInfo),
   };
 }

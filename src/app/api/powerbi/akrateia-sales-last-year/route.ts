@@ -2,8 +2,8 @@ import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
   AKRATEIA_CATEGORY_ORDER,
-  buildAkrateiaSales2025Queries,
-  normalizeAkrateiaSales2025Rows,
+  buildAkrateiaSalesLastYearQueries,
+  normalizeAkrateiaSalesLastYearRows,
 } from "@/lib/bi-reports/akrateia";
 import {
   executePowerBiQuery,
@@ -30,7 +30,7 @@ export async function GET() {
     const tokenOptions = { amsaAccessToken: token };
 
     data = await Promise.all(
-      buildAkrateiaSales2025Queries(area).map(async (query, index) => {
+      buildAkrateiaSalesLastYearQueries(area).map(async (query, index) => {
         try {
           return await executePowerBiQuery(query, target, tokenOptions);
         } catch (err) {
@@ -65,7 +65,7 @@ export async function GET() {
       report: "akrateia_sales_last_year",
       year: 2025,
       area,
-      records: data.flatMap(normalizeAkrateiaSales2025Rows),
+      records: data.flatMap(normalizeAkrateiaSalesLastYearRows),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );

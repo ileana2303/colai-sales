@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { loginRequest } from "@/lib/api/auth";
 import { authKeys } from "@/features/auth/queryKeys";
+import { toSessionUserInfo } from "@/lib/sessionUser";
 import { useAuthStore } from "@/stores/authStore";
 
 export function useLogin() {
@@ -14,12 +15,15 @@ export function useLogin() {
   return useMutation({
     mutationFn: loginRequest,
     onSuccess: (data) => {
-      setAuthenticated(data.userInfos!);
+      const sessionUser = toSessionUserInfo(data.userInfos);
+      if (!sessionUser) return;
+
+      setAuthenticated(sessionUser);
       queryClient.setQueryData(authKeys.me(), {
         ok: true,
         authenticated: true,
-        userInfos: data.userInfos,
-        user: { username: data.userInfos?.username ?? "user" },
+        userInfos: sessionUser,
+        user: { username: sessionUser.username ?? "user" },
       });
     },
     onError: (error: Error) => {

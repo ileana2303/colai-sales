@@ -2,7 +2,7 @@ import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
   buildCovidienSalesLastYearQuery,
-  normalizeCovidienSales2025Rows,
+  normalizeCovidienSalesLastYearRows,
 } from "@/lib/bi-reports/covidien";
 import {
   executePowerBiQuery,
@@ -47,7 +47,7 @@ export async function GET() {
       report: "covidien_sales_last_year",
       year: 2025,
       area,
-      records: normalizeCovidienSales2025Rows(data),
+      records: normalizeCovidienSalesLastYearRows(data),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );
