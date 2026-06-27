@@ -5,6 +5,7 @@ import {
   normalizeColoplastSalesLastYearRows,
 } from "@/lib/bi-reports/coloplast";
 import {
+  getPreviousReportYear,
   executePowerBiQuery,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
@@ -39,7 +40,7 @@ export async function GET() {
         } catch (err) {
           if (err instanceof PowerBiRequestError) {
             throw new PowerBiRequestError(
-              `Coloplast sales 2025 ${spec.label} query failed. ${err.message}`,
+              `Coloplast sales ${getPreviousReportYear()} ${spec.label} query failed. ${err.message}`,
               err.status,
             );
           }
@@ -63,7 +64,7 @@ export async function GET() {
     {
       ok: true,
       report: "coloplast_sales_last_year",
-      year: 2025,
+      year: getPreviousReportYear(),
       area,
       records: data.flatMap(normalizeColoplastSalesLastYearRows),
     },

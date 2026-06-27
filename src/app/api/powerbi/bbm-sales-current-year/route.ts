@@ -5,6 +5,7 @@ import {
   normalizeBbmSalesCurrentYearRows,
 } from "@/lib/bi-reports/bbm";
 import {
+  getCurrentReportYear,
   executePowerBiQuery,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
@@ -45,7 +46,7 @@ export async function GET() {
     {
       ok: true,
       report: "bbm_sales_current_year",
-      year: 2026,
+      year: getCurrentReportYear(),
       area,
       records: normalizeBbmSalesCurrentYearRows(data),
     },

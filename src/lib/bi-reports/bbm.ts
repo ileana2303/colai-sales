@@ -11,8 +11,11 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  buildCalendarYearFilter,
+  CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
   joinDaxQuery,
+  LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -69,7 +72,7 @@ export function buildBbmSalesLastYearQuery(areaName: string): string {
     "  'U Months'[Month],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = YEAR(TODAY()) - 1),",
+    `  ${buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P06VALL-VLY",',
     '  "REPORT_DESC", "BBM Sales by AREA, GROUP and Business Unit",',
     '  "VCY", [Sales LY]',
@@ -103,7 +106,7 @@ export function buildBbmSalesCurrentYearQuery(areaName: string): string {
     "  'U Months'[Status of Closed Month],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = 2026),",
+    `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P06VALL-VCYTRCY",',
     '  "REPORT_DESC", "BBM Sales and Target by AREA, GROUP and Business Unit",',
     '  "VCY", [Sales],',

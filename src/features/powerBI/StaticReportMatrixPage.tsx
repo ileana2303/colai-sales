@@ -3,6 +3,10 @@ import {
   createReportMatrixSections,
   reportMatrixLeadingColumns,
 } from "@/features/powerBI/reportMatrixData";
+import {
+  getCurrentReportYear,
+  getPreviousReportYear,
+} from "@/lib/bi-reports/powerBi";
 
 type StaticReportMatrixPageProps = {
   brandLabel: string;
@@ -10,8 +14,8 @@ type StaticReportMatrixPageProps = {
 };
 
 const matrixSections = createReportMatrixSections({
-  currentYear: 2026,
-  previousYear: 2025,
+  currentYear: getCurrentReportYear(),
+  previousYear: getPreviousReportYear(),
 });
 
 export function StaticReportMatrixPage({

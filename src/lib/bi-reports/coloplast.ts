@@ -12,9 +12,12 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  buildCalendarYearFilter,
+  CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
   indentDaxArgs,
   joinDaxQuery,
+  LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -237,10 +240,6 @@ function readNumber(row: Record<string, unknown>, key: string): number | null {
   return toNullableNumber(row[`[${key}]`] ?? row[key]);
 }
 
-function buildCalendarYearFilter(yearExpression: string): string {
-  return `FILTER('Calendar', 'Calendar'[Year] = ${yearExpression})`;
-}
-
 function buildBaseArgs(
   areaName: string,
   category: ColoplastCategory,
@@ -283,11 +282,11 @@ function buildBaseArgs(
   }
 
   if (category.useCalendarYearFilter && options.calendarYear === "last") {
-    args.push(buildCalendarYearFilter("YEAR(TODAY()) - 1"));
+    args.push(buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX));
   }
 
   if (category.useCalendarYearFilter && options.calendarYear === "current") {
-    args.push(buildCalendarYearFilter("YEAR(TODAY())"));
+    args.push(buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX));
   }
 
   if (category.group1) {

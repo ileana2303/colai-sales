@@ -11,9 +11,12 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  buildCalendarYearFilter,
+  CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
   indentDaxArgs,
   joinDaxQuery,
+  LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -201,10 +204,6 @@ const AKRATEIA_CATEGORIES: AkrateiaCategory[] = [
   },
 ];
 
-function buildCalendarYearFilter(yearExpression: string): string {
-  return `FILTER('Calendar', 'Calendar'[Year] = ${yearExpression})`;
-}
-
 function resolveAkrateiaQuery(
   category: AkrateiaCategory,
   kind: AkrateiaQueryKind,
@@ -311,11 +310,11 @@ function buildBaseArgs(
   );
 
   if (query.calendarYear === "last") {
-    args.push(buildCalendarYearFilter("YEAR(TODAY()) - 1"));
+    args.push(buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX));
   }
 
   if (query.calendarYear === "current") {
-    args.push(buildCalendarYearFilter("YEAR(TODAY())"));
+    args.push(buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX));
   }
 
   if (query.group1) {

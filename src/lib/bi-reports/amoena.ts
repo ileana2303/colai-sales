@@ -11,8 +11,11 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  buildCalendarYearFilter,
+  CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
   joinDaxQuery,
+  LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -28,7 +31,7 @@ export function buildAmoenaSalesCurrentYearQuery(areaName: string): string {
     "  'U Trade Family AMOENA'[Trader Family AMOENA],",
     "  FILTER('UBussiness', 'UBussiness'[BusinessUnit] = \"AMOENA\"),",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = 2026),",
+    `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "Group2", "AMOENA",',
     '  "REPORT_CODE", "P03V01-VCYTCY",',
     '  "REPORT_DESC", "AMOENA ",',
@@ -66,7 +69,7 @@ export function buildAmoenaSalesLastYearQuery(areaName: string): string {
     "  'U Trade Family AMOENA'[Trader Family AMOENA],",
     "  FILTER('UBussiness', 'UBussiness'[BusinessUnit] = \"AMOENA\"),",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = YEAR(TODAY()) - 1),",
+    `  ${buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX)},`,
     '  "Group2", "AMOENA",',
     '  "REPORT_CODE", "P03V01-VLY",',
     '  "REPORT_DESC", "AMOENA ",',
@@ -101,7 +104,7 @@ export function buildAmoenaTrendQuery(areaName: string): string {
     "  'U Trade Family AMOENA'[Trader Family AMOENA],",
     "  FILTER('UBussiness', 'UBussiness'[BusinessUnit] = \"AMOENA\"),",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = 2026),",
+    `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "Group2", "AMOENA",',
     '  "REPORT_CODE", "P03V01-VTREND",',
     '  "REPORT_DESC", "AMOENA ",',

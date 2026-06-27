@@ -5,6 +5,7 @@ import {
   normalizeCovidienSalesLastYearRows,
 } from "@/lib/bi-reports/covidien";
 import {
+  getPreviousReportYear,
   executePowerBiQuery,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
@@ -45,7 +46,7 @@ export async function GET() {
     {
       ok: true,
       report: "covidien_sales_last_year",
-      year: 2025,
+      year: getPreviousReportYear(),
       area,
       records: normalizeCovidienSalesLastYearRows(data),
     },

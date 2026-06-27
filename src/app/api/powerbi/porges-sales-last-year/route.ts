@@ -5,6 +5,7 @@ import {
   normalizePorgesSalesLastYearRows,
 } from "@/lib/bi-reports/porges";
 import {
+  getPreviousReportYear,
   executePowerBiQuery,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
@@ -45,7 +46,7 @@ export async function GET() {
     {
       ok: true,
       report: "porges_sales_last_year",
-      year: 2025,
+      year: getPreviousReportYear(),
       area,
       records: normalizePorgesSalesLastYearRows(data),
     },

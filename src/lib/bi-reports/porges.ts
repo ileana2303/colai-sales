@@ -11,8 +11,11 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  buildCalendarYearFilter,
+  CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
   joinDaxQuery,
+  LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -83,7 +86,7 @@ export function buildPorgesSalesLastYearQuery(areaName: string): string {
     "  'UBussiness'[BusinessUnit],",
     "  FILTER(ALL('U Sales Person'), [SALES TARGET PORGES] > 0),",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = YEAR(TODAY()) - 1),",
+    `  ${buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P05VALL-VLY",',
     '  "REPORT_DESC", "Porges Sales by Sales Person and Group LY",',
     '  "Currency", 1,',
@@ -120,7 +123,7 @@ function buildPorgesSalesCurrentYearBaseQuery(areaName: string): string {
     "  'U Months'[Month],",
     "  'U Months'[Status of Closed Month],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = 2026),",
+    `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P05VALL-VCYTCY",',
     '  "REPORT_DESC", "Porges Sales, Target and Trend by Sales Person and Group",',
     '  "Currency", 1,',
@@ -166,7 +169,7 @@ export function buildPorgesTrendQuery(areaName: string): string {
     "  'U Item Family Code'[Porges SUB],",
     "  'U Item Family Code'[ItemFamilyCode (groups)],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = 2026),",
+    `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P05VALL-VTREND",',
     '  "REPORT_DESC", "Porges Sales, Target and Trend by Sales Person and Group",',
     '  "Currency", 1,',

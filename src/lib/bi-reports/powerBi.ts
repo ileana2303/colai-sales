@@ -106,6 +106,21 @@ export function joinDaxQuery(lines: readonly string[]): string {
   return lines.join("\n");
 }
 
+export const CURRENT_CALENDAR_YEAR_DAX = "YEAR(TODAY())";
+export const LAST_CALENDAR_YEAR_DAX = "YEAR(TODAY()) - 1";
+
+export function buildCalendarYearFilter(yearExpression: string): string {
+  return `FILTER('Calendar', 'Calendar'[Year] = ${yearExpression})`;
+}
+
+export function getCurrentReportYear(referenceDate = new Date()): number {
+  return referenceDate.getFullYear();
+}
+
+export function getPreviousReportYear(referenceDate = new Date()): number {
+  return getCurrentReportYear(referenceDate) - 1;
+}
+
 export function indentDaxArgs(args: readonly string[]): string {
   return args.join(",\n  ");
 }

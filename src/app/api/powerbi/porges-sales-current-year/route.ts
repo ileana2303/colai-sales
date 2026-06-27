@@ -6,6 +6,7 @@ import {
 } from "@/lib/bi-reports/porges";
 import {
   executePowerBiQuery,
+  getCurrentReportYear,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
   type PowerBiExecuteQueriesResponse,
@@ -45,7 +46,7 @@ export async function GET() {
     {
       ok: true,
       report: "porges_sales_current_year",
-      year: 2026,
+      year: getCurrentReportYear(),
       area,
       records: normalizePorgesSalesRows(data),
     },

@@ -6,6 +6,7 @@ import {
   normalizeAkrateiaSalesLastYearRows,
 } from "@/lib/bi-reports/akrateia";
 import {
+  getPreviousReportYear,
   executePowerBiQuery,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
@@ -39,7 +40,7 @@ export async function GET() {
 
           if (err instanceof PowerBiRequestError) {
             throw new PowerBiRequestError(
-              `Akrateia sales 2025 ${category} query failed. ${err.message}`,
+              `Akrateia sales ${getPreviousReportYear()} ${category} query failed. ${err.message}`,
               err.status,
             );
           }
@@ -63,7 +64,7 @@ export async function GET() {
     {
       ok: true,
       report: "akrateia_sales_last_year",
-      year: 2025,
+      year: getPreviousReportYear(),
       area,
       records: data.flatMap(normalizeAkrateiaSalesLastYearRows),
     },

@@ -6,6 +6,7 @@ import {
   normalizeAkrateiaTrendCurrentYearRows,
 } from "@/lib/bi-reports/akrateia";
 import {
+  getCurrentReportYear,
   executePowerBiQuery,
   POWERBI_NO_CACHE_HEADERS,
   PowerBiRequestError,
@@ -39,7 +40,7 @@ export async function GET() {
 
           if (err instanceof PowerBiRequestError) {
             throw new PowerBiRequestError(
-              `Akrateia trend 2026 ${category} query failed. ${err.message}`,
+              `Akrateia trend ${getCurrentReportYear()} ${category} query failed. ${err.message}`,
               err.status,
             );
           }
@@ -63,7 +64,7 @@ export async function GET() {
     {
       ok: true,
       report: "akrateia_trend_current_year",
-      year: 2026,
+      year: getCurrentReportYear(),
       area,
       records: data.flatMap(normalizeAkrateiaTrendCurrentYearRows),
     },

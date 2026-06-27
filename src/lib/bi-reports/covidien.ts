@@ -11,8 +11,11 @@ import {
   type TrendSalesRow,
 } from "@/lib/bi-reports/trendSales";
 import {
+  buildCalendarYearFilter,
+  CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
   joinDaxQuery,
+  LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -94,7 +97,7 @@ export function buildCovidienSalesLastYearQuery(areaName: string): string {
     "  'U Months'[Month],",
     `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = 2025),",
+    `  ${buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P07VALL-VLY",',
     '  "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit LY",',
     '  "Currency", 1,',
@@ -133,7 +136,7 @@ export function buildCovidienSalesQuery(areaName: string): string {
     "  'U Months'[Status of Closed Month],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('U Family', 'U Family'[Family Group] IN {${familyGroups}}),`,
-    "  FILTER('Calendar', 'Calendar'[Year] = YEAR(TODAY())),",
+    `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P07VALL-VCYTRCY",',
     '  "REPORT_DESC", "Covidien Sales and Target by AREA, GROUP and Business Unit",',
     '  "Currency", 1,',

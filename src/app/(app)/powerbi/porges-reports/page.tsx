@@ -1,4 +1,8 @@
 import { PowerBiReportMatrixPage } from "@/features/powerBI/PowerBiReportMatrixPage";
+import {
+  getCurrentReportYear,
+  getPreviousReportYear,
+} from "@/lib/bi-reports/powerBi";
 
 export default function Page() {
   return (
@@ -6,11 +10,11 @@ export default function Page() {
       brandLabel="PORGES"
       caption="Porges target planning matrix"
       currentSalesPath="/api/powerbi/porges-sales-current-year"
-      currentYear={2026}
+      currentYear={getCurrentReportYear()}
       emptyMessage="Δεν βρέθηκαν Porges στοιχεία για το area του login."
       fallbackError="Failed to load Porges matrix"
       previousSalesPath="/api/powerbi/porges-sales-last-year"
-      previousYear={2025}
+      previousYear={getPreviousReportYear()}
       reportKey="porges"
       trendPath="/api/powerbi/porges-trend-current-year"
     />

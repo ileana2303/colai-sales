@@ -1,4 +1,8 @@
 import { PowerBiReportMatrixPage } from "@/features/powerBI/PowerBiReportMatrixPage";
+import {
+  getCurrentReportYear,
+  getPreviousReportYear,
+} from "@/lib/bi-reports/powerBi";
 
 export default function Page() {
   return (
@@ -6,11 +10,11 @@ export default function Page() {
       brandLabel="Bausch & Lomb"
       caption="BAUSCH & LOMB TRIPLEX target planning matrix"
       currentSalesPath="/api/powerbi/bbm-sales-current-year"
-      currentYear={2026}
+      currentYear={getCurrentReportYear()}
       emptyMessage="Δεν βρέθηκαν BAUSCH & LOMB στοιχεία για το area του login."
       fallbackError="Failed to load BAUSCH & LOMB matrix"
       previousSalesPath="/api/powerbi/bbm-sales-last-year"
-      previousYear={2025}
+      previousYear={getPreviousReportYear()}
       reportKey="bbm"
       trendPath="/api/powerbi/bbm-trends-current-year"
     />
