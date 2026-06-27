@@ -19,6 +19,8 @@ import {
   buildReportMatrixCategoryRows,
   buildReportMatrixTeamRows,
   buildReportMatrixTotalRows,
+  isRedundantGroup1Category,
+  reportMatrixDetailRowsHaveGroup2,
   reportMatrixDetailRowsHaveGroup3,
 } from "@/features/powerBI/reportMatrixData";
 
@@ -214,28 +216,13 @@ function canExpandTeam(row: ReportMatrixRow) {
 function isGroup2SubcategoryRow(
   row: ReportMatrixRow,
   group2Rows: ReportMatrixRow[],
-  hasMultipleGroup2: boolean,
+  hasGroup2: boolean,
 ) {
-  if (!hasMultipleGroup2 || row.rowKind !== "category" || !row.parentKey) {
+  if (!hasGroup2 || row.rowKind !== "category" || !row.parentKey) {
     return false;
   }
 
-  const parentGroup2 = group2Rows.find(
-    (group2Row) => group2Row.key === row.parentKey,
-  );
-  return parentGroup2 != null && canExpandGroup2(parentGroup2);
-}
-
-function isSectionCategoryRow(
-  row: ReportMatrixRow,
-  group2Rows: ReportMatrixRow[],
-  hasMultipleGroup2: boolean,
-) {
-  return (
-    hasMultipleGroup2 &&
-    row.rowKind === "category" &&
-    !isGroup2SubcategoryRow(row, group2Rows, hasMultipleGroup2)
-  );
+  return group2Rows.some((group2Row) => group2Row.key === row.parentKey);
 }
 
 function getLeadingValue(row: ReportMatrixRow, key: string) {
@@ -464,22 +451,15 @@ export function ReportMatrixTable({
     () => reportMatrixDetailRowsHaveGroup3(detailRows),
     [detailRows],
   );
-  const hasMultipleGroup2 = useMemo(() => {
-    const group2Values = new Set(
-      detailRows
-        .map((row) => row.filterValues?.group2?.trim() ?? "")
-        .filter(Boolean),
-    );
-
-    return group2Values.size > 1;
-  }, [detailRows]);
+  const hasGroup2 = useMemo(
+    () => reportMatrixDetailRowsHaveGroup2(detailRows),
+    [detailRows],
+  );
 
   const group2Rows = useMemo(
     () =>
-      hasMultipleGroup2
-        ? buildReportMatrixGroup2Rows(comparisonDetailRows)
-        : [],
-    [comparisonDetailRows, hasMultipleGroup2],
+      hasGroup2 ? buildReportMatrixGroup2Rows(comparisonDetailRows) : [],
+    [comparisonDetailRows, hasGroup2],
   );
   const categoryRows = useMemo(
     () => buildReportMatrixCategoryRows(comparisonDetailRows),
@@ -668,15 +648,52 @@ export function ReportMatrixTable({
     };
 
     const renderCategoryBranch = (row: ReportMatrixRow) => {
-      if (hasGroup3) {
-        const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
-        const expandedGroup3Rows =
-          groupedGroup3Rows.flatMap(renderGroup3Branch);
+      const group2Label = row.filterValues?.group2 ?? "";
+      const group1Label =
+        row.filterValues?.category || String(row.category ?? "-");
+      const skipCategoryRow = isRedundantGroup1Category(group2Label, group1Label);
+
+      const renderCategoryChildren = () => {
+        if (hasGroup3) {
+          const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
+          const directTeamRows = teamRowsByCategory.get(row.key) ?? [];
+          const expandedGroup3Rows =
+            groupedGroup3Rows.flatMap(renderGroup3Branch);
+          const expandedDirectTeamRows =
+            directTeamRows.flatMap(renderTeamBranch);
+          const expandedChildren = [
+            ...expandedGroup3Rows,
+            ...expandedDirectTeamRows,
+          ];
+
+          if (effectiveSellerFilter) {
+            return expandedChildren.length ? expandedChildren : [];
+          }
+
+          if (skipCategoryRow) {
+            return expandedChildren;
+          }
+
+          if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
+            return [row];
+          }
+
+          if (!canExpandCategory(row)) {
+            return expandedChildren.length ? expandedChildren : [row];
+          }
+
+          return [row, ...expandedChildren];
+        }
+
+        const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
+        const expandedTeamRows = categoryTeamRows.flatMap(renderTeamBranch);
 
         if (effectiveSellerFilter) {
-          return expandedGroup3Rows.length
-            ? [row, ...expandedGroup3Rows]
-            : [row];
+          return expandedTeamRows.length ? expandedTeamRows : [];
+        }
+
+        if (skipCategoryRow) {
+          return expandedTeamRows.length ? expandedTeamRows : [];
         }
 
         if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
@@ -684,31 +701,16 @@ export function ReportMatrixTable({
         }
 
         if (!canExpandCategory(row)) {
-          return expandedGroup3Rows.length ? expandedGroup3Rows : [row];
+          return expandedTeamRows.length ? expandedTeamRows : [row];
         }
 
-        return [row, ...expandedGroup3Rows];
-      }
+        return [row, ...expandedTeamRows];
+      };
 
-      const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
-      const expandedTeamRows = categoryTeamRows.flatMap(renderTeamBranch);
-
-      if (effectiveSellerFilter) {
-        return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
-      }
-
-      if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
-        return [row];
-      }
-
-      if (!canExpandCategory(row)) {
-        return expandedTeamRows.length ? expandedTeamRows : [row];
-      }
-
-      return [row, ...expandedTeamRows];
+      return renderCategoryChildren();
     };
 
-    if (hasMultipleGroup2) {
+    if (hasGroup2) {
       return group2Rows.flatMap((group2Row) => {
         const groupedCategoryRows =
           categoryRowsByGroup2.get(group2Row.key) ?? [];
@@ -730,11 +732,9 @@ export function ReportMatrixTable({
           return [group2Row];
         }
 
-        if (!canExpandGroup2(group2Row)) {
-          return categoryBranches.length ? categoryBranches : [group2Row];
-        }
-
-        return [group2Row, ...categoryBranches];
+        return categoryBranches.length
+          ? [group2Row, ...categoryBranches]
+          : [group2Row];
       });
     }
 
@@ -753,7 +753,7 @@ export function ReportMatrixTable({
     group2Rows,
     group3RowsByCategory,
     hasGroup3,
-    hasMultipleGroup2,
+    hasGroup2,
     teamRowsByCategory,
     teamRowsByGroup3,
   ]);
@@ -1011,12 +1011,7 @@ export function ReportMatrixTable({
     const isGroup2Subcategory = isGroup2SubcategoryRow(
       row,
       group2Rows,
-      hasMultipleGroup2,
-    );
-    const isSectionCategory = isSectionCategoryRow(
-      row,
-      group2Rows,
-      hasMultipleGroup2,
+      hasGroup2,
     );
 
     return (
@@ -1026,7 +1021,6 @@ export function ReportMatrixTable({
           isGroup2Row && "report-matrix__row--group2",
           row.rowKind === "category" && "report-matrix__row--category",
           isGroup2Subcategory && "report-matrix__row--group2-subcategory",
-          isSectionCategory && "report-matrix__row--section-category",
           row.rowKind === "group3" && "report-matrix__row--group3",
           row.rowKind === "team" && "report-matrix__row--team",
           row.rowKind === "detail" && "report-matrix__row--detail",

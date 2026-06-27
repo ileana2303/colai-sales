@@ -367,6 +367,22 @@ function normalizeKeyPart(value: string | null | undefined) {
   return toText(value).toLocaleUpperCase("el-GR");
 }
 
+/** Matrix hierarchy: group2 → group1 (category) → group3 (optional) → team → seller. */
+export function reportMatrixDetailRowsHaveGroup2(
+  rows: ReportMatrixRow[],
+): boolean {
+  return rows.some(
+    (row) => row.rowKind === "detail" && toText(row.filterValues?.group2),
+  );
+}
+
+export function isRedundantGroup1Category(group2: string, group1: string) {
+  return (
+    Boolean(toText(group2)) &&
+    normalizeKeyPart(group2) === normalizeKeyPart(group1)
+  );
+}
+
 function getMatrixKey(row: PowerBiMatrixSourceRow) {
   return [
     row.group2,
@@ -535,6 +551,7 @@ function renderSeller(aggregate: MatrixAggregate) {
 
 function getCategoryLabel(aggregate: MatrixAggregate, isTotal = false) {
   if (isTotal) return aggregate.group1 || "Σύνολα";
+  // Category column displays group1 in the group2 → group1 → group3 hierarchy.
   return aggregate.group1 || "-";
 }
 
