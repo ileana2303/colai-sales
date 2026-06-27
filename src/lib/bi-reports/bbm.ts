@@ -46,23 +46,8 @@ export type BbmTrendRow = {
   vTrend: number | null;
 };
 
-function toNullableNumber(value: unknown): number | null {
-  if (value == null || value === "") return null;
-
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
-}
-
 function quoteDaxStrings(values: string[]): string {
   return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
-}
-
-function readString(row: Record<string, unknown>, key: string): string {
-  return String(row[`[${key}]`] ?? row[key] ?? "").trim();
-}
-
-function readNumber(row: Record<string, unknown>, key: string): number | null {
-  return toNullableNumber(row[`[${key}]`] ?? row[key]);
 }
 
 function getBbmSalesQueryContext(areaName: string) {
@@ -78,15 +63,13 @@ export function buildBbmSalesLastYearQuery(areaName: string): string {
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
-    "  'U Sales Person'[Area],",
-    "  'U Sales Person'[Team],",
     "  'U Sales Person'[SellerCode],",
-    "  'U Sales Person'[Πωλητής],",
     "  'U Item Family Code'[ItemFamilyCode (groups)],",
     "  'UBussiness'[BusinessUnit],",
     "  'U Months'[Month],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}),`,
+    "  FILTER('Calendar', 'Calendar'[Year] = YEAR(TODAY()) - 1),",
     '  "REPORT_CODE", "P06VALL-VLY",',
     '  "REPORT_DESC", "BBM Sales by AREA, GROUP and Business Unit",',
     '  "VCY", [Sales LY]',
@@ -101,7 +84,6 @@ export function buildBbmSalesLastYearQuery(areaName: string): string {
     '  "Month", \'U Months\'[Month],',
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
-    '  "Currency", 1,',
     '  "VLY", [VCY]',
     ")",
     "ORDER BY [SellerCode], [Group1], [Group2], [Month]",
@@ -114,16 +96,14 @@ export function buildBbmSalesCurrentYearQuery(areaName: string): string {
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
-    "  'U Sales Person'[Area],",
-    "  'U Sales Person'[Team],",
     "  'U Sales Person'[SellerCode],",
-    "  'U Sales Person'[Πωλητής],",
     "  'U Item Family Code'[ItemFamilyCode (groups)],",
     "  'UBussiness'[BusinessUnit],",
     "  'U Months'[Month],",
     "  'U Months'[Status of Closed Month],",
     `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
     `  FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}),`,
+    "  FILTER('Calendar', 'Calendar'[Year] = 2026),",
     '  "REPORT_CODE", "P06VALL-VCYTRCY",',
     '  "REPORT_DESC", "BBM Sales and Target by AREA, GROUP and Business Unit",',
     '  "VCY", [Sales],',
@@ -140,7 +120,6 @@ export function buildBbmSalesCurrentYearQuery(areaName: string): string {
     '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
-    '  "Currency", 1,',
     '  "VCY", [VCY],',
     '  "TCY", [TCY]',
     ")",
@@ -171,15 +150,17 @@ export function buildBbmTrendQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
+    "  \"Area\", 'U Sales Person'[Area],",
+    "  \"Team\", 'U Sales Person'[Team],",
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
     '  "Group1", \'U Item Family Code\'[ItemFamilyCode (groups)],',
     '  "Group2", \'UBussiness\'[BusinessUnit],',
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
-    '  "Currency", [CURRENCY],',
-    '  "VTrend", [VTrend]',
+    '  "VTrend", [VTrend],',
+    '  "CURRENCY", [CURRENCY]',
     ")",
-    "ORDER BY [SellerCode], [Group1], [Group2]",
+    "ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]",
   ]);
 }
 

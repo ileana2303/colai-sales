@@ -37,6 +37,10 @@ type ColoplastCategory = {
   trendTargetKey?: BiReportPowerBiTargetKey;
   trendValue: string;
   filters?: string[];
+  /** Summarize by seller code only (no area/team/name columns). */
+  summarizeSellerCodeOnly?: boolean;
+  /** Apply Calendar year filters in DAX (last year / current year). */
+  useCalendarYearFilter?: boolean;
 };
 
 export type ColoplastQuerySpec = {
@@ -75,11 +79,20 @@ export type ColoplastTrendRow = {
   vTrend: number | null;
 };
 
+export const COLOPLAST_GROUP2_ORDER = [
+  "STOMIES",
+  "COMFEEL",
+  "HOSPITAL",
+  "GENADYNE",
+  "UNO",
+];
+
 export const COLOPLAST_CATEGORY_ORDER = [
   "KS",
   "LOIP",
   "NEF",
-  "COMFEEL",
+  "NEW",
+  "EKTEL",
   "1.TRAUMA",
   "2.OSTOMIES",
   "3.CATHETERS",
@@ -102,7 +115,7 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
       `FILTER('U OC', 'U OC'[OC GROUP] IN {${quoteDaxStrings(OC_GROUPS)}})`,
     ],
     group1Expression: `IF('U OC'[OC GROUP] = "OURAMF", "KS", 'U OC'[OC GROUP])`,
-    group2: "ALL",
+    group2: "STOMIES",
     groupByColumns: ["'U OC'[OC GROUP]"],
     key: "oc",
     label: "OC",
@@ -112,13 +125,15 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     sales2025Value: "[OC PER]",
     sales2026Target: "ROUND([OC PER TARGET], 0)",
     sales2026Value: "[OC PER]",
+    summarizeSellerCodeOnly: true,
     trendValue: "ROUND([OC PER FORECAST], 0)",
+    useCalendarYearFilter: true,
   },
   {
     businessUnit: "COLOPLAST",
     currency: 0,
-    group1: "COMFEEL",
-    group2: "NEW",
+    group1: "NEW",
+    group2: "COMFEEL",
     key: "wc-comfeel",
     label: "WC COMFEEL",
     previousTargetKey: "coloplast_sales_current_year",
@@ -128,14 +143,16 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     sales2025Value: "[WC NEW PER]",
     sales2026Target: "ROUND([NEW Total PER Target], 0)",
     sales2026Value: "[WC NEW PER]",
+    summarizeSellerCodeOnly: true,
     trendTargetKey: "coloplast_sales_2023",
     trendValue: "ROUND([NEW Total PER Forecast], 0)",
+    useCalendarYearFilter: true,
   },
   {
     businessUnit: "COLOPLAST",
     currency: 0,
-    group1: "COMFEEL",
-    group2: "EKTEL",
+    group1: "EKTEL",
+    group2: "COMFEEL",
     key: "wc-comfeel-ektel",
     label: "WC COMFEEL EKTELESEIS",
     reportCode: "P1V2",
@@ -144,7 +161,9 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     sales2025Value: "[WC EKTEL]",
     sales2026Target: "ROUND([ACTUAL TARGET], 0)",
     sales2026Value: "[WC EKTEL]",
+    summarizeSellerCodeOnly: true,
     trendValue: "ROUND([EKTEL Total PER Forecast], 0)",
+    useCalendarYearFilter: true,
   },
   {
     businessUnit: "COLOPLAST",
@@ -153,7 +172,7 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
       `TREATAS({${quoteDaxStrings(HOSPITAL_CATEGORIES)}}, 'U HOSPITAL SUBS'[Κατηγορία])`,
     ],
     group1Expression: "'U HOSPITAL SUBS'[Κατηγορία]",
-    group2: "ALL",
+    group2: "HOSPITAL",
     groupByColumns: ["'U HOSPITAL SUBS'[Κατηγορία]"],
     key: "hospitals",
     label: "Hospitals",
@@ -163,13 +182,15 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     sales2025Value: "[HOSPITAL SALES]",
     sales2026Target: "ROUND([HOSPITAL TARGET], 0)",
     sales2026Value: "[HOSPITAL SALES]",
+    summarizeSellerCodeOnly: true,
     trendValue: "ROUND([Hospital Forecast], 0)",
+    useCalendarYearFilter: true,
   },
   {
     businessUnit: "GENADYNE",
     currency: 1,
     group1: "GENADYNE",
-    group2: "ALL",
+    group2: "GENADYNE",
     key: "genadyne",
     label: "GENADYNE",
     reportCode: "P01V04",
@@ -178,13 +199,15 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     sales2025Value: "[GENADYNE TARGET SALES]",
     sales2026Target: "ROUND([GENADYNE TARGET SALES], 0)",
     sales2026Value: "[GENADYNE TARGET SALES]",
+    summarizeSellerCodeOnly: true,
     trendValue: "ROUND([GENADYNE Forecast], 0)",
+    useCalendarYearFilter: true,
   },
   {
     businessUnit: "GENADYNE",
     currency: 1,
     group1: "UNO",
-    group2: "ALL",
+    group2: "UNO",
     key: "uno",
     label: "UNO",
     reportCode: "P01V05",
@@ -193,7 +216,9 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     sales2025Value: "[UNO Sales]",
     sales2026Target: "ROUND([UNO Target Sales], 0)",
     sales2026Value: "[UNO Sales]",
+    summarizeSellerCodeOnly: true,
     trendValue: "ROUND([UNO Forecast], 0)",
+    useCalendarYearFilter: true,
   },
 ];
 
@@ -212,17 +237,27 @@ function readNumber(row: Record<string, unknown>, key: string): number | null {
   return toNullableNumber(row[`[${key}]`] ?? row[key]);
 }
 
+function buildCalendarYearFilter(yearExpression: string): string {
+  return `FILTER('Calendar', 'Calendar'[Year] = ${yearExpression})`;
+}
+
 function buildBaseArgs(
   areaName: string,
   category: ColoplastCategory,
-  options: { includeClosedMonthStatus?: boolean; includeMonth?: boolean },
+  options: {
+    calendarYear?: "last" | "current";
+    includeClosedMonthStatus?: boolean;
+    includeMonth?: boolean;
+  },
 ) {
-  const args = [
-    "'U Sales Person'[Area]",
-    "'U Sales Person'[Team]",
-    "'U Sales Person'[SellerCode]",
-    "'U Sales Person'[Πωλητής]",
-  ];
+  const args = category.summarizeSellerCodeOnly
+    ? ["'U Sales Person'[SellerCode]"]
+    : [
+        "'U Sales Person'[Area]",
+        "'U Sales Person'[Team]",
+        "'U Sales Person'[SellerCode]",
+        "'U Sales Person'[Πωλητής]",
+      ];
 
   if (options.includeMonth) {
     args.push("'U Months'[Month]");
@@ -247,6 +282,14 @@ function buildBaseArgs(
     args.push(...category.filters);
   }
 
+  if (category.useCalendarYearFilter && options.calendarYear === "last") {
+    args.push(buildCalendarYearFilter("YEAR(TODAY()) - 1"));
+  }
+
+  if (category.useCalendarYearFilter && options.calendarYear === "current") {
+    args.push(buildCalendarYearFilter("YEAR(TODAY())"));
+  }
+
   if (category.group1) {
     args.push(`"Group1", "${escapeDaxString(category.group1)}"`);
   }
@@ -260,12 +303,29 @@ function getGroup1SelectExpression(category: ColoplastCategory) {
   return category.group1Expression ?? "[Group1]";
 }
 
+function getSalesOrderBy(category: ColoplastCategory): string {
+  if (category.summarizeSellerCodeOnly) {
+    return "ORDER BY [SellerCode], [Month]";
+  }
+
+  return "ORDER BY [SellerCode], [Group1], [Group2], [Month]";
+}
+
+function getTrendOrderBy(category: ColoplastCategory): string {
+  if (category.summarizeSellerCodeOnly) {
+    return "ORDER BY [SellerCode]";
+  }
+
+  return "ORDER BY [SellerCode], [Group1], [Group2]";
+}
+
 function buildColoplastSalesCurrentYearQuery(
   areaName: string,
   category: ColoplastCategory,
 ): string {
   const args = [
     ...buildBaseArgs(areaName, category, {
+      calendarYear: "current",
       includeClosedMonthStatus: true,
       includeMonth: true,
     }),
@@ -297,7 +357,7 @@ function buildColoplastSalesCurrentYearQuery(
     '  "VCY", [VCY],',
     '  "TCY", [TCY]',
     ")",
-    "ORDER BY [SellerCode], [Group1], [Group2], [Month]",
+    getSalesOrderBy(category),
   ]);
 }
 
@@ -306,7 +366,10 @@ function buildColoplastSalesLastYearQuery(
   category: ColoplastCategory,
 ): string {
   const args = [
-    ...buildBaseArgs(areaName, category, { includeMonth: true }),
+    ...buildBaseArgs(areaName, category, {
+      calendarYear: "last",
+      includeMonth: true,
+    }),
     `"REPORT_CODE", "${category.reportCode}-VLY"`,
     `"REPORT_DESC", "${escapeDaxString(category.reportDesc)}"`,
     `"VLY", ${category.sales2025Value}`,
@@ -333,7 +396,7 @@ function buildColoplastSalesLastYearQuery(
     '  "Currency", [CURRENCY],',
     '  "VLY", [VLY]',
     ")",
-    "ORDER BY [SellerCode], [Group1], [Group2], [Month]",
+    getSalesOrderBy(category),
   ]);
 }
 
@@ -342,7 +405,7 @@ function buildColoplastTrendCurrentYearQuery(
   category: ColoplastCategory,
 ): string {
   const args = [
-    ...buildBaseArgs(areaName, category, {}),
+    ...buildBaseArgs(areaName, category, { calendarYear: "current" }),
     `"REPORT_CODE", "${category.reportCode}-VTREND"`,
     `"REPORT_DESC", "${escapeDaxString(category.reportDesc)}"`,
     `"VTREND", ${category.trendValue}`,
@@ -368,7 +431,7 @@ function buildColoplastTrendCurrentYearQuery(
     '  "Currency", [CURRENCY],',
     '  "VTrend", [VTREND]',
     ")",
-    "ORDER BY [SellerCode], [Group1], [Group2]",
+    getTrendOrderBy(category),
   ]);
 }
 

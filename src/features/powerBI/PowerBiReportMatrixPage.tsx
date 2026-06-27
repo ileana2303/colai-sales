@@ -33,6 +33,7 @@ type PowerBiReportMatrixPageProps = {
   currentYear: number;
   emptyMessage: string;
   fallbackError: string;
+  group2Order?: string[];
   previousSalesPath: string;
   previousYear: number;
   reportKey: string;
@@ -107,6 +108,7 @@ export function PowerBiReportMatrixPage({
   currentYear,
   emptyMessage,
   fallbackError,
+  group2Order,
   previousSalesPath,
   previousYear,
   reportKey,
@@ -152,12 +154,13 @@ export function PowerBiReportMatrixPage({
         ? buildReportMatrixRows({
             categoryOrder,
             currentRows: data.currentRows,
+            group2Order,
             previousRows: data.previousRows,
             trendRows: data.trendRows,
             sellersCatalog,
           })
         : [],
-    [categoryOrder, data, sellersCatalog],
+    [categoryOrder, data, group2Order, sellersCatalog],
   );
   return (
     <div className="app-page">

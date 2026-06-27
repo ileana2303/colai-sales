@@ -1,5 +1,8 @@
 import { PowerBiReportMatrixPage } from "@/features/powerBI/PowerBiReportMatrixPage";
-import { AKRATEIA_CATEGORY_ORDER } from "@/lib/bi-reports/akrateia";
+import {
+  AKRATEIA_CATEGORY_ORDER,
+  AKRATEIA_GROUP2_ORDER,
+} from "@/lib/bi-reports/akrateia";
 
 export default function Page() {
   return (
@@ -7,6 +10,7 @@ export default function Page() {
       brandLabel="AKRATEIA"
       caption="Akrateia target planning matrix"
       categoryOrder={AKRATEIA_CATEGORY_ORDER}
+      group2Order={AKRATEIA_GROUP2_ORDER}
       currentSalesPath="/api/powerbi/akrateia-sales-current-year"
       currentYear={2026}
       emptyMessage="Δεν βρέθηκαν Akrateia στοιχεία για το area του login."

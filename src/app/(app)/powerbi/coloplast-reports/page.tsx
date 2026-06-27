@@ -1,5 +1,8 @@
 import { PowerBiReportMatrixPage } from "@/features/powerBI/PowerBiReportMatrixPage";
-import { COLOPLAST_CATEGORY_ORDER } from "@/lib/bi-reports/coloplast";
+import {
+  COLOPLAST_CATEGORY_ORDER,
+  COLOPLAST_GROUP2_ORDER,
+} from "@/lib/bi-reports/coloplast";
 
 export default function Page() {
   return (
@@ -7,6 +10,7 @@ export default function Page() {
       brandLabel="COLOPLAST"
       caption="Coloplast target planning matrix"
       categoryOrder={COLOPLAST_CATEGORY_ORDER}
+      group2Order={COLOPLAST_GROUP2_ORDER}
       currentSalesPath="/api/powerbi/coloplast-sales-current-year"
       currentYear={2026}
       emptyMessage="Δεν βρέθηκαν Coloplast στοιχεία για το area του login."

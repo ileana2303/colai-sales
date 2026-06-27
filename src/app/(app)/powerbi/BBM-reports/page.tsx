@@ -3,7 +3,7 @@ import { PowerBiReportMatrixPage } from "@/features/powerBI/PowerBiReportMatrixP
 export default function Page() {
   return (
     <PowerBiReportMatrixPage
-      brandLabel="B&L"
+      brandLabel="Bausch & Lomb"
       caption="BAUSCH & LOMB TRIPLEX target planning matrix"
       currentSalesPath="/api/powerbi/bbm-sales-current-year"
       currentYear={2026}
