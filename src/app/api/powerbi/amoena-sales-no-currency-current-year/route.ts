@@ -1,8 +1,8 @@
 import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext";
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import {
-  buildAmoenaTrendCurrentYearQuery,
-  normalizeAmoenaTrendRows,
+  buildAmoenaSalesNoCurrencyCurrentYearQuery,
+  normalizeAmoenaSalesCurrentYearRows,
 } from "@/lib/bi-reports/amoena";
 import {
   getCurrentReportYear,
@@ -27,8 +27,8 @@ export async function GET() {
   let data: PowerBiExecuteQueriesResponse;
   try {
     data = await executePowerBiQuery(
-      buildAmoenaTrendCurrentYearQuery(area),
-      resolveBiReportPowerBiTarget("amoena_trend_current_year"),
+      buildAmoenaSalesNoCurrencyCurrentYearQuery(area),
+      resolveBiReportPowerBiTarget("amoena_sales_no_currency_current_year"),
       { amsaAccessToken: token },
     );
   } catch (err) {
@@ -45,10 +45,10 @@ export async function GET() {
   return NextResponse.json(
     {
       ok: true,
-      report: "amoena_trend_current_year",
+      report: "amoena_sales_no_currency_current_year",
       year: getCurrentReportYear(),
       area,
-      records: normalizeAmoenaTrendRows(data),
+      records: normalizeAmoenaSalesCurrentYearRows(data),
     },
     { headers: POWERBI_NO_CACHE_HEADERS },
   );

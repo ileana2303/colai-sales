@@ -209,6 +209,7 @@ function formatGapDiff(
   isTotal = false,
 ) {
   if (!Number.isFinite(target) || !Number.isFinite(result)) return EMPTY_VALUE;
+  if (target === 0) return EMPTY_VALUE;
   return formatMatrixValue(result - target, aggregate, isTotal);
 }
 
@@ -216,6 +217,54 @@ function formatYearComparison(current: number, previous: number) {
   if (!previous || !Number.isFinite(previous)) return EMPTY_VALUE;
   if (!Number.isFinite(current)) return EMPTY_VALUE;
   return formatMatrixPercent(current / previous);
+}
+
+function usesPrecomputedCover(aggregate: MatrixAggregate) {
+  return (
+    aggregate.currency === 0 &&
+    normalizeKeyPart(aggregate.group2) === normalizeKeyPart("ΠΕΡΙΣΤΑΤΙΚΑ")
+  );
+}
+
+function toCoverRatio(value: number | null | undefined) {
+  if (value == null || !Number.isFinite(value)) return null;
+  if (value === 0) return 0;
+  return Math.abs(value) > 1.5 ? value / 100 : value;
+}
+
+function formatPrecomputedCover(value: number | null | undefined) {
+  const ratio = toCoverRatio(value);
+  if (ratio == null) return EMPTY_VALUE;
+  return formatMatrixPercent(ratio);
+}
+
+function formatMatrixCoverMetrics(
+  aggregate: MatrixAggregate,
+  closedPeriod: { result: number; target: number },
+  rowKind: ReportMatrixRow["rowKind"],
+  isTotal: boolean,
+) {
+  if (usesPrecomputedCover(aggregate)) {
+    if (isTotal || rowKind !== "detail") {
+      return {
+        currentCover: EMPTY_VALUE,
+        previousCover: EMPTY_VALUE,
+      };
+    }
+
+    return {
+      currentCover: formatPrecomputedCover(aggregate.vTrend),
+      previousCover: formatPrecomputedCover(closedPeriod.result),
+    };
+  }
+
+  return {
+    currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
+    previousCover: formatCoverPercent(
+      closedPeriod.target,
+      closedPeriod.result,
+    ),
+  };
 }
 
 function formatYearDiff(
@@ -226,6 +275,7 @@ function formatYearDiff(
 ) {
   if (!Number.isFinite(current) || !Number.isFinite(previous))
     return EMPTY_VALUE;
+  if (previous === 0) return EMPTY_VALUE;
   return formatMatrixValue(current - previous, aggregate, isTotal);
 }
 
@@ -844,9 +894,20 @@ function aggregateToMatrixRow(
   const displayCategory =
     rowKind === "group3" ? getGroup3Label(aggregate) || "-" : category;
   const includeFilterValues = !isTotal && rowKind === "detail";
-  const previousDiffValue = closedPeriod.result - closedPeriod.target;
-  const currentDiffValue = aggregate.vTrend - aggregate.tcyAll;
-  const yearDiffValue = closedPeriod.result - aggregate.vlc;
+  const coverMetrics = formatMatrixCoverMetrics(
+    aggregate,
+    closedPeriod,
+    rowKind,
+    isTotal,
+  );
+  const previousDiffValue =
+    closedPeriod.target === 0
+      ? 0
+      : closedPeriod.result - closedPeriod.target;
+  const currentDiffValue =
+    aggregate.tcyAll === 0 ? 0 : aggregate.vTrend - aggregate.tcyAll;
+  const yearDiffValue =
+    aggregate.vlc === 0 ? 0 : closedPeriod.result - aggregate.vlc;
 
   return {
     key:
@@ -889,7 +950,7 @@ function aggregateToMatrixRow(
       yearDiff: yearDiffValue,
     }),
     values: {
-      currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
+      currentCover: coverMetrics.currentCover,
       currentDiff: formatGapDiff(
         aggregate.vTrend,
         aggregate.tcyAll,
@@ -913,10 +974,7 @@ function aggregateToMatrixRow(
         aggregate,
         isTotal,
       ),
-      previousCover: formatCoverPercent(
-        closedPeriod.target,
-        closedPeriod.result,
-      ),
+      previousCover: coverMetrics.previousCover,
       previousDiff: formatGapDiff(
         closedPeriod.result,
         closedPeriod.target,

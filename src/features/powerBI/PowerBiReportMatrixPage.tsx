@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -16,6 +16,7 @@ import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
 import { useSellersStore } from "@/stores/sellersStore";
+import { cn } from "@/lib/utils";
 
 type MatrixReportPayload = {
   area: string;
@@ -25,15 +26,18 @@ type MatrixReportPayload = {
   trendRows: PowerBiMatrixSourceRow[];
 };
 
-type PowerBiReportMatrixPageProps = {
+export type PowerBiReportMatrixViewProps = {
   brandLabel: string;
   caption: string;
   categoryOrder?: string[];
   currentSalesPath: string;
   currentYear: number;
   emptyMessage: string;
+  exportFileName: string;
   fallbackError: string;
   group2Order?: string[];
+  headerLabel?: string;
+  hidden?: boolean;
   previousSalesPath: string;
   previousYear: number;
   reportKey: string;
@@ -64,7 +68,7 @@ async function fetchMatrixPayload({
   previousYear,
   trendPath,
 }: Pick<
-  PowerBiReportMatrixPageProps,
+  PowerBiReportMatrixViewProps,
   | "currentSalesPath"
   | "currentYear"
   | "fallbackError"
@@ -100,20 +104,23 @@ async function fetchMatrixPayload({
   };
 }
 
-export function PowerBiReportMatrixPage({
+export function PowerBiReportMatrixView({
   brandLabel,
   caption,
   categoryOrder,
   currentSalesPath,
   currentYear,
   emptyMessage,
+  exportFileName,
   fallbackError,
   group2Order,
+  headerLabel: headerLabelOverride,
+  hidden = false,
   previousSalesPath,
   previousYear,
   reportKey,
   trendPath,
-}: PowerBiReportMatrixPageProps) {
+}: PowerBiReportMatrixViewProps) {
   const sellersCatalog = useSellersStore((state) => state.records);
   const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: powerBiKeys.reportMatrix(
@@ -133,7 +140,7 @@ export function PowerBiReportMatrixPage({
       }),
     ...matrixQueryOptions,
   });
-  const headerLabel = data?.headerLabel || brandLabel;
+  const headerLabel = headerLabelOverride ?? data?.headerLabel ?? brandLabel;
   const sectionSummaries = useMemo(
     () => (data ? createReportMatrixSectionSummaries(data.currentRows) : {}),
     [data],
@@ -162,31 +169,123 @@ export function PowerBiReportMatrixPage({
         : [],
     [categoryOrder, data, group2Order, sellersCatalog],
   );
+
+  if (hidden) {
+    return null;
+  }
+
+  return (
+    <ReportQueryBoundary
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      fallbackError={fallbackError}
+      onRetry={() => void refetch()}
+    >
+      {rows.length ? (
+        <ReportMatrixTable
+          brandLabel={brandLabel}
+          caption={caption}
+          exportFileName={exportFileName}
+          headerLabel={headerLabel}
+          leadingColumns={reportMatrixLeadingColumns}
+          rows={rows}
+          sections={sections}
+        />
+      ) : (
+        <div className="app-card text-muted-foreground p-5 text-center">
+          {emptyMessage}
+        </div>
+      )}
+    </ReportQueryBoundary>
+  );
+}
+
+type PowerBiReportMatrixPageProps = Omit<
+  PowerBiReportMatrixViewProps,
+  "exportFileName" | "hidden"
+>;
+
+export function PowerBiReportMatrixPage({
+  reportKey,
+  ...props
+}: PowerBiReportMatrixPageProps) {
   return (
     <div className="app-page">
-      <ReportQueryBoundary
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
-        fallbackError={fallbackError}
-        onRetry={() => void refetch()}
-      >
-        {rows.length ? (
-          <ReportMatrixTable
-            brandLabel={brandLabel}
-            caption={caption}
-            exportFileName={`${reportKey}-matrix`}
-            headerLabel={headerLabel}
-            leadingColumns={reportMatrixLeadingColumns}
-            rows={rows}
-            sections={sections}
-          />
-        ) : (
-          <div className="app-card text-muted-foreground p-5 text-center">
-            {emptyMessage}
+      <PowerBiReportMatrixView
+        exportFileName={`${reportKey}-matrix`}
+        reportKey={reportKey}
+        {...props}
+      />
+    </div>
+  );
+}
+
+type ReportMatrixTab = {
+  key: string;
+  label: string;
+  view: PowerBiReportMatrixViewProps;
+};
+
+type PowerBiTabbedReportMatrixPageProps = {
+  brandLabel: string;
+  caption: string;
+  tabs: ReportMatrixTab[];
+};
+
+export function PowerBiTabbedReportMatrixPage({
+  brandLabel,
+  caption,
+  tabs,
+}: PowerBiTabbedReportMatrixPageProps) {
+  const [activeTabKey, setActiveTabKey] = useState(tabs[0]?.key ?? "");
+
+  return (
+    <div className="app-page">
+      <section className="app-card p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="app-report-title mb-0">{brandLabel}</h1>
+            <p className="app-report-subtitle mb-0">{caption}</p>
           </div>
-        )}
-      </ReportQueryBoundary>
+
+          <div
+            className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/40 p-1"
+            role="tablist"
+            aria-label={`${brandLabel} report views`}
+          >
+            {tabs.map((tab) => {
+              const isActive = tab.key === activeTabKey;
+
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={isActive}
+                  className={cn(
+                    "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setActiveTabKey(tab.key)}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {tabs.map((tab) => (
+        <PowerBiReportMatrixView
+          key={tab.key}
+          hidden={tab.key !== activeTabKey}
+          {...tab.view}
+        />
+      ))}
     </div>
   );
 }

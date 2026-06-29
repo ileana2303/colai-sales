@@ -1,10 +1,11 @@
-import { StaticReportMatrixPage } from "@/features/powerBI/StaticReportMatrixPage";
+import { UnderConstructionReportPage } from "@/features/powerBI/UnderConstructionReportPage";
 
 export default function Page() {
   return (
-    <StaticReportMatrixPage
+    <UnderConstructionReportPage
       brandLabel="ABBOTT"
       caption="ABBOTT target planning matrix"
+      icon="bi-hospital"
     />
   );
 }
