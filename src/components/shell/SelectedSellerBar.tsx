@@ -36,15 +36,17 @@ export function SelectedSellerBar() {
       </div>
 
       <div className="selected-seller-nav__content">
-        <div className="selected-seller-nav__label">Προβολή αναφορών για</div>
+        <div className="selected-seller-nav__label">Προβολή αναφορών για περιοχή</div>
         <div className="selected-seller-nav__details">
+          <span className="selected-seller-nav__area">
+            {selectedSeller.area}
+          </span>
           <span className="selected-seller-nav__name">
             {selectedSeller.salesPerson}
           </span>
-          <span className="selected-seller-nav__meta">
-            {selectedSeller.area} · {selectedSeller.team} · Κωδ.{" "}
-            {selectedSeller.sellerCode}
-          </span>
+        </div>
+        <div className="selected-seller-nav__meta">
+          {selectedSeller.team} · Κωδ. {selectedSeller.sellerCode}
         </div>
       </div>
 
