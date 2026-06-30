@@ -75,8 +75,8 @@ function ModuleCard({
                 <Image
                   src={brandImagePath}
                   alt={`${title} logo`}
-                  fill
-                  sizes="68px"
+                  width={68}
+                  height={68}
                   unoptimized
                   className="home-module-card__brand-image"
                 />
