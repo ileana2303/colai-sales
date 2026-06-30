@@ -236,7 +236,6 @@ canvas {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
   color: color-mix(in oklch, var(--primary) 72%, var(--foreground));
   line-height: 1.1;
 }
@@ -664,8 +663,87 @@ html.dark .app-header-user__role {
   line-height: 1.45;
 }
 
+.report-matrix-card__controls {
+  display: flex;
+  min-width: 0;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.report-matrix-card__summary-pill {
+  display: inline-flex;
+  min-width: 0;
+  max-width: min(100%, 42rem);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.26rem 0.55rem;
+  margin-right: auto;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid color-mix(in oklch, #93c5fd 40%, var(--border) 60%);
+  border-radius: 999px;
+  background: color-mix(in oklch, #dbeafe 72%, var(--background) 28%);
+  color: #1d4ed8;
+  line-height: 1.15;
+}
+
+.report-matrix-card__summary-pill--success {
+  border-color: color-mix(in oklch, #86efac 42%, var(--border) 58%);
+  background: color-mix(in oklch, #dcfce7 72%, var(--background) 28%);
+  color: #166534;
+}
+
+.report-matrix-card__summary-pill--rose {
+  border-color: color-mix(in oklch, #f9a8d4 40%, var(--border) 60%);
+  background: color-mix(in oklch, #fce7f3 74%, var(--background) 26%);
+  color: #be185d;
+}
+
+.report-matrix-card__summary-pill-label {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.report-matrix-card__summary-pill-value {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.report-matrix-card__summary-pill-details {
+  display: inline-flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.report-matrix-card__summary-pill-details::before {
+  content: "•";
+  color: color-mix(in oklch, currentColor 60%, var(--muted-foreground) 40%);
+}
+
+.report-matrix-card__summary-pill-detail {
+  display: inline-flex;
+  align-items: center;
+}
+
+.report-matrix-card__summary-pill-detail
+  + .report-matrix-card__summary-pill-detail::before {
+  content: "•";
+  margin-right: 0.4rem;
+  color: color-mix(in oklch, currentColor 60%, var(--muted-foreground) 40%);
+}
+
 .report-matrix-card__actions {
   display: flex;
+  min-width: 0;
   flex-shrink: 0;
   flex-wrap: wrap;
   align-items: center;
@@ -1412,6 +1490,27 @@ html[data-bs-theme="dark"] .report-matrix-filter-pill {
   border-color: color-mix(in oklch, #60a5fa 32%, var(--border) 68%);
   background: color-mix(in oklch, #1e3a8a 42%, var(--background) 58%);
   color: #dbeafe;
+}
+
+html.dark .report-matrix-card__summary-pill,
+html[data-bs-theme="dark"] .report-matrix-card__summary-pill {
+  border-color: color-mix(in oklch, #60a5fa 34%, var(--border) 66%);
+  background: color-mix(in oklch, #1d4ed8 34%, var(--background) 66%);
+  color: #dbeafe;
+}
+
+html.dark .report-matrix-card__summary-pill--success,
+html[data-bs-theme="dark"] .report-matrix-card__summary-pill--success {
+  border-color: color-mix(in oklch, #4ade80 34%, var(--border) 66%);
+  background: color-mix(in oklch, #166534 34%, var(--background) 66%);
+  color: #dcfce7;
+}
+
+html.dark .report-matrix-card__summary-pill--rose,
+html[data-bs-theme="dark"] .report-matrix-card__summary-pill--rose {
+  border-color: color-mix(in oklch, #f472b6 34%, var(--border) 66%);
+  background: color-mix(in oklch, #be185d 30%, var(--background) 70%);
+  color: #fce7f3;
 }
 
 html.dark .report-matrix-filter-pill__label,

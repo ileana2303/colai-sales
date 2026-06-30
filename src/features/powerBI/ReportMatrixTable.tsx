@@ -655,7 +655,10 @@ export function ReportMatrixTable({
       const group2Label = row.filterValues?.group2 ?? "";
       const group1Label =
         row.filterValues?.category || String(row.category ?? "-");
-      const skipCategoryRow = isRedundantGroup1Category(group2Label, group1Label);
+      const skipCategoryRow = isRedundantGroup1Category(
+        group2Label,
+        group1Label,
+      );
 
       const renderCategoryChildren = () => {
         if (hasGroup3) {
@@ -1151,8 +1154,21 @@ export function ReportMatrixTable({
     0,
   );
   const resolvedHeaderLabel = headerLabel ?? brandLabel;
-  const hasSectionSummaries = sections.some((section) => section.summary);
-
+  const previousPeriodSummary = sections.find(
+    (section) => section.key === "previous-period",
+  )?.summary;
+  const closedMonthsSummary = sections.find(
+    (section) => section.key === "year-comparison",
+  )?.summary;
+  const fallbackSummary = sections.find((section) => section.summary)?.summary;
+  const mergedSummary =
+    previousPeriodSummary ?? closedMonthsSummary ?? fallbackSummary;
+  const summaryPillDetails = [
+    ...(closedMonthsSummary?.value != null && closedMonthsSummary.value !== ""
+      ? [`Κλειστοί μήνες: ${String(closedMonthsSummary.value)}`]
+      : []),
+    ...(previousPeriodSummary?.details ?? []).map((detail) => String(detail)),
+  ];
   const columns = sections.flatMap((section) =>
     section.columns.map((column, index) => ({
       ...column,
@@ -1172,155 +1188,133 @@ export function ReportMatrixTable({
             <p className="report-matrix-card__description">{description}</p>
           ) : null}
         </div>
-        <div className="report-matrix-card__actions">
-          {teamFilter || effectiveSellerFilter ? (
-            <div className="report-matrix-card__active-filters">
-              {teamFilter ? (
-                <span className="report-matrix-filter-pill">
-                  <span className="report-matrix-filter-pill__label">Team</span>
-                  <span className="report-matrix-filter-pill__value">
-                    {selectedTeamLabel}
-                  </span>
-                  <button
-                    type="button"
-                    className="report-matrix-filter-pill__clear"
-                    aria-label={`Clear Team filter ${selectedTeamLabel}`}
-                    onClick={() => handleTeamFilterChange("")}
-                  >
-                    ×
-                  </button>
-                </span>
-              ) : null}
-              {effectiveSellerFilter ? (
-                <span className="report-matrix-filter-pill">
-                  <span className="report-matrix-filter-pill__label">
-                    Seller
-                  </span>
-                  <span className="report-matrix-filter-pill__value">
-                    {selectedSellerLabel}
-                  </span>
-                  <button
-                    type="button"
-                    className="report-matrix-filter-pill__clear"
-                    aria-label={`Clear Seller filter ${selectedSellerLabel}`}
-                    onClick={() => setSellerFilter("")}
-                  >
-                    ×
-                  </button>
+        <div className="report-matrix-card__controls">
+          {mergedSummary ? (
+            <div
+              className={cn(
+                "report-matrix-card__summary-pill",
+                mergedSummary.tone &&
+                  `report-matrix-card__summary-pill--${mergedSummary.tone}`,
+              )}
+            >
+              <span className="report-matrix-card__summary-pill-label">
+                {mergedSummary.label}:
+              </span>
+              <strong className="report-matrix-card__summary-pill-value">
+                {mergedSummary.value}
+              </strong>
+              {summaryPillDetails.length ? (
+                <span className="report-matrix-card__summary-pill-details">
+                  {summaryPillDetails.map((detail, summaryIndex) => (
+                    <span
+                      key={`summary-pill-${summaryIndex}`}
+                      className="report-matrix-card__summary-pill-detail"
+                    >
+                      {detail}
+                    </span>
+                  ))}
                 </span>
               ) : null}
             </div>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            className="report-matrix-card__expand-toggle"
-            disabled={!hasExpandableRows}
-            aria-label={
-              areAllExpandableRowsExpanded
-                ? "Collapse all expandable rows"
-                : "Expand all expandable rows"
-            }
-            aria-pressed={areAllExpandableRowsExpanded}
-            title={
-              areAllExpandableRowsExpanded
-                ? "Collapse all rows"
-                : "Expand all rows"
-            }
-            onClick={toggleAllCategories}
-          >
-            <AppIcon name="bi-unfold-vertical" size={16} />
-          </Button>
+          <div className="report-matrix-card__actions">
+            {teamFilter || effectiveSellerFilter ? (
+              <div className="report-matrix-card__active-filters">
+                {teamFilter ? (
+                  <span className="report-matrix-filter-pill">
+                    <span className="report-matrix-filter-pill__label">
+                      Team
+                    </span>
+                    <span className="report-matrix-filter-pill__value">
+                      {selectedTeamLabel}
+                    </span>
+                    <button
+                      type="button"
+                      className="report-matrix-filter-pill__clear"
+                      aria-label={`Clear Team filter ${selectedTeamLabel}`}
+                      onClick={() => handleTeamFilterChange("")}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : null}
+                {effectiveSellerFilter ? (
+                  <span className="report-matrix-filter-pill">
+                    <span className="report-matrix-filter-pill__label">
+                      Seller
+                    </span>
+                    <span className="report-matrix-filter-pill__value">
+                      {selectedSellerLabel}
+                    </span>
+                    <button
+                      type="button"
+                      className="report-matrix-filter-pill__clear"
+                      aria-label={`Clear Seller filter ${selectedSellerLabel}`}
+                      onClick={() => setSellerFilter("")}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className="report-matrix-card__expand-toggle"
+              disabled={!hasExpandableRows}
+              aria-label={
+                areAllExpandableRowsExpanded
+                  ? "Collapse all expandable rows"
+                  : "Expand all expandable rows"
+              }
+              aria-pressed={areAllExpandableRowsExpanded}
+              title={
+                areAllExpandableRowsExpanded
+                  ? "Collapse all rows"
+                  : "Expand all rows"
+              }
+              onClick={toggleAllCategories}
+            >
+              <AppIcon name="bi-unfold-vertical" size={16} />
+            </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!hasActiveFilters}
-            onClick={resetFilters}
-          >
-            <AppIcon
-              name="bi-arrow-counterclockwise"
-              className="mr-1"
-              size={14}
-            />
-            Reset filters
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={!filteredRows.length}
-            onClick={handleExport}
-          >
-            <AppIcon name="bi-file-earmark-excel" className="mr-1" size={14} />
-            Excel
-          </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!hasActiveFilters}
+              onClick={resetFilters}
+            >
+              <AppIcon
+                name="bi-arrow-counterclockwise"
+                className="mr-1"
+                size={14}
+              />
+              Reset filters
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!filteredRows.length}
+              onClick={handleExport}
+            >
+              <AppIcon
+                name="bi-file-earmark-excel"
+                className="mr-1"
+                size={14}
+              />
+              Excel
+            </Button>
+          </div>
         </div>
       </div>
-
       <div ref={viewportRef} className="report-matrix__viewport">
         <table className="report-matrix">
           <caption className="sr-only">{caption}</caption>
           <thead>
-            {hasSectionSummaries ? (
-              <tr>
-                <th
-                  className="report-matrix__summary-spacer"
-                  colSpan={resolvedLeadingColumns.length}
-                  scope="colgroup"
-                  style={{
-                    left: 0,
-                    minWidth: leadingWidth,
-                    width: leadingWidth,
-                  }}
-                />
-                {sections.map((section) => (
-                  <th
-                    key={`${section.key}-summary`}
-                    className={cn(
-                      "report-matrix__section-summary-heading",
-                      section.tone &&
-                        `report-matrix__section-summary-heading--${section.tone}`,
-                    )}
-                    colSpan={section.columns.length}
-                    scope="colgroup"
-                  >
-                    {section.summary ? (
-                      <div
-                        className={cn(
-                          "report-matrix__section-summary",
-                          section.summary.tone &&
-                            `report-matrix__section-summary--${section.summary.tone}`,
-                        )}
-                      >
-                        <span className="report-matrix__section-summary-label">
-                          {section.summary.label}
-                        </span>
-                        <strong className="report-matrix__section-summary-value">
-                          {section.summary.value}
-                        </strong>
-                        {section.summary.details?.length ? (
-                          <span className="report-matrix__section-summary-details">
-                            {section.summary.details.map(
-                              (detail, summaryIndex) => (
-                                <span
-                                  key={`${section.key}-summary-${summaryIndex}`}
-                                  className="report-matrix__section-summary-detail"
-                                >
-                                  {detail}
-                                </span>
-                              ),
-                            )}
-                          </span>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </th>
-                ))}
-              </tr>
-            ) : null}
             <tr>
               <th
                 className="report-matrix__brand-cell"
