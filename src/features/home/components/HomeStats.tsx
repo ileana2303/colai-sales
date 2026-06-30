@@ -2,18 +2,33 @@
 
 import type { CSSProperties } from "react";
 
+import Image from "next/image";
 import Link from "next/link";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import AppLoader from "@/components/ui/AppLoader";
 import { isAreaPickerUser } from "@/lib/managerPickerAccess";
-import { AREA_REPORT_CATEGORIES } from "@/lib/bi-reports/reportCategories";
+import {
+  AREA_REPORT_CATEGORIES,
+  type ReportCategoryKey,
+} from "@/lib/bi-reports/reportCategories";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import { useAuthStore } from "@/stores/authStore";
 import { useSelectedSellerStore } from "@/stores/selectedSellerStore";
 
+const AREA_REPORT_CATEGORY_IMAGES: Partial<Record<ReportCategoryKey, string>> =
+  {
+    "coloplast-travma": "/images/brands/coloplast-logo.png",
+    "coloplast-akrateia": "/images/brands/coloplast-logo.png",
+    amoena: "/images/brands/amoena-logo.png",
+    abbott: "/images/brands/abbott_logo.png",
+    bbm: "/images/brands/BBM-logo.png",
+    covidien: "/images/brands/covidien-logo.png",
+  };
+
 type ModuleCardProps = {
   accent: string;
+  brandImagePath?: string;
   description: string;
   href: string;
   icon: string;
@@ -22,6 +37,7 @@ type ModuleCardProps = {
 
 function ModuleCard({
   accent,
+  brandImagePath,
   description,
   href,
   icon,
@@ -30,7 +46,7 @@ function ModuleCard({
   return (
     <Link
       href={href}
-      className="home-module-card block h-full w-full no-underline text-inherit"
+      className="home-module-card block h-full w-full text-inherit no-underline"
       aria-label={`${title} — μετάβαση`}
       style={{ "--home-module-accent": accent } as CSSProperties}
     >
@@ -55,7 +71,18 @@ function ModuleCard({
                 color: accent,
               }}
             >
-              <AppIcon name={icon} size={28} />
+              {brandImagePath ? (
+                <Image
+                  src={brandImagePath}
+                  alt={`${title} logo`}
+                  fill
+                  sizes="68px"
+                  unoptimized
+                  className="home-module-card__brand-image"
+                />
+              ) : (
+                <AppIcon name={icon} size={28} />
+              )}
             </div>
             <div className="home-module-card__text">
               <div className="home-module-card__title">{title}</div>
@@ -113,6 +140,7 @@ export default function HomeStats() {
             key={category.key}
             title={category.title}
             description={category.description}
+            brandImagePath={AREA_REPORT_CATEGORY_IMAGES[category.key]}
             icon={category.icon}
             accent={category.accent}
             href={category.href}
