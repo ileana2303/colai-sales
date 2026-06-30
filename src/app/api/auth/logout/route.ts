@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { cookieName, userCookieName } from "@/lib/auth";
+import { selectedSellerCookieName } from "@/lib/selectedSellerContext";
 
 export async function POST() {
   const jar = await cookies();
   jar.set(cookieName, "", { path: "/", maxAge: 0 });
   jar.set(userCookieName, "", { path: "/", maxAge: 0 });
+  jar.set(selectedSellerCookieName, "", { path: "/", maxAge: 0 });
   return NextResponse.json({ ok: true });
 }

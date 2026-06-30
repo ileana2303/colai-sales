@@ -199,6 +199,103 @@ canvas {
   overflow: visible;
 }
 
+.selected-seller-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in oklch, var(--primary) 24%, var(--border));
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklch, var(--primary) 14%, var(--background)),
+    color-mix(in oklch, var(--primary) 6%, var(--background))
+  );
+}
+
+.selected-seller-nav__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--primary) 16%, var(--background));
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.selected-seller-nav__content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.selected-seller-nav__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--primary) 72%, var(--foreground));
+  line-height: 1.1;
+}
+
+.selected-seller-nav__details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+  min-width: 0;
+}
+
+.selected-seller-nav__name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-seller-nav__meta {
+  font-size: 0.8125rem;
+  color: var(--muted-foreground);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selected-seller-nav__action {
+  flex-shrink: 0;
+}
+
+@media (max-width: 960px) {
+  .selected-seller-nav__meta {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-header__inner {
+    flex-wrap: wrap;
+    border-radius: 24px;
+    min-height: 0;
+    padding: 12px 14px;
+  }
+
+  .selected-seller-nav {
+    order: 3;
+    width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .selected-seller-nav__action-label {
+    display: none;
+  }
+}
+
 .app-header__inner {
   width: 100%;
   max-width: var(--app-content-max-width);
@@ -207,7 +304,7 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 12px;
   min-height: 72px;
   padding: 14px 24px 14px 28px;
   border: 1px solid rgba(16, 24, 40, 0.08);
@@ -334,9 +431,11 @@ html[data-bs-theme="dark"] .home-module-card__icon {
 
 .app-header__actions {
   min-width: 0;
+  margin-left: auto;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .app-content {

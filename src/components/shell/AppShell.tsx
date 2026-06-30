@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AppBackButton } from "@/components/shell/AppBackButton";
+import { SelectedSellerBar } from "@/components/shell/SelectedSellerBar";
 import { AppIcon } from "@/components/ui/app-icon";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLogout } from "@/features/auth/hooks/useLogout";
+import { isAreaPickerUser } from "@/lib/managerPickerAccess";
 import { useAuthStore } from "@/stores/authStore";
 import { useSellersStore } from "@/stores/sellersStore";
 import { ChevronDown } from "@/icons/lucide/chevron-down";
@@ -36,8 +38,13 @@ function getUserMeta(
     team: string;
     salesPerson: string;
   } | null,
+  isPickerUser: boolean,
 ) {
   if (!userInfos) return "Σύνδεση ενεργή";
+
+  if (isPickerUser) {
+    return userInfos.username?.trim() || "";
+  }
 
   const areaTeam = matchedSeller
     ? [matchedSeller.area, matchedSeller.team].filter(Boolean).join(" · ")
@@ -53,7 +60,7 @@ function getUserMeta(
     matchedSeller?.salesPerson?.trim() || null,
   ].filter(Boolean);
 
-  return parts.length && parts.join(" · ");
+  return parts.length ? parts.join(" · ") : "";
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -61,6 +68,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const logoutMutation = useLogout();
   const userInfos = useAuthStore((s) => s.userInfos);
   const matchedSeller = useSellersStore((s) => s.matched);
+  const isPickerUser = isAreaPickerUser(userInfos);
 
   const fullName =
     [userInfos?.fname, userInfos?.lname].filter(Boolean).join(" ") ||
@@ -70,7 +78,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   React.useEffect(() => setMounted(true), []);
 
   const displayName = mounted ? fullName : "Λογαριασμός";
-  const displayMeta = mounted ? getUserMeta(userInfos, matchedSeller) : "Φόρτωση…";
+  const displayMeta = mounted
+    ? getUserMeta(userInfos, matchedSeller, isPickerUser)
+    : "Φόρτωση…";
   const initials = mounted ? getInitials(userInfos) : "?";
 
   const onLogout = async () => {
@@ -98,6 +108,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               style={{ height: 30, width: "auto" }}
             />
           </Link>
+
+          <SelectedSellerBar />
 
           <div className="app-header__actions">
             <DropdownMenu>

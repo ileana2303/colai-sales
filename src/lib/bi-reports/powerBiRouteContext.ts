@@ -1,6 +1,12 @@
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
+import { isAreaPickerUser } from "@/lib/managerPickerAccess";
+import {
+  decodeSelectedSellerCookie,
+  selectedSellerCookieName,
+} from "@/lib/selectedSellerContext";
 import {
   fetchPowerBiSellersCatalog,
+  findPowerBiSellerByCode,
   findPowerBiSellersByArea,
   type PowerBiSellerRow,
   resolveReportSellerContext,
@@ -42,6 +48,14 @@ function badRequestResponse(message: string) {
   );
 }
 
+function readSelectedSellerContext(
+  userInfo: SessionUserInfo | null,
+  cookieValue?: string,
+) {
+  if (!isAreaPickerUser(userInfo)) return null;
+  return decodeSelectedSellerCookie(cookieValue);
+}
+
 export async function getPowerBiRouteAuthContext(): Promise<PowerBiRouteAuthResult> {
   const jar = await cookies();
   const token = jar.get(cookieName)?.value;
@@ -50,15 +64,23 @@ export async function getPowerBiRouteAuthContext(): Promise<PowerBiRouteAuthResu
   }
 
   const userInfo = decodeUserInfoCookie(jar.get(userCookieName)?.value);
-  const reportContext = await resolveReportSellerContext(userInfo, {
-    amsaAccessToken: token,
-  });
+  const selectedContext = readSelectedSellerContext(
+    userInfo,
+    jar.get(selectedSellerCookieName)?.value,
+  );
+  const reportContext = await resolveReportSellerContext(
+    userInfo,
+    { amsaAccessToken: token },
+    selectedContext,
+  );
 
   if (!reportContext?.area) {
     return {
       ok: false,
       response: badRequestResponse(
-        "Missing area or sellers for authenticated user",
+        isAreaPickerUser(userInfo)
+          ? "Select a seller before viewing area reports"
+          : "Missing area or sellers for authenticated user",
       ),
     };
   }
@@ -71,7 +93,9 @@ export async function getPowerBiRouteAuthContext(): Promise<PowerBiRouteAuthResu
   };
 }
 
-export async function getPowerBiSellersRouteContext(): Promise<
+export async function getPowerBiSellersRouteContext(options?: {
+  scope?: "all" | "selected";
+}): Promise<
   | {
       ok: true;
       token: string;
@@ -91,6 +115,50 @@ export async function getPowerBiSellersRouteContext(): Promise<
   const userInfo = decodeUserInfoCookie(jar.get(userCookieName)?.value);
   const tokenOptions = { amsaAccessToken: token };
   const allRecords = await fetchPowerBiSellersCatalog(tokenOptions);
+
+  if (isAreaPickerUser(userInfo)) {
+    if (options?.scope === "all") {
+      return {
+        ok: true,
+        token,
+        userInfo,
+        area: "",
+        records: allRecords,
+        matched: null,
+      };
+    }
+
+    const selectedContext = readSelectedSellerContext(
+      userInfo,
+      jar.get(selectedSellerCookieName)?.value,
+    );
+
+    if (!selectedContext) {
+      return {
+        ok: true,
+        token,
+        userInfo,
+        area: "",
+        records: [],
+        matched: null,
+      };
+    }
+
+    const area = selectedContext.area.trim();
+    const records = findPowerBiSellersByArea(allRecords, area);
+    const matched =
+      findPowerBiSellerByCode(allRecords, selectedContext.sellerCode) ?? null;
+
+    return {
+      ok: true,
+      token,
+      userInfo,
+      area,
+      records,
+      matched,
+    };
+  }
+
   const area = userInfo?.area?.trim() ?? "";
   const records = area
     ? findPowerBiSellersByArea(allRecords, area)

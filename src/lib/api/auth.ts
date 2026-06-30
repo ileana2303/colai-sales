@@ -36,3 +36,42 @@ export async function loginRequest(credentials: {
 export async function logoutRequest(): Promise<void> {
   await fetch("/api/auth/logout", { method: "POST" });
 }
+
+export type SelectedSellerSession = {
+  area: string;
+  sellerCode: string;
+  salesPerson: string;
+  team: string;
+};
+
+export type SelectedSellerSessionResponse = {
+  ok: true;
+  isAreaPickerUser: boolean;
+  selectedSeller: SelectedSellerSession | null;
+};
+
+export async function fetchSelectedSellerSession(): Promise<SelectedSellerSessionResponse> {
+  const res = await fetch("/api/auth/selected-seller", { cache: "no-store" });
+  return parseProxyJson<SelectedSellerSessionResponse>(
+    res,
+    "Failed to load selected seller session.",
+  );
+}
+
+export async function selectSellerRequest(sellerCode: string) {
+  const res = await fetch("/api/auth/select-seller", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sellerCode }),
+  });
+
+  return parseProxyJson<{ ok: true; selectedSeller: SelectedSellerSession }>(
+    res,
+    "Failed to select seller.",
+  );
+}
+
+export async function clearSelectedSellerRequest() {
+  const res = await fetch("/api/auth/select-seller", { method: "DELETE" });
+  return parseProxyJson<{ ok: true }>(res, "Failed to clear selected seller.");
+}

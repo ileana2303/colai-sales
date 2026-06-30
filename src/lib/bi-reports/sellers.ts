@@ -2,6 +2,8 @@ import {
   getUserDisplayName,
   resolveBiReportPowerBiTarget,
 } from "@/lib/bi-reports/biReports";
+import { isAreaPickerUser } from "@/lib/managerPickerAccess";
+import type { SelectedSellerContext } from "@/lib/selectedSellerContext";
 import {
   executePowerBiQuery,
   joinDaxQuery,
@@ -131,11 +133,26 @@ export async function fetchPowerBiSellersCatalog(
 export async function resolveReportSellerContext(
   userInfo: SessionUserInfo | ApiUserInfo | null,
   tokenOptions: PowerBiTokenOptions,
+  selectedContext?: SelectedSellerContext | null,
 ): Promise<ResolvedReportSellerContext | null> {
+  const records = await fetchPowerBiSellersCatalog(tokenOptions);
+
+  if (selectedContext && isAreaPickerUser(userInfo)) {
+    const area = selectedContext.area.trim();
+    const areaSellers = findPowerBiSellersByArea(records, area);
+    if (!areaSellers.length) return null;
+
+    return {
+      area,
+      team: selectedContext.team.trim() || areaSellers[0]?.team || "",
+      sellerCode: normalizeSellerCode(selectedContext.sellerCode) ?? "",
+      sellerName: selectedContext.salesPerson.trim(),
+    };
+  }
+
   const area = userInfo?.area?.trim();
   if (!area) return null;
 
-  const records = await fetchPowerBiSellersCatalog(tokenOptions);
   const areaSellers = findPowerBiSellersByArea(records, area);
   if (!areaSellers.length) return null;
 

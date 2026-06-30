@@ -7,9 +7,11 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const context = await getPowerBiSellersRouteContext();
+    const { searchParams } = new URL(request.url);
+    const scope = searchParams.get("scope") === "all" ? "all" : "selected";
+    const context = await getPowerBiSellersRouteContext({ scope });
     if (!context.ok) {
       return context.response;
     }

@@ -1,4 +1,5 @@
 import AppShell from "@/components/shell/AppShell";
+import AreaPickerGate from "@/features/auth/components/AreaPickerGate";
 import AuthHydrator from "@/features/auth/components/AuthHydrator";
 import SellersHydrator from "@/features/auth/components/SellersHydrator";
 
@@ -17,6 +18,7 @@ export default async function AppLayout({
   return (
     <AppShell>
       <AuthHydrator />
+      <AreaPickerGate />
       <SellersHydrator />
       {children}
     </AppShell>

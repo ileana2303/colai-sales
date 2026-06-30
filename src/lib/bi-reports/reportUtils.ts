@@ -1,5 +1,6 @@
 import {
   formatCurrencyGR,
+  formatDisplayNumber,
   formatIntGR,
   formatPercentGR,
 } from "@/lib/utils/number";
@@ -66,10 +67,7 @@ export function formatNullableCurrency(value: number | null) {
 export function formatNullableNumber(value: number | null, fractionDigits = 2) {
   if (value == null || !Number.isFinite(value)) return "-";
 
-  return new Intl.NumberFormat("el-GR", {
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
-  }).format(value);
+  return formatDisplayNumber(value, fractionDigits);
 }
 
 export function formatNullableInt(value: number | null) {

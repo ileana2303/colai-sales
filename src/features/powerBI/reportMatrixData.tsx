@@ -17,7 +17,11 @@ import {
   type PowerBiSellerRow,
 } from "@/lib/bi-reports/sellers";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
-import { formatPercentGR } from "@/lib/utils/number";
+import {
+  formatPercentGR,
+  matrixCurrencyFormatter,
+  matrixNumberFormatter,
+} from "@/lib/utils/number";
 import type { ReactNode } from "react";
 
 export type PowerBiMatrixSourceRow = {
@@ -156,15 +160,8 @@ type CurrencySplitRowOptions = {
   parentKey?: string;
 };
 
-const currencyFormatter = new Intl.NumberFormat("el-GR", {
-  currency: "EUR",
-  maximumFractionDigits: 0,
-  style: "currency",
-});
-
-const numberFormatter = new Intl.NumberFormat("el-GR", {
-  maximumFractionDigits: 0,
-});
+const currencyFormatter = matrixCurrencyFormatter;
+const numberFormatter = matrixNumberFormatter;
 
 export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
   { key: "category", label: "Κατηγορία Στόχου", width: 196 },
@@ -213,8 +210,19 @@ function formatGapDiff(
   return formatMatrixValue(result - target, aggregate, isTotal);
 }
 
+/** Values below this round to zero in matrix display and are not a YoY baseline. */
+const YEAR_COMPARISON_BASELINE_EPSILON = 0.5;
+
+function hasYearComparisonBaseline(value: number | null | undefined) {
+  return (
+    value != null &&
+    Number.isFinite(value) &&
+    Math.abs(value) >= YEAR_COMPARISON_BASELINE_EPSILON
+  );
+}
+
 function formatYearComparison(current: number, previous: number) {
-  if (!previous || !Number.isFinite(previous)) return EMPTY_VALUE;
+  if (!hasYearComparisonBaseline(previous)) return EMPTY_VALUE;
   if (!Number.isFinite(current)) return EMPTY_VALUE;
   return formatMatrixPercent(current / previous);
 }
@@ -275,7 +283,7 @@ function formatYearDiff(
 ) {
   if (!Number.isFinite(current) || !Number.isFinite(previous))
     return EMPTY_VALUE;
-  if (previous === 0) return EMPTY_VALUE;
+  if (!hasYearComparisonBaseline(previous)) return EMPTY_VALUE;
   return formatMatrixValue(current - previous, aggregate, isTotal);
 }
 
@@ -906,8 +914,9 @@ function aggregateToMatrixRow(
       : closedPeriod.result - closedPeriod.target;
   const currentDiffValue =
     aggregate.tcyAll === 0 ? 0 : aggregate.vTrend - aggregate.tcyAll;
-  const yearDiffValue =
-    aggregate.vlc === 0 ? 0 : closedPeriod.result - aggregate.vlc;
+  const yearDiffValue = hasYearComparisonBaseline(aggregate.vlc)
+    ? closedPeriod.result - aggregate.vlc
+    : 0;
 
   return {
     key:
@@ -998,7 +1007,9 @@ function aggregateToMatrixRow(
         aggregate,
         isTotal,
       ),
-      yearResult: formatMatrixValue(aggregate.vlc, aggregate, isTotal),
+      yearResult: hasYearComparisonBaseline(aggregate.vlc)
+        ? formatMatrixValue(aggregate.vlc, aggregate, isTotal)
+        : EMPTY_VALUE,
     },
   };
 }

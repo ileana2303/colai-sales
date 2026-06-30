@@ -115,9 +115,11 @@ export type PowerBiSellersResponse = {
   records: PowerBiSellerRow[];
 };
 
-export function fetchPowerBiSellers() {
+export function fetchPowerBiSellers(scope?: "all") {
+  const query = scope === "all" ? "?scope=all" : "";
+
   return fetchPowerBi<PowerBiSellersResponse>(
-    "/api/powerbi/sellers",
+    `/api/powerbi/sellers${query}`,
     "Failed to load Power BI sellers",
   );
 }

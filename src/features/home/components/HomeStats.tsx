@@ -2,11 +2,15 @@
 
 import type { CSSProperties } from "react";
 
-import { AppIcon } from "@/components/ui/app-icon";
-import { normalizeSellerCode } from "@/lib/sellerAccess";
-import { AREA_REPORT_CATEGORIES } from "@/lib/bi-reports/reportCategories";
-import { useAuthStore } from "@/stores/authStore";
 import Link from "next/link";
+
+import { AppIcon } from "@/components/ui/app-icon";
+import AppLoader from "@/components/ui/AppLoader";
+import { isAreaPickerUser } from "@/lib/managerPickerAccess";
+import { AREA_REPORT_CATEGORIES } from "@/lib/bi-reports/reportCategories";
+import { normalizeSellerCode } from "@/lib/sellerAccess";
+import { useAuthStore } from "@/stores/authStore";
+import { useSelectedSellerStore } from "@/stores/selectedSellerStore";
 
 type ModuleCardProps = {
   accent: string;
@@ -16,7 +20,13 @@ type ModuleCardProps = {
   title: string;
 };
 
-function ModuleCard({ accent, description, href, icon, title }: ModuleCardProps) {
+function ModuleCard({
+  accent,
+  description,
+  href,
+  icon,
+  title,
+}: ModuleCardProps) {
   return (
     <Link
       href={href}
@@ -65,30 +75,50 @@ function ModuleCard({ accent, description, href, icon, title }: ModuleCardProps)
 
 export default function HomeStats() {
   const userInfos = useAuthStore((s) => s.userInfos);
+  const hydrated = useSelectedSellerStore((s) => s.hydrated);
+  const selectedSeller = useSelectedSellerStore((s) => s.selectedSeller);
   const hasSellerCode = Boolean(normalizeSellerCode(userInfos?.sellerCode));
+  const pickerUser = isAreaPickerUser(userInfos);
+  const showAreaCategories = pickerUser
+    ? Boolean(selectedSeller)
+    : !hasSellerCode;
 
-  return hasSellerCode ? (
-    <div className="app-home-grid">
-      <ModuleCard
-        title="PowerBI . Sellers Reports"
-        description="Αναφορές πωλήσεων."
-        icon="bi-bar-chart"
-        accent="#6366f1"
-        href="/powerbi/seller-reports"
-      />
-    </div>
-  ) : (
-    <div className="app-home-grid">
-      {AREA_REPORT_CATEGORIES.map((category) => (
+  if (pickerUser && !hydrated) {
+    return <AppLoader label="Φόρτωση επιλογής πωλητή…" />;
+  }
+
+  if (pickerUser && !selectedSeller) {
+    return null;
+  }
+
+  if (!showAreaCategories) {
+    return (
+      <div className="app-home-grid">
         <ModuleCard
-          key={category.key}
-          title={category.title}
-          description={category.description}
-          icon={category.icon}
-          accent={category.accent}
-          href={category.href}
+          title="PowerBI . Sellers Reports"
+          description="Αναφορές πωλήσεων."
+          icon="bi-bar-chart"
+          accent="#6366f1"
+          href="/powerbi/seller-reports"
         />
-      ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="app-home-grid">
+        {AREA_REPORT_CATEGORIES.map((category) => (
+          <ModuleCard
+            key={category.key}
+            title={category.title}
+            description={category.description}
+            icon={category.icon}
+            accent={category.accent}
+            href={category.href}
+          />
+        ))}
+      </div>
     </div>
   );
 }

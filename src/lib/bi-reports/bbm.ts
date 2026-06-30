@@ -136,8 +136,6 @@ export function buildBbmTrendQuery(areaName: string): string {
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
-    "  'U Sales Person'[Area],",
-    "  'U Sales Person'[Team],",
     "  'U Sales Person'[SellerCode],",
     "  'U Item Family Code'[ItemFamilyCode (groups)],",
     "  'UBussiness'[BusinessUnit],",
@@ -145,16 +143,13 @@ export function buildBbmTrendQuery(areaName: string): string {
     `  FILTER('UBussiness', 'UBussiness'[BusinessUnit] IN {${businessUnits}}),`,
     '  "REPORT_CODE", "P06VALL-VTREND",',
     '  "REPORT_DESC", "BBM Sales Trend by AREA, GROUP and Business Unit",',
-    '  "VTrend", [Sales Trend],',
-    '  "TargetFilter", CALCULATE([Target Triplex BBM API]),',
+    '  "VTrend", [Sales Trend B&L],',
     '  "CURRENCY", 1',
     ")",
-    "VAR __Filtered = FILTER(__Base, [VTrend] > 0 && NOT(ISBLANK([VTrend])) && [TargetFilter] > 0 && NOT(ISBLANK([TargetFilter])))",
+    "VAR __Filtered = FILTER(__Base, NOT(ISBLANK([VTrend])))",
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    "  \"Area\", 'U Sales Person'[Area],",
-    "  \"Team\", 'U Sales Person'[Team],",
     '  "SellerCode", \'U Sales Person\'[SellerCode],',
     '  "Group1", \'U Item Family Code\'[ItemFamilyCode (groups)],',
     '  "Group2", \'UBussiness\'[BusinessUnit],',
@@ -163,7 +158,7 @@ export function buildBbmTrendQuery(areaName: string): string {
     '  "VTrend", [VTrend],',
     '  "CURRENCY", [CURRENCY]',
     ")",
-    "ORDER BY [Area], [Team], [SellerCode], [Group1], [Group2]",
+    "ORDER BY [SellerCode], [Group1], [Group2]",
   ]);
 }
 
