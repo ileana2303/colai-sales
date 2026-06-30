@@ -1005,6 +1005,7 @@ function aggregateToMatrixRow(
 
 export function buildReportMatrixGroup2Rows(
   rows: ReportMatrixRow[],
+  group2Order?: string[],
 ): ReportMatrixRow[] {
   const groupedRows = new Map<
     string,
@@ -1027,7 +1028,7 @@ export function buildReportMatrixGroup2Rows(
     }
   }
 
-  return [...groupedRows.entries()].map(([key, value]) => ({
+  const group2Rows = [...groupedRows.entries()].map(([key, value]) => ({
     key,
     category: value.group2,
     childCount: new Set(
@@ -1039,9 +1040,21 @@ export function buildReportMatrixGroup2Rows(
       team: false,
       seller: false,
     },
-    rowKind: "group2",
+    rowKind: "group2" as const,
     values: createEmptyMetricValues(),
   }));
+
+  if (group2Order?.length) {
+    group2Rows.sort((left, right) =>
+      compareByOrder(
+        group2Order,
+        String(left.category ?? ""),
+        String(right.category ?? ""),
+      ),
+    );
+  }
+
+  return group2Rows;
 }
 
 export function buildReportMatrixCategoryRows(

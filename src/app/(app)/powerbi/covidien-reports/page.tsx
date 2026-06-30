@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <PowerBiReportMatrixPage
       brandLabel="COVIDIEN"
-      caption="Covidien target planning matrix"
+      caption="COVIDIEN target planning matrix"
       currentSalesPath="/api/powerbi/covidien-sales-current-year"
       currentYear={getCurrentReportYear()}
       emptyMessage="Δεν βρέθηκαν Covidien στοιχεία για το area του login."

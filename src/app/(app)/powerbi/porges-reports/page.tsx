@@ -8,7 +8,7 @@ export default function Page() {
   return (
     <PowerBiReportMatrixPage
       brandLabel="PORGES"
-      caption="Porges target planning matrix"
+      caption="PORGES target planning matrix"
       currentSalesPath="/api/powerbi/porges-sales-current-year"
       currentYear={getCurrentReportYear()}
       emptyMessage="Δεν βρέθηκαν Porges στοιχεία για το area του login."

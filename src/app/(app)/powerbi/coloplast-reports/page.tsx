@@ -12,7 +12,7 @@ export default function Page() {
   return (
     <PowerBiReportMatrixPage
       brandLabel="COLOPLAST"
-      caption="Coloplast target planning matrix"
+      caption="COLOPLAST target planning matrix"
       categoryOrder={COLOPLAST_CATEGORY_ORDER}
       group2Order={COLOPLAST_GROUP2_ORDER}
       currentSalesPath="/api/powerbi/coloplast-sales-current-year"

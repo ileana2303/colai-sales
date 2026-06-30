@@ -103,6 +103,7 @@ type ReportMatrixTableProps = {
   categoryLabel?: string;
   description?: string;
   exportFileName?: string;
+  group2Order?: string[];
   headerLabel?: ReactNode;
   leadingColumns?: ReportMatrixLeadingColumn[];
   rows: ReportMatrixRow[];
@@ -279,6 +280,7 @@ export function ReportMatrixTable({
   categoryLabel = "Κατηγορία Στόχου",
   description,
   exportFileName,
+  group2Order,
   headerLabel,
   leadingColumns,
   rows,
@@ -458,8 +460,10 @@ export function ReportMatrixTable({
 
   const group2Rows = useMemo(
     () =>
-      hasGroup2 ? buildReportMatrixGroup2Rows(comparisonDetailRows) : [],
-    [comparisonDetailRows, hasGroup2],
+      hasGroup2
+        ? buildReportMatrixGroup2Rows(comparisonDetailRows, group2Order)
+        : [],
+    [comparisonDetailRows, group2Order, hasGroup2],
   );
   const categoryRows = useMemo(
     () => buildReportMatrixCategoryRows(comparisonDetailRows),

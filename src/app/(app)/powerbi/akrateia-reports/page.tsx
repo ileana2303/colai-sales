@@ -12,7 +12,7 @@ export default function Page() {
   return (
     <PowerBiReportMatrixPage
       brandLabel="AKRATEIA"
-      caption="Akrateia target planning matrix"
+      caption="AKRATEIA target planning matrix"
       categoryOrder={AKRATEIA_CATEGORY_ORDER}
       group2Order={AKRATEIA_GROUP2_ORDER}
       currentSalesPath="/api/powerbi/akrateia-sales-current-year"

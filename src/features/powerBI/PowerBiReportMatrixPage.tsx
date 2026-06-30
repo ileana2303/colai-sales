@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
@@ -48,6 +48,28 @@ const matrixQueryOptions = {
   staleTime: 60_000,
   retry: 1,
 } as const;
+
+function ReportMatrixPageHeader({
+  actions,
+  brandLabel,
+  caption,
+}: {
+  actions?: ReactNode;
+  brandLabel: string;
+  caption: string;
+}) {
+  return (
+    <section className="app-card p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="app-report-title mb-0">{brandLabel}</h1>
+          <p className="app-report-subtitle mb-0">{caption}</p>
+        </div>
+        {actions}
+      </div>
+    </section>
+  );
+}
 
 function getUniqueGroup2Label(...rowGroups: PowerBiMatrixSourceRow[][]) {
   const labels = new Set(
@@ -187,6 +209,7 @@ export function PowerBiReportMatrixView({
           brandLabel={brandLabel}
           caption={caption}
           exportFileName={exportFileName}
+          group2Order={group2Order}
           headerLabel={headerLabel}
           leadingColumns={reportMatrixLeadingColumns}
           rows={rows}
@@ -207,12 +230,17 @@ type PowerBiReportMatrixPageProps = Omit<
 >;
 
 export function PowerBiReportMatrixPage({
+  brandLabel,
+  caption,
   reportKey,
   ...props
 }: PowerBiReportMatrixPageProps) {
   return (
     <div className="app-page">
+      <ReportMatrixPageHeader brandLabel={brandLabel} caption={caption} />
       <PowerBiReportMatrixView
+        brandLabel={brandLabel}
+        caption={caption}
         exportFileName={`${reportKey}-matrix`}
         reportKey={reportKey}
         {...props}
@@ -242,13 +270,8 @@ export function PowerBiTabbedReportMatrixPage({
 
   return (
     <div className="app-page">
-      <section className="app-card p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="app-report-title mb-0">{brandLabel}</h1>
-            <p className="app-report-subtitle mb-0">{caption}</p>
-          </div>
-
+      <ReportMatrixPageHeader
+        actions={
           <div
             className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/40 p-1"
             role="tablist"
@@ -276,8 +299,10 @@ export function PowerBiTabbedReportMatrixPage({
               );
             })}
           </div>
-        </div>
-      </section>
+        }
+        brandLabel={brandLabel}
+        caption={caption}
+      />
 
       {tabs.map((tab) => (
         <PowerBiReportMatrixView

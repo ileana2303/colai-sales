@@ -96,6 +96,7 @@ export const AKRATEIA_GROUP2_ORDER = [
   "CC",
   "CC SALES",
   "FOLEY",
+  "ΝΟΣΟΚΟΜΕΙΑΚΟ",
 ];
 
 export const AKRATEIA_CATEGORY_ORDER = [
@@ -106,6 +107,7 @@ export const AKRATEIA_CATEGORY_ORDER = [
   "CC",
   "CC SALES",
   "FOLEY",
+  "ΝΟΣΟΚΟΜΕΙΑΚΟ",
 ];
 
 const IC_TYPES = ["IC", "IC-RESTART", "ICST"];
@@ -201,6 +203,27 @@ const AKRATEIA_CATEGORIES: AkrateiaCategory[] = [
     summarizeSellerCodeOnly: true,
     trendCalendarFilter: true,
     trendValue: "[Monimoi Sales Forecast]",
+  },
+  {
+    businessUnit: "COLOPLAST",
+    currency: 1,
+    currentYearCalendarFilter: true,
+    filters: [
+      `TREATAS({"3.CATHETERS"}, 'U HOSPITAL SUBS'[Κατηγορία])`,
+    ],
+    group1: "ΝΟΣΟΚΟΜΕΙΑΚΟ",
+    group2: "ΝΟΣΟΚΟΜΕΙΑΚΟ",
+    groupByColumns: ["'U HOSPITAL SUBS'[Κατηγορία]"],
+    lastYearCalendarFilter: true,
+    reportCode: "P02V06",
+    reportDesc: "Hospital ",
+    rowFilterTarget: "[HOSPITAL TARGET]",
+    sales2025Value: "[HOSPITAL SALES]",
+    sales2026Target: "ROUND([HOSPITAL TARGET], 0)",
+    sales2026Value: "[HOSPITAL SALES]",
+    summarizeSellerCodeOnly: true,
+    trendCalendarFilter: true,
+    trendValue: "ROUND([Hospital Forecast], 0)",
   },
 ];
 
