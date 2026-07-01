@@ -1034,21 +1034,39 @@ export function buildReportMatrixGroup2Rows(
     }
   }
 
-  const group2Rows = [...groupedRows.entries()].map(([key, value]) => ({
-    key,
-    category: value.group2,
-    childCount: new Set(
+  const group2Rows = [...groupedRows.entries()].map(([key, value]) => {
+    const childAggregates = value.childRows.map((row) =>
+      aggregateFromMetrics(row.metrics!),
+    );
+    const aggregate = buildTotalAggregate(childAggregates);
+    const childCount = new Set(
       value.childRows.map(
         (row) => row.filterValues?.category || String(row.category ?? "-"),
       ),
-    ).size,
-    leadingValues: {
-      team: false,
-      seller: false,
-    },
-    rowKind: "group2" as const,
-    values: createEmptyMetricValues(),
-  }));
+    ).size;
+
+    aggregate.group2 = value.group2;
+    aggregate.group1 = "";
+    aggregate.team = "";
+    aggregate.sellerCode = "";
+    aggregate.sellerName = "";
+
+    const row = aggregateToMatrixRow(aggregate, false, {
+      childCount,
+      extraMonthlyTargetSum: sumExtraMonthlyTarget(childAggregates),
+      key,
+      leadingValues: {
+        team: false,
+        seller: false,
+      },
+      rowKind: "group2",
+    });
+
+    return {
+      ...row,
+      category: value.group2,
+    };
+  });
 
   if (group2Order?.length) {
     group2Rows.sort((left, right) =>
@@ -1543,7 +1561,7 @@ export function createReportMatrixSections({
   return sections.map<ReportMatrixSection>((section) => ({
     ...section,
     columns: section.columns.map<ReportMatrixColumn>((column) => ({
-      align: "right",
+      align: "center",
       ...column,
       width: column.width ?? 82,
     })),

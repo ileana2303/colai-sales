@@ -203,7 +203,7 @@ function canExpandCategory(row: ReportMatrixRow) {
 }
 
 function canExpandGroup2(row: ReportMatrixRow) {
-  return row.rowKind === "group2" && (row.childCount ?? 0) > 1;
+  return row.rowKind === "group2" && (row.childCount ?? 0) >= 1;
 }
 
 function canExpandGroup3(row: ReportMatrixRow) {
@@ -523,6 +523,70 @@ export function ReportMatrixTable({
     expandableGroup3Keys.every((key) => expandedGroup3Keys.has(key)) &&
     expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
 
+  const hierarchyStepCount = useMemo(() => {
+    let count = 0;
+    if (hasGroup2 && expandableGroup2Keys.length > 0) count++;
+    if (expandableCategoryKeys.length > 0) count++;
+    if (hasGroup3 && expandableGroup3Keys.length > 0) count++;
+    return count;
+  }, [
+    expandableCategoryKeys.length,
+    expandableGroup2Keys.length,
+    expandableGroup3Keys.length,
+    hasGroup2,
+    hasGroup3,
+  ]);
+
+  const currentExpansionLevel = useMemo(() => {
+    let step = 0;
+    let level = 0;
+
+    if (hasGroup2 && expandableGroup2Keys.length > 0) {
+      const group2Expanded = expandableGroup2Keys.every((key) =>
+        expandedGroup2Keys.has(key),
+      );
+      if (!group2Expanded) return 0;
+      level = step + 1;
+      step++;
+    }
+
+    if (expandableCategoryKeys.length > 0) {
+      const categoriesExpanded = expandableCategoryKeys.every((key) =>
+        expandedCategoryKeys.has(key),
+      );
+      if (!categoriesExpanded) return level;
+      level = step + 1;
+      step++;
+    }
+
+    if (hasGroup3 && expandableGroup3Keys.length > 0) {
+      const group3Expanded = expandableGroup3Keys.every((key) =>
+        expandedGroup3Keys.has(key),
+      );
+      if (!group3Expanded) return level;
+      level = step + 1;
+    }
+
+    return level;
+  }, [
+    expandableCategoryKeys,
+    expandableGroup2Keys,
+    expandableGroup3Keys,
+    expandedCategoryKeys,
+    expandedGroup2Keys,
+    expandedGroup3Keys,
+    hasGroup2,
+    hasGroup3,
+  ]);
+
+  const canExpandOneHierarchyLevel =
+    !effectiveSellerFilter &&
+    hierarchyStepCount > 0 &&
+    currentExpansionLevel < hierarchyStepCount;
+  const canCollapseOneHierarchyLevel =
+    !effectiveSellerFilter && currentExpansionLevel > 0;
+  const nextExpansionLevel = currentExpansionLevel + 1;
+
   const group3RowsByCategory = useMemo(() => {
     const groupedRows = new Map<string, ReportMatrixRow[]>();
 
@@ -655,10 +719,9 @@ export function ReportMatrixTable({
       const group2Label = row.filterValues?.group2 ?? "";
       const group1Label =
         row.filterValues?.category || String(row.category ?? "-");
-      const skipCategoryRow = isRedundantGroup1Category(
-        group2Label,
-        group1Label,
-      );
+      const skipCategoryRow =
+        !hasGroup2 &&
+        isRedundantGroup1Category(group2Label, group1Label);
 
       const renderCategoryChildren = () => {
         if (hasGroup3) {
@@ -851,6 +914,44 @@ export function ReportMatrixTable({
     });
   }
 
+  function applyExpansionLevel(targetLevel: number) {
+    let step = 0;
+
+    if (hasGroup2 && expandableGroup2Keys.length > 0) {
+      setExpandedGroup2Keys(
+        targetLevel > step ? new Set(expandableGroup2Keys) : new Set(),
+      );
+      step++;
+    }
+
+    if (expandableCategoryKeys.length > 0) {
+      setExpandedCategoryKeys(
+        targetLevel > step ? new Set(expandableCategoryKeys) : new Set(),
+      );
+      step++;
+    } else {
+      setExpandedCategoryKeys(new Set());
+    }
+
+    if (hasGroup3 && expandableGroup3Keys.length > 0) {
+      setExpandedGroup3Keys(
+        targetLevel > step ? new Set(expandableGroup3Keys) : new Set(),
+      );
+    } else {
+      setExpandedGroup3Keys(new Set());
+    }
+
+    setExpandedTeamKeys(new Set());
+  }
+
+  function expandOneHierarchyLevel() {
+    applyExpansionLevel(currentExpansionLevel + 1);
+  }
+
+  function collapseOneHierarchyLevel() {
+    applyExpansionLevel(currentExpansionLevel - 1);
+  }
+
   function toggleAllCategories() {
     const shouldCollapse =
       expandableGroup2Keys.every((key) => expandedGroup2Keys.has(key)) &&
@@ -1026,7 +1127,9 @@ export function ReportMatrixTable({
         key={row.key}
         className={cn(
           isGroup2Row && "report-matrix__row--group2",
-          row.rowKind === "category" && "report-matrix__row--category",
+          row.rowKind === "category" &&
+            !isGroup2Subcategory &&
+            "report-matrix__row--category",
           isGroup2Subcategory && "report-matrix__row--group2-subcategory",
           row.rowKind === "group3" && "report-matrix__row--group3",
           row.rowKind === "team" && "report-matrix__row--team",
@@ -1189,6 +1292,59 @@ export function ReportMatrixTable({
           ) : null}
         </div>
         <div className="report-matrix-card__controls">
+          <div className="report-matrix-card__hierarchy-controls">
+            {canExpandOneHierarchyLevel ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="report-matrix-card__hierarchy-button"
+                aria-label={`Expand hierarchy level ${nextExpansionLevel}`}
+                onClick={expandOneHierarchyLevel}
+              >
+                <AppIcon name="bi-chevron-down" size={14} />
+                Επέκταση επιπέδου{" "}
+                <span className="report-matrix-card__hierarchy-button-level">
+                  {nextExpansionLevel}
+                </span>
+              </Button>
+            ) : null}
+            {canCollapseOneHierarchyLevel ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="report-matrix-card__hierarchy-button"
+                aria-label={`Collapse hierarchy level ${currentExpansionLevel}`}
+                onClick={collapseOneHierarchyLevel}
+              >
+                <AppIcon name="bi-chevron-left" size={14} />
+                Σύμπτυξη επιπέδου{" "}
+                <span className="report-matrix-card__hierarchy-button-level">
+                  {currentExpansionLevel}
+                </span>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="report-matrix-card__hierarchy-button"
+              disabled={!hasExpandableRows || Boolean(effectiveSellerFilter)}
+              aria-label={
+                areAllExpandableRowsExpanded
+                  ? "Collapse all expandable rows"
+                  : "Expand all expandable rows"
+              }
+              aria-pressed={areAllExpandableRowsExpanded}
+              onClick={toggleAllCategories}
+            >
+              <AppIcon name="bi-unfold-vertical" size={14} />
+              {areAllExpandableRowsExpanded
+                ? "Σύμπτυξη όλων"
+                : "Επέκταση όλων"}
+            </Button>
+          </div>
           {mergedSummary ? (
             <div
               className={cn(
@@ -1258,28 +1414,6 @@ export function ReportMatrixTable({
                 ) : null}
               </div>
             ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-sm"
-              className="report-matrix-card__expand-toggle"
-              disabled={!hasExpandableRows}
-              aria-label={
-                areAllExpandableRowsExpanded
-                  ? "Collapse all expandable rows"
-                  : "Expand all expandable rows"
-              }
-              aria-pressed={areAllExpandableRowsExpanded}
-              title={
-                areAllExpandableRowsExpanded
-                  ? "Collapse all rows"
-                  : "Expand all rows"
-              }
-              onClick={toggleAllCategories}
-            >
-              <AppIcon name="bi-unfold-vertical" size={16} />
-            </Button>
-
             <Button
               type="button"
               variant="outline"

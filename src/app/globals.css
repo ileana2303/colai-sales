@@ -827,6 +827,30 @@ html.dark .app-header-user__role {
   gap: 0.75rem;
 }
 
+.report-matrix-card__hierarchy-controls {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.report-matrix-card__hierarchy-button {
+  font-weight: 650;
+}
+
+.report-matrix-card__hierarchy-button-level {
+  display: inline-flex;
+  min-width: 1.1rem;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.92rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--primary);
+}
+
 .report-matrix-card__summary-pill {
   display: inline-flex;
   min-width: 0;
@@ -997,7 +1021,7 @@ html.dark .app-header-user__role {
 .report-matrix__footer {
   position: sticky;
   bottom: 0;
-  z-index: 5;
+  z-index: 11;
 }
 
 .report-matrix__summary-spacer {
@@ -1063,7 +1087,7 @@ html.dark .app-header-user__role {
   position: sticky;
   z-index: 7;
   border-right: 1px solid var(--border);
-  text-align: center;
+  text-align: left;
 }
 
 .report-matrix__brand-cell {
@@ -1304,7 +1328,6 @@ html.dark .app-header-user__role {
 .report-matrix__column-heading {
   background: color-mix(in oklch, var(--muted) 78%, var(--background) 22%);
   color: #1f4e80;
-  text-align: right;
   font-size: 0.72rem;
   line-height: 1.15;
   overflow: visible;
@@ -1374,7 +1397,12 @@ html.dark .app-header-user__role {
 .report-matrix__row--group2 .report-matrix__cell,
 .report-matrix__row--group2 .report-matrix__category-cell,
 .report-matrix__row--group2 .report-matrix__dimension-cell {
-  background: color-mix(in oklch, var(--muted) 84%, var(--background) 16%);
+  background: color-mix(in oklch, #bbf7d0 70%, var(--background) 30%);
+}
+
+.report-matrix__row--group2 .report-matrix__cell {
+  color: #052e16;
+  text-align: center;
 }
 
 .report-matrix__row--group2 .report-matrix__group2-cell {
@@ -1382,6 +1410,7 @@ html.dark .app-header-user__role {
   font-size: 0.88rem;
   font-weight: 900;
   letter-spacing: 0.02em;
+  padding-left: 0.75rem;
 }
 
 .report-matrix__row--group2
@@ -1408,7 +1437,7 @@ html.dark .app-header-user__role {
   tbody
   tr.report-matrix__row--group2:hover
   .report-matrix__dimension-cell {
-  background: color-mix(in oklch, var(--muted) 84%, var(--background) 16%);
+  background: color-mix(in oklch, #bbf7d0 70%, var(--background) 30%);
 }
 
 .report-matrix
@@ -1439,7 +1468,9 @@ html.dark .app-header-user__role {
   color: var(--muted-foreground);
 }
 
-.report-matrix__row--group2-subcategory td,
+.report-matrix tbody tr.report-matrix__row--group2-subcategory td,
+.report-matrix tbody tr.report-matrix__row--group2-subcategory th,
+.report-matrix tbody tr.report-matrix__row--group2-subcategory .report-matrix__cell,
 .report-matrix__row--group2-subcategory .report-matrix__category-cell,
 .report-matrix__row--group2-subcategory .report-matrix__dimension-cell {
   background: color-mix(in oklch, #dbeafe 22%, var(--background) 78%);
@@ -1452,6 +1483,32 @@ html.dark .app-header-user__role {
   color: #334155;
   font-size: var(--report-matrix-group2-category-font-size);
   font-weight: 750;
+}
+
+.report-matrix__row--group2-subcategory .report-matrix__dimension-cell {
+  color: var(--muted-foreground);
+}
+
+.report-matrix__row--group2-subcategory .report-matrix__cell {
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.report-matrix tbody tr.report-matrix__row--group2-subcategory:hover td,
+.report-matrix tbody tr.report-matrix__row--group2-subcategory:hover th,
+.report-matrix
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  .report-matrix__cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  .report-matrix__dimension-cell {
+  background: color-mix(in oklch, #dbeafe 22%, var(--background) 78%);
 }
 
 .report-matrix__row--group2-subcategory .report-matrix__category-toggle,
@@ -1564,6 +1621,15 @@ html.dark .app-header-user__role {
   font-weight: 650;
 }
 
+.report-matrix__footer .report-matrix__row--total td,
+.report-matrix__footer .report-matrix__row--total .report-matrix__cell,
+.report-matrix__footer .report-matrix__row--total .report-matrix__category-cell,
+.report-matrix__footer .report-matrix__row--total .report-matrix__dimension-cell {
+  border-bottom: 0;
+  background: color-mix(in oklch, var(--background) 86%, var(--muted) 14%);
+  font-weight: 850;
+}
+
 .report-matrix__row--total td,
 .report-matrix__row--total .report-matrix__category-cell,
 .report-matrix__row--total .report-matrix__dimension-cell {
@@ -1596,6 +1662,18 @@ html.dark .app-header-user__role {
   + .report-matrix__row--total
   .report-matrix__dimension-cell {
   border-top: 1px solid var(--border);
+}
+
+.report-matrix__footer .report-matrix__row--total .report-matrix__cell {
+  z-index: 11;
+}
+
+.report-matrix__footer .report-matrix__row--total .report-matrix__dimension-cell {
+  z-index: 12;
+}
+
+.report-matrix__footer .report-matrix__row--total .report-matrix__category-cell {
+  z-index: 13;
 }
 
 .report-matrix__row--total .report-matrix__dimension-cell {
@@ -1705,6 +1783,8 @@ html[data-bs-theme="dark"]
 
 html.dark .report-matrix__row--group2-subcategory td,
 html[data-bs-theme="dark"] .report-matrix__row--group2-subcategory td,
+html.dark .report-matrix__row--group2-subcategory th,
+html[data-bs-theme="dark"] .report-matrix__row--group2-subcategory th,
 html.dark .report-matrix__row--group2-subcategory .report-matrix__category-cell,
 html[data-bs-theme="dark"]
   .report-matrix__row--group2-subcategory
@@ -1714,7 +1794,11 @@ html.dark
   .report-matrix__dimension-cell,
 html[data-bs-theme="dark"]
   .report-matrix__row--group2-subcategory
-  .report-matrix__dimension-cell {
+  .report-matrix__dimension-cell,
+html.dark .report-matrix__row--group2-subcategory .report-matrix__cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group2-subcategory
+  .report-matrix__cell {
   background: color-mix(in oklch, #1e3a8a 22%, var(--background) 78%);
 }
 
@@ -1724,6 +1808,47 @@ html[data-bs-theme="dark"]
   .report-matrix__category-cell {
   border-left-color: color-mix(in oklch, #4ade80 45%, #60a5fa 55%);
   color: #dbeafe;
+}
+
+html.dark .report-matrix__row--group2-subcategory .report-matrix__dimension-cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group2-subcategory
+  .report-matrix__dimension-cell {
+  color: #bfdbfe;
+}
+
+html.dark .report-matrix__row--group2-subcategory .report-matrix__cell,
+html[data-bs-theme="dark"]
+  .report-matrix__row--group2-subcategory
+  .report-matrix__cell {
+  color: var(--foreground);
+}
+
+html.dark
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  td,
+html[data-bs-theme="dark"]
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  td,
+html.dark
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  th,
+html[data-bs-theme="dark"]
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  th,
+html.dark
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  .report-matrix__cell,
+html[data-bs-theme="dark"]
+  tbody
+  tr.report-matrix__row--group2-subcategory:hover
+  .report-matrix__cell {
+  background: color-mix(in oklch, #1e3a8a 22%, var(--background) 78%);
 }
 
 html.dark .report-matrix__row--section-category td,
@@ -1755,14 +1880,20 @@ html[data-bs-theme="dark"]
 html.dark .report-matrix__row--group2 .report-matrix__group2-cell,
 html[data-bs-theme="dark"]
   .report-matrix__row--group2
-  .report-matrix__group2-cell {
+  .report-matrix__group2-cell,
+html.dark .report-matrix__row--group2 td,
+html[data-bs-theme="dark"] .report-matrix__row--group2 td,
+html.dark .report-matrix__row--group2 .report-matrix__cell,
+html[data-bs-theme="dark"] .report-matrix__row--group2 .report-matrix__cell {
   background: color-mix(in oklch, #14532d 54%, var(--background) 46%);
 }
 
 html.dark .report-matrix__row--group2 .report-matrix__group2-cell,
 html[data-bs-theme="dark"]
   .report-matrix__row--group2
-  .report-matrix__group2-cell {
+  .report-matrix__group2-cell,
+html.dark .report-matrix__row--group2 .report-matrix__cell,
+html[data-bs-theme="dark"] .report-matrix__row--group2 .report-matrix__cell {
   color: #dcfce7;
 }
 
