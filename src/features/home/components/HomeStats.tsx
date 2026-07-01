@@ -24,6 +24,7 @@ const AREA_REPORT_CATEGORY_IMAGES: Partial<Record<ReportCategoryKey, string>> =
     abbott: "/images/brands/abbott_logo.png",
     bbm: "/images/brands/BBM-logo.png",
     covidien: "/images/brands/covidien-logo.png",
+    porges: "/images/brands/porges-logo.png",
   };
 
 type ModuleCardProps = {

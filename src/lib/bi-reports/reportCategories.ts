@@ -55,7 +55,7 @@ export const AREA_REPORT_CATEGORIES: ReportCategoryDefinition[] = [
     description: "PowerBI Reports for Porges Sales & Trends.",
     href: "/powerbi/porges-reports",
     icon: "bi-stars",
-    accent: "#7c3aed",
+    accent: "#00A2BA",
   },
   {
     key: "bbm",

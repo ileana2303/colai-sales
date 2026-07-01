@@ -109,9 +109,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             />
           </Link>
 
-          <SelectedSellerBar />
-
           <div className="app-header__actions">
+            <SelectedSellerBar />
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="app-header-user"
