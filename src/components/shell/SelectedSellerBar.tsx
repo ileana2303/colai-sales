@@ -8,14 +8,11 @@ import { AppIcon } from "@/components/ui/app-icon";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { AreaSelectMenuContent } from "@/features/manager/AreaSelectMenuContent";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { fetchPowerBiSellers } from "@/lib/api/powerbi";
 import { getUniquePowerBiAreas } from "@/lib/bi-reports/sellers";
@@ -36,6 +33,8 @@ export function SelectedSellerBar() {
     (state) => state.selectedSeller,
   );
   const selectArea = useSelectedSellerStore((state) => state.selectArea);
+  const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [pendingArea, setPendingArea] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
 
@@ -64,15 +63,22 @@ export function SelectedSellerBar() {
 
   const selectedArea = selectedSeller.area.trim();
   const metaLabel = pendingArea
-    ? "Αλλαγή περιοχής…"
-    : "Προβολή αναφορών για διεύθυνση";
-  const areasCountLabel =
-    String(availableAreas.length) +
-    " " +
-    (availableAreas.length === 1 ? "διαθέσιμη διεύθυνση" : "διαθέσιμες διευθύνσεις");
+    ? "Αλλαγή διεύθυνσης…"
+    : "Προβολή αναφορών για area";
+
+  function handleOpenChange(nextOpen: boolean) {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setSearchQuery("");
+      setSelectionError(null);
+    }
+  }
 
   async function handleAreaSelect(area: string) {
     const nextArea = area.trim();
+    setOpen(false);
+    setSearchQuery("");
+
     if (!nextArea || nextArea === selectedArea || pendingArea) return;
 
     setSelectionError(null);
@@ -94,10 +100,10 @@ export function SelectedSellerBar() {
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false} open={open} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger
         className="app-header-user app-header-user--scope"
-        aria-label="Επιλογή διεύθυνσης αναφορών"
+        aria-label="Επιλογή area αναφορών"
         disabled={Boolean(pendingArea)}
       >
         <span
@@ -114,68 +120,20 @@ export function SelectedSellerBar() {
         </span>
         <ChevronDown className="app-header-user__chevron" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 p-2">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="px-2 py-2 font-normal">
-            <div className="flex flex-col gap-1">
-              <span className="font-semibold">Επιλογή διεύθυνσης</span>
-              <span className="text-muted-foreground text-xs">
-                {availableAreas.length
-                  ? areasCountLabel
-                  : "Δεν βρέθηκαν διαθέσιμες διευθύνσεις."}
-              </span>
-            </div>
-          </DropdownMenuLabel>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-
-        {isLoading ? (
-          <DropdownMenuItem
-            className="gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
-            disabled
-          >
-            Φόρτωση διευθύνσεων
-          </DropdownMenuItem>
-        ) : isError ? (
-          <>
-            <DropdownMenuLabel className="text-destructive px-2 py-2 text-xs">
-              {error instanceof Error
-                ? error.message
-                : "Αποτυχία φόρτωσης διευθύνσεων."}
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              className="hover:bg-muted/80 cursor-pointer gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
-              onClick={() => void refetch()}
-            >
-              <AppIcon name="bi-arrow-clockwise" size={16} />
-              Δοκιμή ξανά
-            </DropdownMenuItem>
-          </>
-        ) : availableAreas.length ? (
-          <DropdownMenuRadioGroup
-            value={pendingArea ?? selectedArea}
-            onValueChange={(area) => void handleAreaSelect(String(area))}
-          >
-            {availableAreas.map((area) => (
-              <DropdownMenuRadioItem
-                key={area}
-                value={area}
-                disabled={Boolean(pendingArea)}
-                className="cursor-pointer gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
-              >
-                {area}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        ) : (
-          <DropdownMenuItem
-            className="gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
-            disabled
-          >
-            Δεν βρέθηκαν διαθέσιμες διευθύνσεις.
-          </DropdownMenuItem>
-        )}
-
+      <DropdownMenuContent align="end" className="w-80 p-0">
+        <AreaSelectMenuContent
+          areas={availableAreas}
+          error={error}
+          isError={isError}
+          isLoading={isLoading}
+          isOpen={open}
+          pendingArea={pendingArea}
+          searchQuery={searchQuery}
+          selectedArea={selectedArea}
+          onRetry={() => void refetch()}
+          onSearchQueryChange={setSearchQuery}
+          onSelect={(area) => void handleAreaSelect(area)}
+        />
         {selectionError ? (
           <>
             <DropdownMenuSeparator />

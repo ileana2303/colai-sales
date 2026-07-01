@@ -6,9 +6,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { filterAreasBySearch } from "@/features/manager/areaSelectSearch";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { fetchPowerBiSellers } from "@/lib/api/powerbi";
 import { getUniquePowerBiAreas } from "@/lib/bi-reports/sellers";
+import { cn } from "@/lib/utils";
 import { useSelectedSellerStore } from "@/stores/selectedSellerStore";
 
 export function SelectSellerPage() {
@@ -19,6 +22,7 @@ export function SelectSellerPage() {
   );
   const selectArea = useSelectedSellerStore((state) => state.selectArea);
   const [selectedArea, setSelectedArea] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data, error, isError, isLoading, refetch } = useQuery({
@@ -31,6 +35,11 @@ export function SelectSellerPage() {
   const availableAreas = useMemo(
     () => getUniquePowerBiAreas(data?.records ?? []),
     [data?.records],
+  );
+
+  const filteredAreas = useMemo(
+    () => filterAreasBySearch(availableAreas, searchQuery),
+    [availableAreas, searchQuery],
   );
 
   useEffect(() => {
@@ -61,7 +70,7 @@ export function SelectSellerPage() {
     <div className="area-picker-page">
       <section className="app-card area-picker-card p-4">
         <div className="area-picker-card__header">
-          <h1 className="app-report-title mb-0">Επιλογή διεύθυνσης πωλήσεων</h1>
+          <h1 className="app-report-title mb-0">Επιλογή area πωλήσεων</h1>
           <p className="app-report-subtitle mb-0">
             Επιλέξτε διεύθυνση για προβολή των αντίστοιχων αναφορών
           </p>
@@ -69,7 +78,7 @@ export function SelectSellerPage() {
 
         {isLoading ? (
           <div className="text-muted-foreground py-8 text-center text-sm">
-            Φόρτωση διευθύνσεων...
+            Φόρτωση διευθύνσεων…
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
@@ -97,33 +106,54 @@ export function SelectSellerPage() {
               Διεύθυνση Πωλήσεων
             </span>
 
-            <div className="area-picker-select-wrap">
-              <select
-                value={selectedArea}
-                disabled={!availableAreas.length || isSubmitting}
-                onChange={(event) => setSelectedArea(event.target.value)}
-                className="area-picker-select"
-                aria-label="Επιλογή διεύθυνσης πωλήσεων"
-              >
-                <option value="">Επιλέξτε…</option>
-                {availableAreas.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
-              <AppIcon
-                name="bi-chevron-down"
-                size={16}
-                className="area-picker-select-wrap__chevron"
-              />
+            <Input
+              type="search"
+              value={searchQuery}
+              disabled={!availableAreas.length || isSubmitting}
+              placeholder="Αναζήτηση διεύθυνσης…"
+              aria-label="Αναζήτηση area"
+              className="area-picker-search-input"
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+
+            <div
+              className="area-picker-options"
+              role="listbox"
+              aria-label="Διαθέσιμες διευθύνσεις"
+            >
+              {!availableAreas.length ? (
+                <p className="area-picker-options__empty">
+                  Δεν βρέθηκαν διαθέσιμες διευθύνσεις.
+                </p>
+              ) : !filteredAreas.length ? (
+                <p className="area-picker-options__empty">
+                  Δεν βρέθηκαν διευθύνσεις με τα τρέχοντα φίλτρα.
+                </p>
+              ) : (
+                filteredAreas.map((area) => {
+                  const isSelected = selectedArea === area;
+
+                  return (
+                    <button
+                      key={area}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      disabled={isSubmitting}
+                      className={cn(
+                        "area-picker-option",
+                        isSelected && "area-picker-option--selected",
+                      )}
+                      onClick={() => setSelectedArea(area)}
+                    >
+                      {area}
+                    </button>
+                  );
+                })
+              )}
             </div>
 
-            {!availableAreas.length ? (
-              <p className="area-picker-panel__meta">
-                Δεν βρέθηκαν διαθέσιμες διευθύνσεις.
-              </p>
-            ) : (
+            {availableAreas.length ? (
               <>
                 <Button
                   type="button"
@@ -136,13 +166,14 @@ export function SelectSellerPage() {
                     ? "Επιλογή…"
                     : isCurrentSelection
                       ? "Επιλεγμένη"
-                      : "Επιλογή διεύθυνσης"}
+                      : "Επιλογή area"}
                 </Button>
                 <p className="area-picker-panel__meta">
-                  {availableAreas.length} διαθέσιμες διευθύνσεις
+                  {filteredAreas.length} από {availableAreas.length} διαθέσιμες
+                  διευθύνσεις
                 </p>
               </>
-            )}
+            ) : null}
           </div>
         )}
       </section>
