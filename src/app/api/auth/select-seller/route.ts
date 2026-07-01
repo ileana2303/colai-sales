@@ -8,7 +8,7 @@ import {
 } from "@/lib/auth";
 import {
   fetchPowerBiSellersCatalog,
-  findPowerBiSellerByCode,
+  findPowerBiSellersByArea,
 } from "@/lib/bi-reports/sellers";
 import { isAreaPickerUser } from "@/lib/managerPickerAccess";
 import {
@@ -44,28 +44,29 @@ export async function POST(request: Request) {
   if (!isAreaPickerUser(userInfo)) return forbidden();
 
   const body = getObject(await request.json().catch(() => null));
-  const sellerCode = normalizeSellerCode(body?.sellerCode);
-  if (!sellerCode) {
+  const area = String(body?.area ?? "").trim();
+  if (!area) {
     return NextResponse.json(
-      { ok: false, message: "Missing sellerCode" },
+      { ok: false, message: "Missing area" },
       { status: 400 },
     );
   }
 
   const records = await fetchPowerBiSellersCatalog({ amsaAccessToken: token });
-  const seller = findPowerBiSellerByCode(records, sellerCode);
-  if (!seller) {
+  const areaSellers = findPowerBiSellersByArea(records, area);
+  if (!areaSellers.length) {
     return NextResponse.json(
-      { ok: false, message: "Seller not found" },
+      { ok: false, message: "Area not found" },
       { status: 404 },
     );
   }
 
+  const representative = areaSellers[0];
   const selectedSeller: SelectedSellerContext = {
-    area: seller.area,
-    sellerCode: seller.sellerCode,
-    salesPerson: seller.salesPerson,
-    team: seller.team,
+    area: representative.area,
+    sellerCode: normalizeSellerCode(representative.sellerCode) ?? "",
+    salesPerson: representative.salesPerson,
+    team: representative.team,
   };
 
   jar.set(selectedSellerCookieName, encodeSelectedSellerCookie(selectedSeller), {

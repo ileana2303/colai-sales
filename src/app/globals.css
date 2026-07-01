@@ -296,6 +296,128 @@ canvas {
   flex-shrink: 0;
 }
 
+.area-picker-page {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.25rem;
+}
+
+.area-picker-card {
+  width: min(100%, 22rem);
+}
+
+.area-picker-card__header {
+  text-align: center;
+}
+
+.area-picker-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  margin-top: 1.25rem;
+  padding: 1.125rem 1rem 1rem;
+  border: 1.5px solid color-mix(in oklch, var(--primary) 42%, var(--border));
+  border-radius: 16px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in oklch, var(--primary) 16%, var(--background)),
+    color-mix(in oklch, var(--primary) 7%, var(--background))
+  );
+  box-shadow:
+    0 2px 8px color-mix(in oklch, var(--primary) 14%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 36%, transparent);
+}
+
+.area-picker-panel__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--primary) 82%, var(--foreground));
+}
+
+.area-picker-panel__label-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--primary) 24%, var(--background));
+  color: var(--primary);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 20%, transparent);
+}
+
+.area-picker-select-wrap {
+  position: relative;
+  width: min(100%, 15.5rem);
+}
+
+.area-picker-select {
+  appearance: none;
+  width: 100%;
+  height: 2.625rem;
+  padding: 0 2.25rem 0 0.875rem;
+  border: 2px solid color-mix(in oklch, var(--primary) 48%, var(--border));
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--primary) 18%, transparent),
+    inset 0 1px 0 color-mix(in oklch, white 50%, transparent);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease;
+}
+
+.area-picker-select:hover:not(:disabled) {
+  border-color: color-mix(in oklch, var(--primary) 68%, var(--border));
+  background: color-mix(in oklch, var(--primary) 4%, var(--background));
+}
+
+.area-picker-select:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 3px color-mix(in oklch, var(--primary) 24%, transparent),
+    0 1px 2px color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+.area-picker-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.area-picker-select-wrap__chevron {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--primary);
+}
+
+.area-picker-panel__action {
+  width: min(100%, 15.5rem);
+  font-weight: 700;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--primary) 20%, transparent);
+}
+
+.area-picker-panel__meta {
+  font-size: 0.75rem;
+  color: var(--muted-foreground);
+  text-align: center;
+}
+
 @media (max-width: 960px) {
   .selected-seller-nav__meta {
     display: none;

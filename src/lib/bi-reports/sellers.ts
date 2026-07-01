@@ -89,6 +89,19 @@ export function findPowerBiSellersByArea(
   );
 }
 
+export function getUniquePowerBiAreas(records: PowerBiSellerRow[]): string[] {
+  const areas = new Set<string>();
+
+  for (const record of records) {
+    const area = record.area.trim();
+    if (area) areas.add(area);
+  }
+
+  return [...areas].sort((left, right) =>
+    left.localeCompare(right, "el", { sensitivity: "base" }),
+  );
+}
+
 export function findPowerBiSellerByCode(
   records: PowerBiSellerRow[],
   sellerCode: string,

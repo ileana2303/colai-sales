@@ -5,7 +5,7 @@ import { create } from "zustand";
 import {
   clearSelectedSellerRequest,
   fetchSelectedSellerSession,
-  selectSellerRequest,
+  selectAreaRequest,
   type SelectedSellerSession,
 } from "@/lib/api/auth";
 
@@ -14,7 +14,7 @@ type SelectedSellerState = {
   isAreaPickerUser: boolean;
   selectedSeller: SelectedSellerSession | null;
   hydrateFromSession: () => Promise<void>;
-  selectSeller: (sellerCode: string) => Promise<SelectedSellerSession>;
+  selectArea: (area: string) => Promise<SelectedSellerSession>;
   clearSelection: () => Promise<void>;
   reset: () => void;
 };
@@ -46,8 +46,8 @@ export const useSelectedSellerStore = create<SelectedSellerState>()(
         });
       }
     },
-    selectSeller: async (sellerCode) => {
-      const data = await selectSellerRequest(sellerCode);
+    selectArea: async (area) => {
+      const data = await selectAreaRequest(area);
       set({
         hydrated: true,
         isAreaPickerUser: true,

@@ -45,7 +45,7 @@ export default function AreaPickerGate() {
 
   if (authStatus === "authenticated" && pickerUser && !hydrated) {
     return (
-      <AppLoader overlay label="Φόρτωση επιλογής πωλητή…" card={false} />
+      <AppLoader overlay label="Φόρτωση επιλογής περιοχής…" card={false} />
     );
   }
 

@@ -79,7 +79,7 @@ export async function getPowerBiRouteAuthContext(): Promise<PowerBiRouteAuthResu
       ok: false,
       response: badRequestResponse(
         isAreaPickerUser(userInfo)
-          ? "Select a seller before viewing area reports"
+          ? "Select an area before viewing area reports"
           : "Missing area or sellers for authenticated user",
       ),
     };

@@ -58,16 +58,16 @@ export async function fetchSelectedSellerSession(): Promise<SelectedSellerSessio
   );
 }
 
-export async function selectSellerRequest(sellerCode: string) {
+export async function selectAreaRequest(area: string) {
   const res = await fetch("/api/auth/select-seller", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sellerCode }),
+    body: JSON.stringify({ area }),
   });
 
   return parseProxyJson<{ ok: true; selectedSeller: SelectedSellerSession }>(
     res,
-    "Failed to select seller.",
+    "Failed to select area.",
   );
 }
 

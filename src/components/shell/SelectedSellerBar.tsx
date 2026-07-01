@@ -29,10 +29,10 @@ export function SelectedSellerBar() {
   return (
     <section
       className="selected-seller-nav"
-      aria-label="Επιλεγμένος πωλητής για προβολή αναφορών"
+      aria-label="Επιλεγμένη περιοχή για προβολή αναφορών"
     >
       <div className="selected-seller-nav__icon" aria-hidden>
-        <AppIcon name="bi-people" size={18} />
+        <AppIcon name="bi-hospital" size={18} />
       </div>
 
       <div className="selected-seller-nav__content">
@@ -41,12 +41,6 @@ export function SelectedSellerBar() {
           <span className="selected-seller-nav__area">
             {selectedSeller.area}
           </span>
-          <span className="selected-seller-nav__name">
-            {selectedSeller.salesPerson}
-          </span>
-        </div>
-        <div className="selected-seller-nav__meta">
-          {selectedSeller.team} · Κωδ. {selectedSeller.sellerCode}
         </div>
       </div>
 
@@ -57,7 +51,7 @@ export function SelectedSellerBar() {
         onClick={() => router.push("/select-seller")}
       >
         <AppIcon name="bi-arrow-repeat" size={15} />
-        <span className="selected-seller-nav__action-label">Αλλαγή πωλητή</span>
+        <span className="selected-seller-nav__action-label">Αλλαγή περιοχής</span>
       </Button>
     </section>
   );
