@@ -61,22 +61,22 @@ export function SelectSellerPage() {
     <div className="area-picker-page">
       <section className="app-card area-picker-card p-4">
         <div className="area-picker-card__header">
-          <h1 className="app-report-title mb-0">Επιλογή περιοχής</h1>
+          <h1 className="app-report-title mb-0">Επιλογή διεύθυνσης πωλήσεων</h1>
           <p className="app-report-subtitle mb-0">
-            Επιλέξτε περιοχή για προβολή αναφορών
+            Επιλέξτε διεύθυνση για προβολή των αντίστοιχων αναφορών
           </p>
         </div>
 
         {isLoading ? (
           <div className="text-muted-foreground py-8 text-center text-sm">
-            Φόρτωση περιοχών…
+            Φόρτωση διευθύνσεων...
           </div>
         ) : isError ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <p className="text-muted-foreground text-sm">
               {error instanceof Error
                 ? error.message
-                : "Αποτυχία φόρτωσης περιοχών"}
+                : "Αποτυχία φόρτωσης διευθύνσεων"}
             </p>
             <Button
               type="button"
@@ -94,7 +94,7 @@ export function SelectSellerPage() {
               <span className="area-picker-panel__label-icon" aria-hidden>
                 <AppIcon name="bi-hospital" size={13} />
               </span>
-              Περιοχή
+              Διεύθυνση Πωλήσεων
             </span>
 
             <div className="area-picker-select-wrap">
@@ -103,7 +103,7 @@ export function SelectSellerPage() {
                 disabled={!availableAreas.length || isSubmitting}
                 onChange={(event) => setSelectedArea(event.target.value)}
                 className="area-picker-select"
-                aria-label="Επιλογή περιοχής"
+                aria-label="Επιλογή διεύθυνσης πωλήσεων"
               >
                 <option value="">Επιλέξτε…</option>
                 {availableAreas.map((area) => (
@@ -121,7 +121,7 @@ export function SelectSellerPage() {
 
             {!availableAreas.length ? (
               <p className="area-picker-panel__meta">
-                Δεν βρέθηκαν διαθέσιμες περιοχές.
+                Δεν βρέθηκαν διαθέσιμες διευθύνσεις.
               </p>
             ) : (
               <>
@@ -136,10 +136,10 @@ export function SelectSellerPage() {
                     ? "Επιλογή…"
                     : isCurrentSelection
                       ? "Επιλεγμένη"
-                      : "Επιλογή περιοχής"}
+                      : "Επιλογή διεύθυνσης"}
                 </Button>
                 <p className="area-picker-panel__meta">
-                  {availableAreas.length} διαθέσιμες περιοχές
+                  {availableAreas.length} διαθέσιμες διευθύνσεις
                 </p>
               </>
             )}

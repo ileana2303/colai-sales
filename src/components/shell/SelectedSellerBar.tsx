@@ -65,11 +65,11 @@ export function SelectedSellerBar() {
   const selectedArea = selectedSeller.area.trim();
   const metaLabel = pendingArea
     ? "Αλλαγή περιοχής…"
-    : "Προβολή αναφορών για περιοχή";
+    : "Προβολή αναφορών για διεύθυνση";
   const areasCountLabel =
     String(availableAreas.length) +
     " " +
-    (availableAreas.length === 1 ? "διαθέσιμη περιοχή" : "διαθέσιμες περιοχές");
+    (availableAreas.length === 1 ? "διαθέσιμη διεύθυνση" : "διαθέσιμες διευθύνσεις");
 
   async function handleAreaSelect(area: string) {
     const nextArea = area.trim();
@@ -86,7 +86,7 @@ export function SelectedSellerBar() {
       setSelectionError(
         selection instanceof Error
           ? selection.message
-          : "Αποτυχία επιλογής περιοχής.",
+          : "Αποτυχία επιλογής διεύθυνσης.",
       );
     } finally {
       setPendingArea(null);
@@ -97,7 +97,7 @@ export function SelectedSellerBar() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className="app-header-user app-header-user--scope"
-        aria-label="Επιλογή περιοχής αναφορών"
+        aria-label="Επιλογή διεύθυνσης αναφορών"
         disabled={Boolean(pendingArea)}
       >
         <span
@@ -118,11 +118,11 @@ export function SelectedSellerBar() {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="px-2 py-2 font-normal">
             <div className="flex flex-col gap-1">
-              <span className="font-semibold">Επιλογή περιοχής</span>
+              <span className="font-semibold">Επιλογή διεύθυνσης</span>
               <span className="text-muted-foreground text-xs">
                 {availableAreas.length
                   ? areasCountLabel
-                  : "Δεν βρέθηκαν διαθέσιμες περιοχές."}
+                  : "Δεν βρέθηκαν διαθέσιμες διευθύνσεις."}
               </span>
             </div>
           </DropdownMenuLabel>
@@ -134,14 +134,14 @@ export function SelectedSellerBar() {
             className="gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
             disabled
           >
-            Φόρτωση περιοχών…
+            Φόρτωση διευθύνσεων
           </DropdownMenuItem>
         ) : isError ? (
           <>
             <DropdownMenuLabel className="text-destructive px-2 py-2 text-xs">
               {error instanceof Error
                 ? error.message
-                : "Αποτυχία φόρτωσης περιοχών."}
+                : "Αποτυχία φόρτωσης διευθύνσεων."}
             </DropdownMenuLabel>
             <DropdownMenuItem
               className="hover:bg-muted/80 cursor-pointer gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
@@ -172,7 +172,7 @@ export function SelectedSellerBar() {
             className="gap-2.5 px-3 py-2.5 text-[0.9375rem] font-medium"
             disabled
           >
-            Δεν βρέθηκαν διαθέσιμες περιοχές.
+            Δεν βρέθηκαν διαθέσιμες διευθύνσεις.
           </DropdownMenuItem>
         )}
 
