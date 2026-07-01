@@ -863,6 +863,11 @@ html.dark .app-header-user__role {
   font-weight: 650;
 }
 
+.report-matrix-card__hierarchy-button--reserved {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .report-matrix-card__hierarchy-button-level {
   display: inline-flex;
   min-width: 1.1rem;

@@ -1293,6 +1293,33 @@ export function ReportMatrixTable({
         </div>
         <div className="report-matrix-card__controls">
           <div className="report-matrix-card__hierarchy-controls">
+            {!effectiveSellerFilter && hierarchyStepCount > 0 ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "report-matrix-card__hierarchy-button",
+                  !canCollapseOneHierarchyLevel &&
+                    "report-matrix-card__hierarchy-button--reserved",
+                )}
+                disabled={!canCollapseOneHierarchyLevel}
+                aria-hidden={!canCollapseOneHierarchyLevel}
+                tabIndex={canCollapseOneHierarchyLevel ? 0 : -1}
+                aria-label={`Collapse hierarchy level ${currentExpansionLevel || 1}`}
+                onClick={
+                  canCollapseOneHierarchyLevel
+                    ? collapseOneHierarchyLevel
+                    : undefined
+                }
+              >
+                <AppIcon name="bi-chevron-left" size={14} />
+                Σύμπτυξη επιπέδου{" "}
+                <span className="report-matrix-card__hierarchy-button-level">
+                  {currentExpansionLevel || 1}
+                </span>
+              </Button>
+            ) : null}
             {canExpandOneHierarchyLevel ? (
               <Button
                 type="button"
@@ -1306,22 +1333,6 @@ export function ReportMatrixTable({
                 Επέκταση επιπέδου{" "}
                 <span className="report-matrix-card__hierarchy-button-level">
                   {nextExpansionLevel}
-                </span>
-              </Button>
-            ) : null}
-            {canCollapseOneHierarchyLevel ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="report-matrix-card__hierarchy-button"
-                aria-label={`Collapse hierarchy level ${currentExpansionLevel}`}
-                onClick={collapseOneHierarchyLevel}
-              >
-                <AppIcon name="bi-chevron-left" size={14} />
-                Σύμπτυξη επιπέδου{" "}
-                <span className="report-matrix-card__hierarchy-button-level">
-                  {currentExpansionLevel}
                 </span>
               </Button>
             ) : null}
