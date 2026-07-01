@@ -268,10 +268,7 @@ function formatMatrixCoverMetrics(
 
   return {
     currentCover: formatCoverPercent(aggregate.tcyAll, aggregate.vTrend),
-    previousCover: formatCoverPercent(
-      closedPeriod.target,
-      closedPeriod.result,
-    ),
+    previousCover: formatCoverPercent(closedPeriod.target, closedPeriod.result),
   };
 }
 
@@ -909,9 +906,7 @@ function aggregateToMatrixRow(
     isTotal,
   );
   const previousDiffValue =
-    closedPeriod.target === 0
-      ? 0
-      : closedPeriod.result - closedPeriod.target;
+    closedPeriod.target === 0 ? 0 : closedPeriod.result - closedPeriod.target;
   const currentDiffValue =
     aggregate.tcyAll === 0 ? 0 : aggregate.vTrend - aggregate.tcyAll;
   const yearDiffValue = hasYearComparisonBaseline(aggregate.vlc)
@@ -1443,6 +1438,11 @@ export function createReportMatrixSections({
   summaries?: ReportMatrixSectionSummaries;
 }): ReportMatrixSection[] {
   const resolvedPreviousYear = previousYear || currentYear - 1;
+  const currentMonthLabel =
+    summaries?.["monthly-target"]?.value != null &&
+    summaries?.["monthly-target"]?.value !== "-"
+      ? String(summaries["monthly-target"]?.value)
+      : null;
   const sections = [
     {
       key: "previous-period",
@@ -1515,7 +1515,13 @@ export function createReportMatrixSections({
     {
       key: "monthly-target",
       summary: summaries?.["monthly-target"],
-      title: "Μηνιαία Προσαρμογή Στόχου",
+      title: currentMonthLabel ? (
+        <>
+          Μηνιαία Προσαρμογή Στόχου: <strong>{currentMonthLabel}</strong>
+        </>
+      ) : (
+        "Μηνιαία Προσαρμογή Στόχου"
+      ),
       tone: "rose",
       columns: [
         {

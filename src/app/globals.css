@@ -228,7 +228,8 @@ canvas {
   background: color-mix(in oklch, var(--primary) 22%, var(--background));
   color: var(--primary);
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 18%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklch, var(--primary) 18%, transparent);
 }
 
 .selected-seller-nav__content {
@@ -349,7 +350,8 @@ canvas {
   border-radius: 999px;
   background: color-mix(in oklch, var(--primary) 24%, var(--background));
   color: var(--primary);
-  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 20%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklch, var(--primary) 20%, transparent);
 }
 
 .area-picker-select-wrap {
@@ -1231,6 +1233,14 @@ html.dark .app-header-user__role {
 
 .report-matrix__section-title {
   display: block;
+}
+
+.report-matrix__section-title-prefix {
+  font-weight: 700;
+}
+
+.report-matrix__section-title-emphasis {
+  font-weight: 900;
 }
 
 .report-matrix__section-summary {
