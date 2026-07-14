@@ -10,6 +10,7 @@ export type BiReportSellerContext = {
 export type BiReportPowerBiTargetKey =
   | "sales"
   | "sales_year"
+  | "area_category_targets"
   | "akrateia"
   | "akrateia_sales_last_year"
   | "akrateia_sales_current_year"
@@ -53,6 +54,8 @@ const MAVROGENIS_AMOENA_ABBOTT_SALES_REPORTS_LAST_YEAR =
 const BI_REPORT_DATASET_IDS: Record<BiReportPowerBiTargetKey, string> = {
   sales: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   sales_year: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
+  area_category_targets:
+    MAVROGENIS_SALES_REPORTS_CURRENT_YEAR_CLP_DATASET_ID,
   akrateia: MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID,
   akrateia_sales_last_year: MAVROGENIS_SALES_REPORTS_LAST_YEAR_CLP_DATASET_ID,
   akrateia_sales_current_year:

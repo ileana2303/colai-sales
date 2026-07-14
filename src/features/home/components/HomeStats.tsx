@@ -2,11 +2,14 @@
 
 import type { CSSProperties } from "react";
 
+import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import AppLoader from "@/components/ui/AppLoader";
+import { powerBiKeys } from "@/features/powerBI/queryKeys";
+import { fetchAreaCategoryTargets } from "@/lib/api/powerbi";
 import { isAreaPickerUser } from "@/lib/managerPickerAccess";
 import {
   AREA_REPORT_CATEGORIES,
@@ -110,6 +113,17 @@ export default function HomeStats() {
   const showAreaCategories = pickerUser
     ? Boolean(selectedSeller)
     : !hasSellerCode;
+  const area = pickerUser
+    ? selectedSeller?.area?.trim() || ""
+    : userInfos?.area?.trim() || "";
+  const {
+    data: categoryTargets,
+    isLoading: isLoadingCategoryTargets,
+  } = useQuery({
+    queryKey: powerBiKeys.areaCategoryTargets(area),
+    queryFn: fetchAreaCategoryTargets,
+    enabled: showAreaCategories && Boolean(area),
+  });
 
   if (pickerUser && !hydrated) {
     return <AppLoader label="Φόρτωση επιλογής πωλητή…" />;
@@ -133,10 +147,18 @@ export default function HomeStats() {
     );
   }
 
+  if (isLoadingCategoryTargets) {
+    return <AppLoader label="Φόρτωση διαθέσιμων αναφορών…" />;
+  }
+
+  const visibleCategories = AREA_REPORT_CATEGORIES.filter(
+    (category) => categoryTargets?.record?.[category.key] != null,
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="app-home-grid">
-        {AREA_REPORT_CATEGORIES.map((category) => (
+        {visibleCategories.map((category) => (
           <ModuleCard
             key={category.key}
             title={category.title}

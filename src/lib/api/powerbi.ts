@@ -5,6 +5,7 @@ import type {
   SalesPerYearResponse,
 } from "@/lib/bi-reports/biReports";
 import type { BbmSalesRow, BbmTrendRow } from "@/lib/bi-reports/bbm";
+import type { AreaCategoryTargetsRow } from "@/lib/bi-reports/areaCategoryTargets";
 import type {
   CovidienSalesRow,
   CovidienTrendRow,
@@ -121,5 +122,20 @@ export function fetchPowerBiSellers(scope?: "all") {
   return fetchPowerBi<PowerBiSellersResponse>(
     `/api/powerbi/sellers${query}`,
     "Failed to load Power BI sellers",
+  );
+}
+
+export type AreaCategoryTargetsResponse = {
+  ok: true;
+  report: "area_category_targets";
+  year: number;
+  area: string;
+  record: AreaCategoryTargetsRow | null;
+};
+
+export function fetchAreaCategoryTargets() {
+  return fetchPowerBi<AreaCategoryTargetsResponse>(
+    "/api/powerbi/area-category-targets",
+    "Failed to load area category targets",
   );
 }

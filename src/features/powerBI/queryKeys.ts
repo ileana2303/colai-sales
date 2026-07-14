@@ -3,6 +3,8 @@ export const powerBiKeys = {
   salesPerMonth: () => [...powerBiKeys.all, "sales-per-month"] as const,
   salesPerYear: () => [...powerBiKeys.all, "sales-per-year"] as const,
   akrateia: () => [...powerBiKeys.all, "akrateia"] as const,
+  areaCategoryTargets: (area: string) =>
+    [...powerBiKeys.all, "area-category-targets", area] as const,
   covidienSales: (apiPath: string) =>
     [...powerBiKeys.all, "covidien-sales", apiPath] as const,
   covidienTrends: () => [...powerBiKeys.all, "covidien-trends"] as const,
