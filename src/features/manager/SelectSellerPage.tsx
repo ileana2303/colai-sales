@@ -134,20 +134,21 @@ export function SelectSellerPage() {
                   const isSelected = selectedArea === area;
 
                   return (
-                    <button
+                    <Button
                       key={area}
                       type="button"
+                      variant="ghost"
                       role="option"
                       aria-selected={isSelected}
                       disabled={isSubmitting}
                       className={cn(
-                        "area-picker-option",
+                        "area-picker-option h-auto justify-start whitespace-normal",
                         isSelected && "area-picker-option--selected",
                       )}
                       onClick={() => setSelectedArea(area)}
                     >
                       {area}
-                    </button>
+                    </Button>
                   );
                 })
               )}

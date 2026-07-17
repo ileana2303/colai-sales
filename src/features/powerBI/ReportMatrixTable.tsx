@@ -1025,9 +1025,10 @@ export function ReportMatrixTable({
       const isExpanded = expandedGroup3Keys.has(row.key);
 
       return (
-        <button
+        <Button
           type="button"
-          className="report-matrix__category-toggle"
+          variant="ghost"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
           aria-expanded={isExpanded}
           onClick={() => toggleGroup3(row.key)}
         >
@@ -1039,7 +1040,7 @@ export function ReportMatrixTable({
           <span className="report-matrix__category-toggle-label">
             {content}
           </span>
-        </button>
+        </Button>
       );
     }
 
@@ -1055,9 +1056,10 @@ export function ReportMatrixTable({
       const isExpanded = expandedCategoryKeys.has(row.key);
 
       return (
-        <button
+        <Button
           type="button"
-          className="report-matrix__category-toggle"
+          variant="ghost"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
           aria-expanded={isExpanded}
           onClick={() => toggleCategory(row.key)}
         >
@@ -1069,7 +1071,7 @@ export function ReportMatrixTable({
           <span className="report-matrix__category-toggle-label">
             {content}
           </span>
-        </button>
+        </Button>
       );
     }
 
@@ -1085,9 +1087,10 @@ export function ReportMatrixTable({
       const isExpanded = expandedTeamKeys.has(row.key);
 
       return (
-        <button
+        <Button
           type="button"
-          className="report-matrix__category-toggle"
+          variant="ghost"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
           aria-expanded={isExpanded}
           onClick={() => toggleTeam(row.key)}
         >
@@ -1099,7 +1102,7 @@ export function ReportMatrixTable({
           <span className="report-matrix__category-toggle-label">
             {content}
           </span>
-        </button>
+        </Button>
       );
     }
 
@@ -1146,9 +1149,10 @@ export function ReportMatrixTable({
             title={getTruncationTitle(row.category)}
           >
             {!effectiveSellerFilter && canExpandGroup2(row) ? (
-              <button
+              <Button
                 type="button"
-                className="report-matrix__category-toggle"
+                variant="ghost"
+                className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
                 aria-expanded={expandedGroup2Keys.has(row.key)}
                 onClick={() => toggleGroup2(row.key)}
               >
@@ -1167,7 +1171,7 @@ export function ReportMatrixTable({
                     getTruncationTitle(row.category),
                   )}
                 </span>
-              </button>
+              </Button>
             ) : (
               renderTruncatedCell(
                 row.category,
@@ -1395,14 +1399,16 @@ export function ReportMatrixTable({
                     <span className="report-matrix-filter-pill__value">
                       {selectedTeamLabel}
                     </span>
-                    <button
+                    <Button
                       type="button"
-                      className="report-matrix-filter-pill__clear"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="report-matrix-filter-pill__clear size-5 p-0"
                       aria-label={`Clear Team filter ${selectedTeamLabel}`}
                       onClick={() => handleTeamFilterChange("")}
                     >
                       ×
-                    </button>
+                    </Button>
                   </span>
                 ) : null}
                 {effectiveSellerFilter ? (
@@ -1413,14 +1419,16 @@ export function ReportMatrixTable({
                     <span className="report-matrix-filter-pill__value">
                       {selectedSellerLabel}
                     </span>
-                    <button
+                    <Button
                       type="button"
-                      className="report-matrix-filter-pill__clear"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="report-matrix-filter-pill__clear size-5 p-0"
                       aria-label={`Clear Seller filter ${selectedSellerLabel}`}
                       onClick={() => setSellerFilter("")}
                     >
                       ×
-                    </button>
+                    </Button>
                   </span>
                 ) : null}
               </div>

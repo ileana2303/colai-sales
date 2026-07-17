@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import { Check } from "@/icons/lucide/check";
 import { ChevronDown } from "@/icons/lucide/chevron-down";
 import { cn } from "@/lib/utils";
@@ -109,7 +110,7 @@ export function PowerBiTableHeaderFilter({
           <div className="px-0.5 pb-1 text-xs font-medium text-muted-foreground">
             {label}
           </div>
-          <input
+          <Input
             ref={searchInputRef}
             aria-label={`Αναζήτηση ${label}`}
             autoComplete="off"

@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
+import { Button } from "@/components/ui/button";
 import { ReportMatrixTable } from "@/features/powerBI/ReportMatrixTable";
 import {
   buildReportMatrixRows,
@@ -281,13 +282,14 @@ export function PowerBiTabbedReportMatrixPage({
               const isActive = tab.key === activeTabKey;
 
               return (
-                <button
+                <Button
                   key={tab.key}
                   type="button"
+                  variant="ghost"
                   role="tab"
                   aria-selected={isActive}
                   className={cn(
-                    "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "h-auto rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
@@ -295,7 +297,7 @@ export function PowerBiTabbedReportMatrixPage({
                   onClick={() => setActiveTabKey(tab.key)}
                 >
                   {tab.label}
-                </button>
+                </Button>
               );
             })}
           </div>

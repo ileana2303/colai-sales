@@ -3,6 +3,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
 
 import { AppIcon } from "@/components/ui/app-icon";
+import { Input } from "@/components/ui/input";
 import {
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -71,7 +72,7 @@ export function AreaSelectMenuContent({
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <div className="border-border/60 bg-popover sticky top-0 z-10 border-b p-2">
-        <input
+        <Input
           ref={searchInputRef}
           aria-label="Αναζήτηση area"
           autoComplete="off"
