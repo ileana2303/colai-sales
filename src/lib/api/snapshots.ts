@@ -1,6 +1,5 @@
 import { parseProxyJson } from "@/lib/api/client";
 import type {
-  RefreshSnapshotRequest,
   RefreshSnapshotResponse,
   SnapshotResponse,
 } from "@/lib/snapshots/types";
@@ -35,7 +34,13 @@ export async function fetchReportSnapshot(input: {
   );
 }
 
-export async function refreshReportSnapshot(input: RefreshSnapshotRequest) {
+export async function refreshReportSnapshot(input: {
+  area?: string;
+  pageCode: string;
+  currentYear: number;
+  compareYear: number;
+  queryIds?: string[];
+}) {
   const res = await fetch("/api/report-snapshots/refresh", {
     method: "POST",
     cache: "no-store",

@@ -15,6 +15,7 @@ import {
 } from "@/features/powerBI/reportMatrixData";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { useEnsureReportSnapshot } from "@/features/powerBI/hooks/useEnsureReportSnapshot";
+import { RefreshSnapshotButton } from "@/features/powerBI/RefreshSnapshotButton";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
 import { useSellersStore } from "@/stores/sellersStore";
@@ -247,16 +248,35 @@ export function PowerBiReportMatrixPage({
   brandLabel,
   caption,
   reportKey,
+  snapshotPageCode,
+  currentYear,
+  previousYear,
   ...props
 }: PowerBiReportMatrixPageProps) {
   return (
     <div className="app-page">
-      <ReportMatrixPageHeader brandLabel={brandLabel} caption={caption} />
+      <ReportMatrixPageHeader
+        actions={
+          snapshotPageCode ? (
+            <RefreshSnapshotButton
+              brandLabel={brandLabel}
+              pageCode={snapshotPageCode}
+              currentYear={currentYear}
+              compareYear={previousYear}
+            />
+          ) : null
+        }
+        brandLabel={brandLabel}
+        caption={caption}
+      />
       <PowerBiReportMatrixView
         brandLabel={brandLabel}
         caption={caption}
         exportFileName={`${reportKey}-matrix`}
         reportKey={reportKey}
+        snapshotPageCode={snapshotPageCode}
+        currentYear={currentYear}
+        previousYear={previousYear}
         {...props}
       />
     </div>
@@ -281,38 +301,54 @@ export function PowerBiTabbedReportMatrixPage({
   tabs,
 }: PowerBiTabbedReportMatrixPageProps) {
   const [activeTabKey, setActiveTabKey] = useState(tabs[0]?.key ?? "");
+  const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? tabs[0];
+  const snapshotPageCode = activeTab?.view.snapshotPageCode;
+  const currentYear = activeTab?.view.currentYear;
+  const previousYear = activeTab?.view.previousYear;
 
   return (
     <div className="app-page">
       <ReportMatrixPageHeader
         actions={
-          <div
-            className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/40 p-1"
-            role="tablist"
-            aria-label={`${brandLabel} report views`}
-          >
-            {tabs.map((tab) => {
-              const isActive = tab.key === activeTabKey;
+          <div className="flex flex-wrap items-center gap-2">
+            {snapshotPageCode &&
+            currentYear != null &&
+            previousYear != null ? (
+              <RefreshSnapshotButton
+                brandLabel={brandLabel}
+                pageCode={snapshotPageCode}
+                currentYear={currentYear}
+                compareYear={previousYear}
+              />
+            ) : null}
+            <div
+              className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/40 p-1"
+              role="tablist"
+              aria-label={`${brandLabel} report views`}
+            >
+              {tabs.map((tab) => {
+                const isActive = tab.key === activeTabKey;
 
-              return (
-                <Button
-                  key={tab.key}
-                  type="button"
-                  variant="ghost"
-                  role="tab"
-                  aria-selected={isActive}
-                  className={cn(
-                    "h-auto rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                    isActive
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={() => setActiveTabKey(tab.key)}
-                >
-                  {tab.label}
-                </Button>
-              );
-            })}
+                return (
+                  <Button
+                    key={tab.key}
+                    type="button"
+                    variant="ghost"
+                    role="tab"
+                    aria-selected={isActive}
+                    className={cn(
+                      "h-auto rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                    onClick={() => setActiveTabKey(tab.key)}
+                  >
+                    {tab.label}
+                  </Button>
+                );
+              })}
+            </div>
           </div>
         }
         brandLabel={brandLabel}

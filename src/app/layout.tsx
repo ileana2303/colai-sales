@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { QueryProvider } from "@/providers/QueryProvider";
 import { BootstrapThemeSync } from "@/components/ui/BootstrapThemeSync";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -65,6 +66,7 @@ export default function RootLayout({
         <QueryProvider>
           <BootstrapThemeSync />
           {children}
+          <Toaster />
         </QueryProvider>
       </body>
     </html>
