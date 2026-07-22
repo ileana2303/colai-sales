@@ -29,4 +29,18 @@ export const powerBiKeys = {
     [...powerBiKeys.all, "porges-sales", apiPath] as const,
   porgesTrends: () => [...powerBiKeys.all, "porges-trends"] as const,
   sellers: () => [...powerBiKeys.all, "sellers"] as const,
+  reportSnapshot: (
+    area: string,
+    pageCode: string,
+    year: number,
+    compareYear: number,
+  ) =>
+    [
+      ...powerBiKeys.all,
+      "report-snapshot",
+      area,
+      pageCode,
+      year,
+      compareYear,
+    ] as const,
 };

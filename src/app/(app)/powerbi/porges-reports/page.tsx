@@ -3,6 +3,7 @@ import {
   getCurrentReportYear,
   getPreviousReportYear,
 } from "@/lib/bi-reports/powerBi";
+import { REPORT_SNAPSHOT_PAGE_CODES } from "@/lib/snapshots/pageAvailability";
 
 export default function Page() {
   return (
@@ -16,6 +17,7 @@ export default function Page() {
       previousSalesPath="/api/powerbi/porges-sales-last-year"
       previousYear={getPreviousReportYear()}
       reportKey="porges"
+      snapshotPageCode={REPORT_SNAPSHOT_PAGE_CODES.porges}
       trendPath="/api/powerbi/porges-trend-current-year"
     />
   );

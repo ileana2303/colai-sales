@@ -3,6 +3,7 @@ import {
   getCurrentReportYear,
   getPreviousReportYear,
 } from "@/lib/bi-reports/powerBi";
+import { REPORT_SNAPSHOT_PAGE_CODES } from "@/lib/snapshots/pageAvailability";
 
 export default function Page() {
   return (
@@ -16,6 +17,7 @@ export default function Page() {
       previousSalesPath="/api/powerbi/covidien-sales-last-year"
       previousYear={getPreviousReportYear()}
       reportKey="covidien"
+      snapshotPageCode={REPORT_SNAPSHOT_PAGE_CODES.covidien}
       trendPath="/api/powerbi/covidien-trend-current-year"
     />
   );

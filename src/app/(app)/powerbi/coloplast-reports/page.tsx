@@ -7,6 +7,7 @@ import {
   getCurrentReportYear,
   getPreviousReportYear,
 } from "@/lib/bi-reports/powerBi";
+import { REPORT_SNAPSHOT_PAGE_CODES } from "@/lib/snapshots/pageAvailability";
 
 export default function Page() {
   return (
@@ -22,6 +23,7 @@ export default function Page() {
       previousSalesPath="/api/powerbi/coloplast-sales-last-year"
       previousYear={getPreviousReportYear()}
       reportKey="coloplast"
+      snapshotPageCode={REPORT_SNAPSHOT_PAGE_CODES.coloplast}
       trendPath="/api/powerbi/coloplast-trend-current-year"
     />
   );

@@ -9,12 +9,14 @@ import {
   getCurrentReportYear,
   getPreviousReportYear,
 } from "@/lib/bi-reports/powerBi";
+import { REPORT_SNAPSHOT_PAGE_CODES } from "@/lib/snapshots/pageAvailability";
 
 const emptyMessage =
   "Δεν βρέθηκαν AMOENA στοιχεία για το area του login.";
 const fallbackError = "Failed to load AMOENA matrix";
 const currentYear = getCurrentReportYear();
 const previousYear = getPreviousReportYear();
+const snapshotPageCode = REPORT_SNAPSHOT_PAGE_CODES.amoena;
 
 export default function Page() {
   return (
@@ -38,6 +40,7 @@ export default function Page() {
             previousSalesPath: "/api/powerbi/amoena-sales-last-year",
             previousYear,
             reportKey: "amoena-sales",
+            snapshotPageCode,
             trendPath: "/api/powerbi/amoena-trend-current-year",
           },
         },
@@ -58,6 +61,7 @@ export default function Page() {
             previousSalesPath: "/api/powerbi/amoena-sales-no-currency-last-year",
             previousYear,
             reportKey: "amoena-peristatika",
+            snapshotPageCode,
             trendPath: "/api/powerbi/amoena-trend-no-currency-current-year",
           },
         },

@@ -14,6 +14,7 @@ import {
   type PowerBiMatrixSourceRow,
 } from "@/features/powerBI/reportMatrixData";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
+import { useEnsureReportSnapshot } from "@/features/powerBI/hooks/useEnsureReportSnapshot";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
 import { useSellersStore } from "@/stores/sellersStore";
@@ -42,6 +43,8 @@ export type PowerBiReportMatrixViewProps = {
   previousSalesPath: string;
   previousYear: number;
   reportKey: string;
+  /** When set, ensures a same-day sales_snapshots row exists for this page. */
+  snapshotPageCode?: string;
   trendPath: string;
 };
 
@@ -142,6 +145,7 @@ export function PowerBiReportMatrixView({
   previousSalesPath,
   previousYear,
   reportKey,
+  snapshotPageCode,
   trendPath,
 }: PowerBiReportMatrixViewProps) {
   const sellersCatalog = useSellersStore((state) => state.records);
@@ -163,6 +167,15 @@ export function PowerBiReportMatrixView({
       }),
     ...matrixQueryOptions,
   });
+
+  useEnsureReportSnapshot({
+    area: data?.area,
+    pageCode: snapshotPageCode,
+    year: currentYear,
+    compareYear: previousYear,
+    enabled: !hidden && Boolean(snapshotPageCode) && Boolean(data?.area),
+  });
+
   const headerLabel = headerLabelOverride ?? data?.headerLabel ?? brandLabel;
   const sectionSummaries = useMemo(
     () => (data ? createReportMatrixSectionSummaries(data.currentRows) : {}),
