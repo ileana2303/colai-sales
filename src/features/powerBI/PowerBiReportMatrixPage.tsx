@@ -14,10 +14,15 @@ import {
   type PowerBiMatrixSourceRow,
 } from "@/features/powerBI/reportMatrixData";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
-import { useEnsureReportSnapshot } from "@/features/powerBI/hooks/useEnsureReportSnapshot";
 import { RefreshSnapshotButton } from "@/features/powerBI/RefreshSnapshotButton";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
+import {
+  filterSnapshotRowsByCurrency,
+  getSnapshotHeaderLabel,
+  mapSnapshotRowsToMatrixSource,
+} from "@/features/powerBI/snapshotMatrixSource";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
+import { fetchReportSnapshot } from "@/lib/api/snapshots";
 import { useSellersStore } from "@/stores/sellersStore";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +32,8 @@ type MatrixReportPayload = {
   currentRows: PowerBiMatrixSourceRow[];
   previousRows: PowerBiMatrixSourceRow[];
   trendRows: PowerBiMatrixSourceRow[];
+  /** Set when this payload was read from Supabase instead of live Power BI. */
+  snapshotDate?: string;
 };
 
 export type PowerBiReportMatrixViewProps = {
@@ -44,8 +51,20 @@ export type PowerBiReportMatrixViewProps = {
   previousSalesPath: string;
   previousYear: number;
   reportKey: string;
-  /** When set, ensures a same-day sales_snapshots row exists for this page. */
+  /**
+   * When set, the table is populated from the sales_snapshots row for this
+   * page_code (via v_available_snapshots) whenever one is available, instead
+   * of querying Power BI live. It also ensures a same-day snapshot row
+   * exists for future loads.
+   */
   snapshotPageCode?: string;
+  /**
+   * Some pages store more than one business view under the same page_code
+   * (e.g. AMOENA "SALES" vs "ΠΕΡΙΣΤΑΤΙΚΑ"). Set this to the currency flag
+   * (0 or 1) used by this view's Power BI queries to select the matching
+   * subset of snapshot rows.
+   */
+  snapshotCurrency?: 0 | 1;
   trendPath: string;
 };
 
@@ -76,6 +95,17 @@ function ReportMatrixPageHeader({
   );
 }
 
+function formatSnapshotDescription(snapshotDate: string | undefined) {
+  if (!snapshotDate) return undefined;
+
+  const parsed = new Date(`${snapshotDate}T00:00:00`);
+  const formatted = Number.isNaN(parsed.getTime())
+    ? snapshotDate
+    : parsed.toLocaleDateString("el-GR");
+
+  return `Δεδομένα από στιγμιότυπο (Supabase) της ${formatted}`;
+}
+
 function getUniqueGroup2Label(...rowGroups: PowerBiMatrixSourceRow[][]) {
   const labels = new Set(
     rowGroups
@@ -87,7 +117,48 @@ function getUniqueGroup2Label(...rowGroups: PowerBiMatrixSourceRow[][]) {
   return labels.size === 1 ? [...labels][0]! : "";
 }
 
-async function fetchMatrixPayload({
+async function fetchMatrixPayloadFromSnapshot({
+  currentYear,
+  previousYear,
+  snapshotCurrency,
+  snapshotPageCode,
+}: Pick<
+  PowerBiReportMatrixViewProps,
+  | "currentYear"
+  | "previousYear"
+  | "snapshotCurrency"
+  | "snapshotPageCode"
+>): Promise<MatrixReportPayload | null> {
+  if (!snapshotPageCode) return null;
+
+  // This endpoint calls ensureSnapshot: it returns today's cached rows when
+  // available, otherwise refreshes the Power BI triptych and persists today's
+  // snapshot before returning the new Supabase rows.
+  const response = await fetchReportSnapshot({
+    pageCode: snapshotPageCode,
+    year: currentYear,
+    compareYear: previousYear,
+  });
+
+  if (!response.rows.length) return null;
+
+  const rows = filterSnapshotRowsByCurrency(response.rows, snapshotCurrency);
+  if (!rows.length) return null;
+
+  const { currentRows, previousRows, trendRows } =
+    mapSnapshotRowsToMatrixSource(rows);
+
+  return {
+    area: response.snapshot?.area ?? "",
+    headerLabel: getSnapshotHeaderLabel(rows),
+    currentRows,
+    previousRows,
+    trendRows,
+    snapshotDate: response.snapshot?.snapshot_date,
+  };
+}
+
+async function fetchMatrixPayloadFromPowerBi({
   currentSalesPath,
   currentYear,
   fallbackError,
@@ -131,6 +202,27 @@ async function fetchMatrixPayload({
   };
 }
 
+async function fetchMatrixPayload(
+  props: Pick<
+    PowerBiReportMatrixViewProps,
+    | "currentSalesPath"
+    | "currentYear"
+    | "fallbackError"
+    | "previousSalesPath"
+    | "previousYear"
+    | "snapshotCurrency"
+    | "snapshotPageCode"
+    | "trendPath"
+  >,
+): Promise<MatrixReportPayload> {
+  const snapshotPayload = await fetchMatrixPayloadFromSnapshot(props).catch(
+    () => null,
+  );
+  if (snapshotPayload) return snapshotPayload;
+
+  return fetchMatrixPayloadFromPowerBi(props);
+}
+
 export function PowerBiReportMatrixView({
   brandLabel,
   caption,
@@ -146,6 +238,7 @@ export function PowerBiReportMatrixView({
   previousSalesPath,
   previousYear,
   reportKey,
+  snapshotCurrency,
   snapshotPageCode,
   trendPath,
 }: PowerBiReportMatrixViewProps) {
@@ -156,6 +249,8 @@ export function PowerBiReportMatrixView({
       currentSalesPath,
       previousSalesPath,
       trendPath,
+      snapshotPageCode,
+      snapshotCurrency,
     ),
     queryFn: () =>
       fetchMatrixPayload({
@@ -164,17 +259,11 @@ export function PowerBiReportMatrixView({
         fallbackError,
         previousSalesPath,
         previousYear,
+        snapshotCurrency,
+        snapshotPageCode,
         trendPath,
       }),
     ...matrixQueryOptions,
-  });
-
-  useEnsureReportSnapshot({
-    area: data?.area,
-    pageCode: snapshotPageCode,
-    year: currentYear,
-    compareYear: previousYear,
-    enabled: !hidden && Boolean(snapshotPageCode) && Boolean(data?.area),
   });
 
   const headerLabel = headerLabelOverride ?? data?.headerLabel ?? brandLabel;
@@ -223,6 +312,7 @@ export function PowerBiReportMatrixView({
         <ReportMatrixTable
           brandLabel={brandLabel}
           caption={caption}
+          description={formatSnapshotDescription(data?.snapshotDate)}
           exportFileName={exportFileName}
           group2Order={group2Order}
           headerLabel={headerLabel}

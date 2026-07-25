@@ -10,6 +10,17 @@ function getPowerBiRowKey(row: Record<string, unknown>) {
   ].join("|");
 }
 
+// VTREND queries are annual (no Month dimension), so trend rows must be
+// joined without the month component or they will never match a monthed
+// VCYTCY row.
+function getTrendRowKey(row: Record<string, unknown>) {
+  return [
+    readString(row, "SellerCode"),
+    readString(row, "Group1"),
+    readString(row, "Group2"),
+  ].join("|");
+}
+
 function getSnapshotUniqueKey(row: JoinedSnapshotSourceRow) {
   return [
     row.sellerCode,
@@ -56,13 +67,13 @@ export function joinTriptych(
   const previous = new Map(
     previousRows.map((row) => [getPowerBiRowKey(row), row]),
   );
-  const trend = new Map(trendRows.map((row) => [getPowerBiRowKey(row), row]));
+  const trend = new Map(trendRows.map((row) => [getTrendRowKey(row), row]));
 
   return mergeDuplicateSnapshotRows(
     currentRows.map((row) => {
       const key = getPowerBiRowKey(row);
       const previousRow = previous.get(key) ?? {};
-      const trendRow = trend.get(key) ?? {};
+      const trendRow = trend.get(getTrendRowKey(row)) ?? {};
       const monthText = readString(row, "Month");
 
       return {

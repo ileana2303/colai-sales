@@ -13,6 +13,8 @@ export const powerBiKeys = {
     currentSalesPath: string,
     previousSalesPath: string,
     trendPath: string,
+    snapshotPageCode?: string,
+    snapshotCurrency?: number,
   ) =>
     [
       ...powerBiKeys.all,
@@ -21,6 +23,8 @@ export const powerBiKeys = {
       currentSalesPath,
       previousSalesPath,
       trendPath,
+      snapshotPageCode ?? "",
+      snapshotCurrency ?? "",
     ] as const,
   bbmSales: (apiPath: string) =>
     [...powerBiKeys.all, "bbm-sales", apiPath] as const,
