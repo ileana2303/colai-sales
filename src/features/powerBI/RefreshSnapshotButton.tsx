@@ -36,7 +36,7 @@ export function RefreshSnapshotButton({
         currentYear,
         compareYear,
       }),
-    onSuccess: (result) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: powerBiKeys.reportSnapshot(
           area ?? "",
@@ -45,9 +45,7 @@ export function RefreshSnapshotButton({
           compareYear,
         ),
       });
-      toast.success(`${brandLabel} snapshot uploaded`, {
-        description: `${result.rowCount.toLocaleString("el-GR")} rows · ${result.snapshotDate}`,
-      });
+      toast.success(`${brandLabel} snapshot uploaded`);
     },
     onError: (error) => {
       toast.error(`${brandLabel} snapshot failed`, {
