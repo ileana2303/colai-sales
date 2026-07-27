@@ -11,16 +11,14 @@ const intFmt = new Intl.NumberFormat(DISPLAY_NUMBER_LOCALE, {
 });
 
 export const matrixCurrencyFormatter = new Intl.NumberFormat(
-  DISPLAY_NUMBER_LOCALE,
+  "el-GR",
   {
-    currency: "EUR",
     maximumFractionDigits: 0,
-    style: "currency",
   },
 );
 
 export const matrixNumberFormatter = new Intl.NumberFormat(
-  DISPLAY_NUMBER_LOCALE,
+  "el-GR",
   {
     maximumFractionDigits: 0,
   },

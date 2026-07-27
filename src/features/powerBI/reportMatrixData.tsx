@@ -199,12 +199,16 @@ function formatMatrixValue(
 ) {
   if (value == null || !Number.isFinite(value)) return EMPTY_VALUE;
   if (value === 0) {
-    return usesPlainNumberFormat(aggregate) ? "0" : currencyFormatter.format(0);
+    return usesPlainNumberFormat(aggregate)
+      ? "0"
+      : `€${currencyFormatter.format(0)}`;
   }
   if (usesPlainNumberFormat(aggregate)) {
     return numberFormatter.format(value);
   }
-  return currencyFormatter.format(value);
+  return value < 0
+    ? `-€${currencyFormatter.format(Math.abs(value))}`
+    : `€${currencyFormatter.format(value)}`;
 }
 
 function formatMatrixPercent(ratio: number | null | undefined) {
