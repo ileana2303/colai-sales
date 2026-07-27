@@ -9,6 +9,10 @@ import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
 import { executePowerBiQuery } from "@/lib/bi-reports/powerBi";
 import { fetchPowerBiSellersCatalog } from "@/lib/bi-reports/sellers";
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
+import {
+  buildReportMatrixRows,
+  getReportMatrixFinalValues,
+} from "@/features/powerBI/reportMatrixData";
 import { enrichSnapshotRowsWithSellers } from "@/lib/snapshots/enrichSellers";
 import { isReportPageAvailableForArea } from "@/lib/snapshots/pageAvailability";
 import { executeReportQuery } from "@/lib/snapshots/powerBiExecute";
@@ -25,10 +29,10 @@ import {
   replaceTodaySnapshot,
 } from "@/lib/snapshots/snapshotStore";
 import {
-  computeSnapshotFields,
   getPeriodMeta,
   todayIsoDate,
 } from "@/lib/snapshots/rowUtils";
+import { mapJoinedSnapshotRowsToMatrixSource } from "@/features/powerBI/snapshotMatrixSource";
 import { joinTriptych } from "@/lib/snapshots/triptych";
 import type {
   EnsureSnapshotRequest,
@@ -77,6 +81,12 @@ function getRefreshKey(input: RefreshSnapshotRequest) {
   ].join("::");
 }
 
+function serializeDisplayValues(values: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(values).map(([key, value]) => [key, String(value ?? "")]),
+  );
+}
+
 async function performRefreshSnapshot(
   input: RefreshSnapshotRequest,
 ): Promise<RefreshSnapshotResult> {
@@ -122,7 +132,7 @@ async function performRefreshSnapshot(
     amsaAccessToken: token,
   });
 
-  const recordGroups = await Promise.all(
+  const joinedGroups = await Promise.all(
     triples.map(async (triple) => {
       const [currentRows, previousRows, trendRows] = await Promise.all([
         executeReportQuery(token, triple.VCYTCY, input),
@@ -132,51 +142,96 @@ async function performRefreshSnapshot(
       const joined = enrichSnapshotRowsWithSellers(
         joinTriptych(currentRows, previousRows, trendRows),
         sellersCatalog,
-      );
-      const period = getPeriodMeta(joined);
+      ).map((row) => ({ ...row, currency: triple.VCYTCY.currency }));
 
-      return joined.map((row) => ({
+      return { joined, query: triple.VCYTCY };
+    }),
+  );
+  const joined = joinedGroups.flatMap((group) => group.joined);
+
+  if (!joined.length) {
+    throw new Error("Power BI returned no rows; the existing snapshot was kept.");
+  }
+
+  const period = getPeriodMeta(joined);
+  const matrixSource = mapJoinedSnapshotRowsToMatrixSource(joined);
+  const matrixRows = buildReportMatrixRows({
+    currentRows: matrixSource.currentRows,
+    previousRows: matrixSource.previousRows,
+    trendRows: matrixSource.trendRows,
+    sellersCatalog,
+  });
+  const query = joinedGroups[0]!.query;
+  const records = matrixRows.flatMap((row) => {
+    if (row.rowKind !== "detail" || !row.metrics || !row.filterValues) {
+      return [];
+    }
+
+    const finalValues = getReportMatrixFinalValues(row.metrics, {
+      group2: row.filterValues.group2,
+      isTotal: false,
+      rowKind: row.rowKind,
+    });
+
+    return [
+      {
+        snapshot_date: snapshotDate,
         username: user?.username ?? "user",
         area: input.area,
-        year: input.currentYear,
+        is_active: true,
         closed_period_label: period.closedPeriodLabel,
         closed_months_count: period.closedMonthsCount,
         last_closed_month: period.lastClosedMonth,
         open_months_count: period.openMonths,
-        report_query_id: triple.VCYTCY.id,
-        report_page: triple.VCYTCY.report_page,
-        report_code: triple.VCYTCY.report_code,
-        report_desc: triple.VCYTCY.report_desc,
-        page_code: triple.VCYTCY.page_code,
-        workbook_id: triple.VCYTCY.dataset_id,
-        workbook_description: triple.VCYTCY.report_page_desc,
-        seller_code: row.sellerCode,
-        seller_name: row.sellerName,
-        team: row.team,
-        group1: row.group1,
-        group2: row.group2,
-        group3: row.group3,
-        month: row.month,
-        closed_month_status: row.closedMonthStatus,
-        currency: triple.VCYTCY.currency,
-        pbi_query_calc_01: row.pbi_query_calc_01,
-        pbi_query_calc_02: row.pbi_query_calc_02,
-        pbi_query_calc_03: row.pbi_query_calc_03,
-        pbi_query_calc_04: row.pbi_query_calc_04,
-        ...computeSnapshotFields(
-          row.pbi_query_calc_01,
-          row.pbi_query_calc_02,
-          row.pbi_query_calc_03,
-          row.pbi_query_calc_04,
-          period.openMonths,
-        ),
-      }));
-    }),
-  );
-  const records = recordGroups.flat();
+        year: input.currentYear,
+        report_query_id: query.id,
+        report_page: query.report_page,
+        report_code: "MATRIX",
+        report_desc: "Final calculated seller matrix values",
+        page_code: input.pageCode,
+        workbook_id: query.dataset_id,
+        workbook_description: query.report_page_desc,
+        seller_code: row.filterValues.seller.split("|")[0] || null,
+        seller_name: row.filterValues.seller.split("|")[1] || null,
+        team: row.filterValues.team || null,
+        group1: row.filterValues.category || null,
+        group2: row.filterValues.group2 || null,
+        group3: row.filterValues.group3 || null,
+        currency: row.metrics.currency,
+        calculation_version: "matrix-v1",
+        row_kind: row.rowKind,
+        row_key: row.key,
+        parent_key: row.parentKey ?? null,
+        child_count: row.childCount ?? null,
+        is_total: false,
+        has_closed_month_status: row.metrics.hasClosedMonthStatus,
+        open_month_tcy_by_month: row.metrics.openMonthTcyByMonth,
+        previous_target: finalValues.previousTarget,
+        previous_result: finalValues.previousResult,
+        previous_cover: finalValues.previousCover,
+        previous_difference: finalValues.previousDifference,
+        year_result: finalValues.yearResult,
+        year_comparison: finalValues.yearComparison,
+        year_difference: finalValues.yearDifference,
+        previous_year_result_all: finalValues.yearResultAll,
+        current_target: finalValues.currentTarget,
+        current_result: finalValues.currentResult,
+        current_trend: finalValues.currentTrend,
+        current_cover: finalValues.currentCover,
+        current_difference: finalValues.currentDifference,
+        monthly_target: finalValues.monthlyTarget,
+        extra_monthly_target: finalValues.extraMonthlyTarget,
+        new_monthly_target: finalValues.newMonthlyTarget,
+        display_values: serializeDisplayValues(row.values),
+        cell_tones: row.cellTones ?? null,
+      },
+    ];
+  });
 
   if (!records.length) {
-    throw new Error("Power BI returned no rows; the existing snapshot was kept.");
+    throw new Error(
+      "Power BI returned no seller matrix rows; the existing snapshot was kept.",
+    );
   }
 
   await replaceTodaySnapshot({

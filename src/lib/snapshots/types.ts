@@ -49,11 +49,20 @@ export type JoinedSnapshotSourceRow = {
   group3: string | null;
   month: number | null;
   closedMonthStatus: string | null;
+  currency?: number | null;
   pbi_query_calc_01: number | null;
   pbi_query_calc_02: number | null;
   pbi_query_calc_03: number | null;
   pbi_query_calc_04: number | null;
 };
+
+export type SnapshotRowKind =
+  | "category"
+  | "detail"
+  | "group2"
+  | "group3"
+  | "team"
+  | "total";
 
 export type SnapshotRow = {
   id: string;
@@ -61,6 +70,11 @@ export type SnapshotRow = {
   snapshot_ts: string | null;
   username: string;
   area: string;
+  is_active: boolean;
+  closed_period_label: string | null;
+  closed_months_count: number | null;
+  last_closed_month: string | null;
+  open_months_count: number | null;
   year: number | null;
   report_query_id: string | null;
   report_page: string | null;
@@ -74,23 +88,33 @@ export type SnapshotRow = {
   group1: string | null;
   group2: string | null;
   group3: string | null;
-  month: number | null;
-  closed_month_status: string | null;
   currency: number | null;
-  pbi_query_calc_01: number | null;
-  pbi_query_calc_02: number | null;
-  pbi_query_calc_03: number | null;
-  pbi_query_calc_04: number | null;
-  react_calc_01: number | null;
-  react_calc_02: number | null;
-  react_calc_03: number | null;
-  react_calc_04: number | null;
-  react_calc_05: number | null;
-  react_calc_06: number | null;
-  react_calc_07: number | null;
-  react_calc_08: number | null;
-  react_calc_09: number | null;
-  react_calc_10: number | null;
+  calculation_version: string;
+  row_kind: SnapshotRowKind;
+  row_key: string;
+  parent_key: string | null;
+  child_count: number | null;
+  is_total: boolean;
+  has_closed_month_status: boolean;
+  open_month_tcy_by_month: Record<string, number>;
+  previous_target: number;
+  previous_result: number;
+  previous_cover: number | null;
+  previous_difference: number | null;
+  year_result: number | null;
+  year_comparison: number | null;
+  year_difference: number | null;
+  current_target: number;
+  current_result: number;
+  current_trend: number;
+  current_cover: number | null;
+  current_difference: number | null;
+  monthly_target: number | null;
+  extra_monthly_target: number | null;
+  new_monthly_target: number | null;
+  previous_year_result_all: number;
+  display_values: Record<string, string>;
+  cell_tones: Record<string, string> | null;
 };
 
 export type AvailableSnapshot = {

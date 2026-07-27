@@ -5,7 +5,10 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { ReportMatrixTable } from "@/features/powerBI/ReportMatrixTable";
+import {
+  ReportMatrixTable,
+  type ReportMatrixRow,
+} from "@/features/powerBI/ReportMatrixTable";
 import {
   buildReportMatrixRows,
   createReportMatrixSections,
@@ -18,8 +21,7 @@ import { RefreshSnapshotButton } from "@/features/powerBI/RefreshSnapshotButton"
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   filterSnapshotRowsByCurrency,
-  getSnapshotHeaderLabel,
-  mapSnapshotRowsToMatrixSource,
+  mapSnapshotRowsToMatrixRows,
 } from "@/features/powerBI/snapshotMatrixSource";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
 import { fetchReportSnapshot } from "@/lib/api/snapshots";
@@ -32,6 +34,7 @@ type MatrixReportPayload = {
   currentRows: PowerBiMatrixSourceRow[];
   previousRows: PowerBiMatrixSourceRow[];
   trendRows: PowerBiMatrixSourceRow[];
+  precalculatedRows?: ReportMatrixRow[];
   /** Set when this payload was read from Supabase instead of live Power BI. */
   snapshotDate?: string;
 };
@@ -145,15 +148,19 @@ async function fetchMatrixPayloadFromSnapshot({
   const rows = filterSnapshotRowsByCurrency(response.rows, snapshotCurrency);
   if (!rows.length) return null;
 
-  const { currentRows, previousRows, trendRows } =
-    mapSnapshotRowsToMatrixSource(rows);
+  const precalculatedRows = mapSnapshotRowsToMatrixRows(rows);
+  if (!precalculatedRows.length) return null;
+  const group2Labels = new Set(
+    rows.map((row) => row.group2?.trim() ?? "").filter(Boolean),
+  );
 
   return {
     area: response.snapshot?.area ?? "",
-    headerLabel: getSnapshotHeaderLabel(rows),
-    currentRows,
-    previousRows,
-    trendRows,
+    headerLabel: group2Labels.size === 1 ? [...group2Labels][0]! : "",
+    currentRows: [],
+    previousRows: [],
+    trendRows: [],
+    precalculatedRows,
     snapshotDate: response.snapshot?.snapshot_date,
   };
 }
@@ -284,14 +291,15 @@ export function PowerBiReportMatrixView({
   const rows = useMemo(
     () =>
       data
-        ? buildReportMatrixRows({
+        ? (data.precalculatedRows ??
+          buildReportMatrixRows({
             categoryOrder,
             currentRows: data.currentRows,
             group2Order,
             previousRows: data.previousRows,
             trendRows: data.trendRows,
             sellersCatalog,
-          })
+          }))
         : [],
     [categoryOrder, data, group2Order, sellersCatalog],
   );

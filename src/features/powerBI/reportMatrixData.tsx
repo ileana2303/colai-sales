@@ -115,6 +115,25 @@ type MonthlyTargetMetrics = {
   newMonthlyTarget: number | null;
 };
 
+export type ReportMatrixFinalValues = {
+  currentCover: number | null;
+  currentDifference: number | null;
+  currentResult: number;
+  currentTarget: number;
+  currentTrend: number;
+  extraMonthlyTarget: number | null;
+  monthlyTarget: number | null;
+  newMonthlyTarget: number | null;
+  previousCover: number | null;
+  previousDifference: number | null;
+  previousResult: number;
+  previousTarget: number;
+  yearComparison: number | null;
+  yearDifference: number | null;
+  yearResult: number | null;
+  yearResultAll: number;
+};
+
 type MatrixRowOptions = {
   childCount?: number;
   extraMonthlyTargetSum?: number | null;
@@ -875,6 +894,66 @@ function computeMonthlyTargetMetrics(
     monthlyTarget,
     extraMonthlyTarget: monthlyTarget == null ? null : extraMonthlyTarget,
     newMonthlyTarget,
+  };
+}
+
+/**
+ * Returns the final, unformatted matrix values for a row. Snapshot refreshes
+ * persist this contract so consumers do not need to reproduce UI formulas.
+ */
+export function getReportMatrixFinalValues(
+  metrics: ReportMatrixRowMetrics,
+  options: {
+    group2: string;
+    isTotal: boolean;
+    rowKind: ReportMatrixRow["rowKind"];
+  },
+): ReportMatrixFinalValues {
+  const aggregate = aggregateFromMetrics(metrics);
+  aggregate.group2 = options.group2;
+  const closedPeriod = getClosedPeriodMetrics(aggregate);
+  const monthlyTargets = computeMonthlyTargetMetrics(aggregate);
+  const isPrecomputedCover =
+    usesPrecomputedCover(aggregate) &&
+    !options.isTotal &&
+    options.rowKind === "detail";
+  const previousCover = isPrecomputedCover
+    ? toCoverRatio(closedPeriod.result)
+    : closedPeriod.target
+      ? closedPeriod.result / closedPeriod.target
+      : null;
+  const currentCover = isPrecomputedCover
+    ? toCoverRatio(aggregate.vTrend)
+    : aggregate.tcyAll
+      ? aggregate.vTrend / aggregate.tcyAll
+      : null;
+  const hasYearBaseline = hasYearComparisonBaseline(aggregate.vlc);
+
+  return {
+    currentCover,
+    currentDifference:
+      aggregate.tcyAll === 0 ? 0 : aggregate.vTrend - aggregate.tcyAll,
+    currentResult: aggregate.vcyAll,
+    currentTarget: aggregate.tcyAll,
+    currentTrend: aggregate.vTrend,
+    extraMonthlyTarget: monthlyTargets.extraMonthlyTarget,
+    monthlyTarget: monthlyTargets.monthlyTarget,
+    newMonthlyTarget: monthlyTargets.newMonthlyTarget,
+    previousCover,
+    previousDifference:
+      closedPeriod.target === 0
+        ? 0
+        : closedPeriod.result - closedPeriod.target,
+    previousResult: closedPeriod.result,
+    previousTarget: closedPeriod.target,
+    yearComparison: hasYearBaseline
+      ? closedPeriod.result / aggregate.vlc
+      : null,
+    yearDifference: hasYearBaseline
+      ? closedPeriod.result - aggregate.vlc
+      : null,
+    yearResult: hasYearBaseline ? aggregate.vlc : null,
+    yearResultAll: aggregate.vlcAll,
   };
 }
 

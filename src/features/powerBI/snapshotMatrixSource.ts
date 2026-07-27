@@ -1,5 +1,12 @@
 import type { PowerBiMatrixSourceRow } from "@/features/powerBI/reportMatrixData";
-import type { SnapshotRow } from "@/lib/snapshots/types";
+import type {
+  ReportMatrixRow,
+  ReportMatrixTone,
+} from "@/features/powerBI/ReportMatrixTable";
+import type {
+  JoinedSnapshotSourceRow,
+  SnapshotRow,
+} from "@/lib/snapshots/types";
 
 export type SnapshotMatrixSource = {
   currentRows: PowerBiMatrixSourceRow[];
@@ -16,13 +23,16 @@ function normalizeKeyPart(value: string | null | undefined) {
 }
 
 /** Mirrors the group2 → group1 → group3 → team → seller aggregation key used by buildReportMatrixRows. */
-function getTrendDedupeKey(row: SnapshotRow) {
+function getTrendDedupeKey(row: Pick<
+  JoinedSnapshotSourceRow,
+  "group1" | "group2" | "group3" | "sellerCode" | "sellerName" | "team"
+>) {
   return [
     row.group2,
     row.group1,
     row.group3,
     row.team,
-    row.seller_code || row.seller_name || "",
+    row.sellerCode || row.sellerName || "",
   ]
     .map(normalizeKeyPart)
     .join("|");
@@ -43,16 +53,11 @@ export function filterSnapshotRowsByCurrency(
 }
 
 /**
- * Rebuilds the three PowerBiMatrixSourceRow arrays (current/previous/trend)
- * that buildReportMatrixRows expects, from the already-joined sales_snapshots
- * rows. Each snapshot row already carries VCY/TCY (pbi_query_calc_01/02) for
- * its own month, VLY (pbi_query_calc_03) for the same month a year prior, and
- * VTREND (pbi_query_calc_04) broadcast across every month of the same
- * seller/group combination - so VTREND is de-duplicated per aggregate key to
- * avoid summing the same trend value once per month.
+ * Converts the joined Power BI triptych to the source shape used for the
+ * one-time matrix calculation performed during snapshot refresh.
  */
-export function mapSnapshotRowsToMatrixSource(
-  rows: SnapshotRow[],
+export function mapJoinedSnapshotRowsToMatrixSource(
+  rows: JoinedSnapshotSourceRow[],
 ): SnapshotMatrixSource {
   const currentRows: PowerBiMatrixSourceRow[] = [];
   const previousRows: PowerBiMatrixSourceRow[] = [];
@@ -67,8 +72,8 @@ export function mapSnapshotRowsToMatrixSource(
       group2: row.group2,
       group3: row.group3,
       team: row.team,
-      sellerCode: row.seller_code,
-      sellerName: row.seller_name,
+      sellerCode: row.sellerCode,
+      sellerName: row.sellerName,
       currency: row.currency,
     };
     const month = row.month != null ? String(row.month) : null;
@@ -76,7 +81,7 @@ export function mapSnapshotRowsToMatrixSource(
     currentRows.push({
       ...base,
       month,
-      closedMonthStatus: row.closed_month_status,
+      closedMonthStatus: row.closedMonthStatus,
       tcy: row.pbi_query_calc_02,
       vcy: row.pbi_query_calc_01,
     });
@@ -105,10 +110,54 @@ export function mapSnapshotRowsToMatrixSource(
   };
 }
 
-export function getSnapshotHeaderLabel(rows: SnapshotRow[]) {
-  const labels = new Set(
-    rows.map((row) => row.group2?.trim() ?? "").filter(Boolean),
-  );
+/**
+ * Hydrates final seller rows straight from sales_snapshots. Their displayed
+ * values and raw matrix metrics were both materialized during refresh, so no
+ * seller-level calculation is repeated in the browser.
+ */
+export function mapSnapshotRowsToMatrixRows(
+  rows: SnapshotRow[],
+): ReportMatrixRow[] {
+  return rows
+    .filter((row) => row.row_kind === "detail")
+    .map((row) => {
+      const sellerLabel = [row.seller_name, row.seller_code]
+        .filter(Boolean)
+        .join(" - ") || "-";
 
-  return labels.size === 1 ? [...labels][0]! : "";
+      return {
+        key: row.row_key,
+        category: row.group1 || "-",
+        childCount: row.child_count ?? undefined,
+        filterValues: {
+          category: row.group1 || "-",
+          group2: row.group2 || "",
+          group3: row.group3 || undefined,
+          seller: `${row.seller_code ?? ""}|${row.seller_name ?? ""}`,
+          sellerLabel,
+          team: row.team || "",
+        },
+        leadingValues: {
+          seller: sellerLabel,
+          team: row.team || "-",
+        },
+        metrics: {
+          currency: row.currency,
+          hasClosedMonthStatus: row.has_closed_month_status,
+          openMonthTcyByMonth: row.open_month_tcy_by_month ?? {},
+          tcyAll: row.current_target,
+          tcyClosed: row.previous_target,
+          vTrend: row.current_trend,
+          vcyAll: row.current_result,
+          vcyClosed: row.previous_result,
+          vlc: row.year_result ?? 0,
+          vlcAll: row.previous_year_result_all,
+        },
+        parentKey: row.parent_key ?? undefined,
+        rowKind: "detail",
+        values: row.display_values,
+        cellTones: row.cell_tones as Record<string, ReportMatrixTone> | undefined,
+        isTotal: false,
+      };
+    });
 }
