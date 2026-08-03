@@ -54,6 +54,70 @@ export async function readLatestSnapshot(
   return { rows: (rows ?? []) as SnapshotRow[], snapshot };
 }
 
+export async function listAvailableSnapshots(input: SnapshotLookup & {
+  username: string;
+}) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("v_available_snapshots")
+    .select("*")
+    .eq("area", input.area)
+    .eq("page_code", input.pageCode)
+    .eq("year", input.year)
+    .eq("username", input.username)
+    .order("snapshot_date", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to load available snapshots: ${error.message}`);
+  }
+
+  return (data ?? []) as AvailableSnapshot[];
+}
+
+export async function readSnapshotByDate(
+  input: SnapshotLookup & { snapshotDate: string; username: string },
+): Promise<SnapshotReadResult> {
+  const supabase = createSupabaseAdminClient();
+  const { data: snapshots, error: snapshotError } = await supabase
+    .from("v_available_snapshots")
+    .select("*")
+    .eq("area", input.area)
+    .eq("page_code", input.pageCode)
+    .eq("year", input.year)
+    .eq("username", input.username)
+    .eq("snapshot_date", input.snapshotDate)
+    .limit(1);
+
+  if (snapshotError) {
+    throw new Error(
+      `Failed to load available snapshots: ${snapshotError.message}`,
+    );
+  }
+
+  const snapshot = ((snapshots ?? [])[0] ?? null) as AvailableSnapshot | null;
+  if (!snapshot) return { rows: [], snapshot };
+
+  const { data: rows, error: rowsError } = await supabase
+    .from("sales_snapshots")
+    .select("*")
+    .eq("is_active", true)
+    .eq("area", input.area)
+    .eq("page_code", input.pageCode)
+    .eq("year", input.year)
+    .eq("username", input.username)
+    .eq("snapshot_date", input.snapshotDate)
+    .order("report_code")
+    .order("group2")
+    .order("group1")
+    .order("seller_name");
+
+  if (rowsError) {
+    throw new Error(`Failed to load snapshots: ${rowsError.message}`);
+  }
+
+  return { rows: (rows ?? []) as SnapshotRow[], snapshot };
+}
+
 export async function replaceTodaySnapshot(input: {
   area: string;
   pageCode: string;

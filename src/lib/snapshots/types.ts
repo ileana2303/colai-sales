@@ -133,6 +133,10 @@ export type AvailableSnapshot = {
   rows_count: number;
 };
 
+export type AvailableSnapshotsResponse =
+  | { ok: true; snapshots: AvailableSnapshot[] }
+  | { ok: false; message: string };
+
 export type SnapshotResponse =
   | {
       ok: true;

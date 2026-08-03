@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { ensureSnapshot } from "@/lib/snapshots/snapshotRuntime";
+import { readSnapshotByDate } from "@/lib/snapshots/snapshotStore";
 import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext";
 import { POWERBI_NO_CACHE_HEADERS } from "@/lib/bi-reports/powerBi";
 
@@ -14,6 +15,7 @@ export async function GET(request: Request) {
   const compareYear =
     compareYearParam == null ? year - 1 : Number(compareYearParam);
   const areaParam = url.searchParams.get("area")?.trim() ?? "";
+  const snapshotDate = url.searchParams.get("snapshotDate")?.trim() ?? "";
 
   if (!pageCode || !Number.isInteger(year) || !Number.isInteger(compareYear)) {
     return NextResponse.json(
@@ -30,6 +32,33 @@ export async function GET(request: Request) {
   const area = areaParam || auth.reportContext.area;
 
   try {
+    if (snapshotDate) {
+      const username = auth.userInfo?.username?.trim();
+      if (!username) {
+        return NextResponse.json(
+          { ok: false, message: "Missing authenticated username." },
+          { status: 400, headers: POWERBI_NO_CACHE_HEADERS },
+        );
+      }
+      const data = await readSnapshotByDate({
+        area,
+        pageCode,
+        year,
+        snapshotDate,
+        username,
+      });
+      return NextResponse.json(
+        {
+          ok: true,
+          ...data,
+          fromCache: true,
+          isStale: false,
+          refreshAttempted: false,
+        },
+        { headers: POWERBI_NO_CACHE_HEADERS },
+      );
+    }
+
     const data = await ensureSnapshot({
       area,
       pageCode,

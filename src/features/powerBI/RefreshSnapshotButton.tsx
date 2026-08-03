@@ -45,6 +45,12 @@ export function RefreshSnapshotButton({
           compareYear,
         ),
       });
+      void queryClient.invalidateQueries({
+        queryKey: powerBiKeys.availableReportSnapshots(pageCode, currentYear),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: powerBiKeys.reportMatrices(),
+      });
       toast.success(`${brandLabel} snapshot uploaded`);
     },
     onError: (error) => {

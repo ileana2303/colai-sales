@@ -1,5 +1,6 @@
 export const powerBiKeys = {
   all: ["powerbi"] as const,
+  reportMatrices: () => [...powerBiKeys.all, "report-matrix"] as const,
   salesPerMonth: () => [...powerBiKeys.all, "sales-per-month"] as const,
   salesPerYear: () => [...powerBiKeys.all, "sales-per-year"] as const,
   akrateia: () => [...powerBiKeys.all, "akrateia"] as const,
@@ -15,17 +16,20 @@ export const powerBiKeys = {
     trendPath: string,
     snapshotPageCode?: string,
     snapshotCurrency?: number,
+    snapshotDate?: string,
   ) =>
     [
-      ...powerBiKeys.all,
-      "report-matrix",
+      ...powerBiKeys.reportMatrices(),
       reportKey,
       currentSalesPath,
       previousSalesPath,
       trendPath,
       snapshotPageCode ?? "",
       snapshotCurrency ?? "",
+      snapshotDate ?? "",
     ] as const,
+  availableReportSnapshots: (pageCode: string, year: number) =>
+    [...powerBiKeys.all, "available-report-snapshots", pageCode, year] as const,
   bbmSales: (apiPath: string) =>
     [...powerBiKeys.all, "bbm-sales", apiPath] as const,
   bbmTrends: () => [...powerBiKeys.all, "bbm-trends"] as const,

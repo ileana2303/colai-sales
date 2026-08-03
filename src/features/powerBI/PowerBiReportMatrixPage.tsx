@@ -4,7 +4,17 @@ import { useMemo, useState, type ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
+import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ReportMatrixTable,
   type ReportMatrixRow,
@@ -24,7 +34,10 @@ import {
   mapSnapshotRowsToMatrixRows,
 } from "@/features/powerBI/snapshotMatrixSource";
 import { fetchPowerBiAreaReport } from "@/lib/api/powerbi";
-import { fetchReportSnapshot } from "@/lib/api/snapshots";
+import {
+  fetchAvailableReportSnapshots,
+  fetchReportSnapshot,
+} from "@/lib/api/snapshots";
 import { useSellersStore } from "@/stores/sellersStore";
 import { cn } from "@/lib/utils";
 
@@ -68,6 +81,8 @@ export type PowerBiReportMatrixViewProps = {
    * subset of snapshot rows.
    */
   snapshotCurrency?: 0 | 1;
+  /** ISO date of a user-selected historical snapshot. */
+  snapshotDate?: string;
   trendPath: string;
 };
 
@@ -109,6 +124,65 @@ function formatSnapshotDescription(snapshotDate: string | undefined) {
   return `Δεδομένα από στιγμιότυπο (Supabase) της ${formatted}`;
 }
 
+function SnapshotPicker({
+  pageCode,
+  year,
+  value,
+  onChange,
+}: {
+  pageCode: string;
+  year: number;
+  value?: string;
+  onChange: (snapshotDate: string | undefined) => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: powerBiKeys.availableReportSnapshots(pageCode, year),
+    queryFn: () => fetchAvailableReportSnapshots({ pageCode, year }),
+    ...matrixQueryOptions,
+  });
+  const selectedLabel = value
+    ? new Date(`${value}T00:00:00`).toLocaleDateString("el-GR")
+    : "Latest snapshot";
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Select a past snapshot"
+        disabled={isLoading}
+        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-4 text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+      >
+        {isLoading ? "Loading snapshots…" : selectedLabel}
+        <AppIcon name="bi-chevron-down" size={14} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Available snapshots</DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuRadioGroup
+          value={value ?? ""}
+          onValueChange={(snapshotDate) =>
+            onChange(String(snapshotDate) || undefined)
+          }
+        >
+          <DropdownMenuRadioItem value="">
+            Latest snapshot
+          </DropdownMenuRadioItem>
+          {data?.snapshots.map((snapshot) => (
+            <DropdownMenuRadioItem
+              key={snapshot.snapshot_date}
+              value={snapshot.snapshot_date}
+            >
+              {new Date(
+                `${snapshot.snapshot_date}T00:00:00`,
+              ).toLocaleDateString("el-GR")}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function getUniqueGroup2Label(...rowGroups: PowerBiMatrixSourceRow[][]) {
   const labels = new Set(
     rowGroups
@@ -124,12 +198,14 @@ async function fetchMatrixPayloadFromSnapshot({
   currentYear,
   previousYear,
   snapshotCurrency,
+  snapshotDate,
   snapshotPageCode,
 }: Pick<
   PowerBiReportMatrixViewProps,
   | "currentYear"
   | "previousYear"
   | "snapshotCurrency"
+  | "snapshotDate"
   | "snapshotPageCode"
 >): Promise<MatrixReportPayload | null> {
   if (!snapshotPageCode) return null;
@@ -141,6 +217,7 @@ async function fetchMatrixPayloadFromSnapshot({
     pageCode: snapshotPageCode,
     year: currentYear,
     compareYear: previousYear,
+    snapshotDate,
   });
 
   if (!response.rows.length) return null;
@@ -218,6 +295,7 @@ async function fetchMatrixPayload(
     | "previousSalesPath"
     | "previousYear"
     | "snapshotCurrency"
+    | "snapshotDate"
     | "snapshotPageCode"
     | "trendPath"
   >,
@@ -246,6 +324,7 @@ export function PowerBiReportMatrixView({
   previousYear,
   reportKey,
   snapshotCurrency,
+  snapshotDate,
   snapshotPageCode,
   trendPath,
 }: PowerBiReportMatrixViewProps) {
@@ -258,6 +337,7 @@ export function PowerBiReportMatrixView({
       trendPath,
       snapshotPageCode,
       snapshotCurrency,
+      snapshotDate,
     ),
     queryFn: () =>
       fetchMatrixPayload({
@@ -267,6 +347,7 @@ export function PowerBiReportMatrixView({
         previousSalesPath,
         previousYear,
         snapshotCurrency,
+        snapshotDate,
         snapshotPageCode,
         trendPath,
       }),
@@ -351,17 +432,27 @@ export function PowerBiReportMatrixPage({
   previousYear,
   ...props
 }: PowerBiReportMatrixPageProps) {
+  const [snapshotDate, setSnapshotDate] = useState<string>();
+
   return (
     <div className="app-page">
       <ReportMatrixPageHeader
         actions={
           snapshotPageCode ? (
-            <RefreshSnapshotButton
-              brandLabel={brandLabel}
-              pageCode={snapshotPageCode}
-              currentYear={currentYear}
-              compareYear={previousYear}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <RefreshSnapshotButton
+                brandLabel={brandLabel}
+                pageCode={snapshotPageCode}
+                currentYear={currentYear}
+                compareYear={previousYear}
+              />
+              <SnapshotPicker
+                pageCode={snapshotPageCode}
+                year={currentYear}
+                value={snapshotDate}
+                onChange={setSnapshotDate}
+              />
+            </div>
           ) : null
         }
         brandLabel={brandLabel}
@@ -376,6 +467,7 @@ export function PowerBiReportMatrixPage({
         currentYear={currentYear}
         previousYear={previousYear}
         {...props}
+        snapshotDate={snapshotDate}
       />
     </div>
   );
@@ -399,10 +491,12 @@ export function PowerBiTabbedReportMatrixPage({
   tabs,
 }: PowerBiTabbedReportMatrixPageProps) {
   const [activeTabKey, setActiveTabKey] = useState(tabs[0]?.key ?? "");
+  const [snapshotDates, setSnapshotDates] = useState<Record<string, string>>();
   const activeTab = tabs.find((tab) => tab.key === activeTabKey) ?? tabs[0];
   const snapshotPageCode = activeTab?.view.snapshotPageCode;
   const currentYear = activeTab?.view.currentYear;
   const previousYear = activeTab?.view.previousYear;
+  const snapshotDate = activeTab ? snapshotDates?.[activeTab.key] : undefined;
 
   return (
     <div className="app-page">
@@ -412,12 +506,26 @@ export function PowerBiTabbedReportMatrixPage({
             {snapshotPageCode &&
             currentYear != null &&
             previousYear != null ? (
-              <RefreshSnapshotButton
-                brandLabel={brandLabel}
-                pageCode={snapshotPageCode}
-                currentYear={currentYear}
-                compareYear={previousYear}
-              />
+              <>
+                <RefreshSnapshotButton
+                  brandLabel={brandLabel}
+                  pageCode={snapshotPageCode}
+                  currentYear={currentYear}
+                  compareYear={previousYear}
+                />
+                <SnapshotPicker
+                  pageCode={snapshotPageCode}
+                  year={currentYear}
+                  value={snapshotDate}
+                  onChange={(date) => {
+                    if (!activeTab) return;
+                    setSnapshotDates((dates) => ({
+                      ...dates,
+                      [activeTab.key]: date ?? "",
+                    }));
+                  }}
+                />
+              </>
             ) : null}
             <div
               className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/40 p-1"
@@ -458,6 +566,7 @@ export function PowerBiTabbedReportMatrixPage({
           key={tab.key}
           hidden={tab.key !== activeTabKey}
           {...tab.view}
+          snapshotDate={snapshotDates?.[tab.key] || undefined}
         />
       ))}
     </div>

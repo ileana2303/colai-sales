@@ -21,7 +21,7 @@ export function ReportQueryBoundary({
   error,
   fallbackError,
   onRetry,
-  loadingLabel = "Φόρτωση Power BI...",
+  loadingLabel = "Φόρτωση...",
   children,
 }: ReportQueryBoundaryProps) {
   if (isLoading) {
