@@ -33,19 +33,11 @@ export async function GET(request: Request) {
 
   try {
     if (snapshotDate) {
-      const username = auth.userInfo?.username?.trim();
-      if (!username) {
-        return NextResponse.json(
-          { ok: false, message: "Missing authenticated username." },
-          { status: 400, headers: POWERBI_NO_CACHE_HEADERS },
-        );
-      }
       const data = await readSnapshotByDate({
         area,
         pageCode,
         year,
         snapshotDate,
-        username,
       });
       return NextResponse.json(
         {

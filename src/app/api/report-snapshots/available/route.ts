@@ -21,20 +21,11 @@ export async function GET(request: Request) {
   const auth = await getPowerBiRouteAuthContext();
   if (!auth.ok) return auth.response;
 
-  const username = auth.userInfo?.username?.trim();
-  if (!username) {
-    return NextResponse.json(
-      { ok: false, message: "Missing authenticated username." },
-      { status: 400, headers: POWERBI_NO_CACHE_HEADERS },
-    );
-  }
-
   try {
     const snapshots = await listAvailableSnapshots({
       area: auth.reportContext.area,
       pageCode,
       year,
-      username,
     });
     return NextResponse.json(
       { ok: true, snapshots },

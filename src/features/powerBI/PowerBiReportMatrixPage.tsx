@@ -23,6 +23,7 @@ import {
   buildReportMatrixRows,
   createReportMatrixSections,
   createReportMatrixSectionSummaries,
+  createReportMatrixSectionSummariesFromPeriodMeta,
   reportMatrixLeadingColumns,
   type PowerBiMatrixSourceRow,
 } from "@/features/powerBI/reportMatrixData";
@@ -38,6 +39,7 @@ import {
   fetchAvailableReportSnapshots,
   fetchReportSnapshot,
 } from "@/lib/api/snapshots";
+import type { AvailableSnapshot } from "@/lib/snapshots/types";
 import { useSellersStore } from "@/stores/sellersStore";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +52,12 @@ type MatrixReportPayload = {
   precalculatedRows?: ReportMatrixRow[];
   /** Set when this payload was read from Supabase instead of live Power BI. */
   snapshotDate?: string;
+  snapshotPeriod?: {
+    closedPeriodLabel: string | null;
+    closedMonthsCount: number | null;
+    lastClosedMonth: string | null;
+    openMonthsCount: number | null;
+  };
 };
 
 export type PowerBiReportMatrixViewProps = {
@@ -95,22 +103,146 @@ function ReportMatrixPageHeader({
   actions,
   brandLabel,
   caption,
+  periodSummary,
 }: {
   actions?: ReactNode;
   brandLabel: string;
   caption: string;
+  periodSummary?: ReactNode;
 }) {
   return (
     <section className="app-card p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 shrink-0">
           <h1 className="app-report-title mb-0">{brandLabel}</h1>
           <p className="app-report-subtitle mb-0">{caption}</p>
         </div>
+        {periodSummary ? (
+          <div className="min-w-0 flex-1 lg:px-4">{periodSummary}</div>
+        ) : null}
         {actions}
       </div>
     </section>
   );
+}
+
+function SnapshotPeriodSummaryPill({
+  snapshot,
+}: {
+  snapshot: AvailableSnapshot | null | undefined;
+}) {
+  const summaries = useMemo(
+    () =>
+      createReportMatrixSectionSummariesFromPeriodMeta(
+        snapshot
+          ? {
+              closedPeriodLabel: snapshot.closed_period_label,
+              closedMonthsCount: snapshot.closed_months_count,
+              lastClosedMonth: snapshot.last_closed_month,
+              openMonthsCount: snapshot.open_months_count,
+            }
+          : null,
+      ),
+    [snapshot],
+  );
+
+  const previousPeriodSummary = summaries["previous-period"];
+  const closedMonthsSummary = summaries["closed-months"];
+  const openMonthsSummary = summaries["current-year"];
+  const currentMonthSummary = summaries["monthly-target"];
+
+  const items = [
+    previousPeriodSummary
+      ? {
+          key: "closed-period",
+          label: previousPeriodSummary.label,
+          value: String(previousPeriodSummary.value),
+          hint: previousPeriodSummary.details?.[0]
+            ? String(previousPeriodSummary.details[0])
+            : null,
+        }
+      : null,
+    closedMonthsSummary
+      ? {
+          key: "closed-months",
+          label: "Κλειστοί μήνες",
+          value: String(closedMonthsSummary.value),
+          hint: closedMonthsSummary.details?.[0]
+            ? String(closedMonthsSummary.details[0])
+            : null,
+        }
+      : null,
+    openMonthsSummary
+      ? {
+          key: "open-months",
+          label: openMonthsSummary.label,
+          value: String(openMonthsSummary.value),
+          hint: openMonthsSummary.details?.[0]
+            ? String(openMonthsSummary.details[0])
+            : null,
+        }
+      : null,
+    currentMonthSummary
+      ? {
+          key: "current-month",
+          label: currentMonthSummary.label,
+          value: String(currentMonthSummary.value),
+          hint: currentMonthSummary.details?.[0]
+            ? String(currentMonthSummary.details[0]).replace(/^Κατάσταση:\s*/, "")
+            : null,
+        }
+      : null,
+  ].filter(Boolean) as Array<{
+    key: string;
+    label: string;
+    value: string;
+    hint: string | null;
+  }>;
+
+  if (!items.length) return null;
+
+  return (
+    <div className="snapshot-period-summary" aria-label="Περίοδος στιγμιοτύπου">
+      {items.map((item) => (
+        <div key={item.key} className="snapshot-period-summary__item">
+          <span className="snapshot-period-summary__label">{item.label}</span>
+          <strong className="snapshot-period-summary__value">{item.value}</strong>
+          {item.hint ? (
+            <span className="snapshot-period-summary__hint">{item.hint}</span>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useActiveAvailableSnapshot(
+  pageCode: string | undefined,
+  year: number | undefined,
+  snapshotDate: string | undefined,
+) {
+  const { data } = useQuery({
+    queryKey: powerBiKeys.availableReportSnapshots(pageCode ?? "", year ?? 0),
+    queryFn: () =>
+      fetchAvailableReportSnapshots({
+        pageCode: pageCode!,
+        year: year!,
+      }),
+    enabled: Boolean(pageCode && year != null),
+    ...matrixQueryOptions,
+  });
+
+  return useMemo(() => {
+    const snapshots = data?.snapshots ?? [];
+    if (!snapshots.length) return null;
+    if (snapshotDate) {
+      return (
+        snapshots.find((snapshot) => snapshot.snapshot_date === snapshotDate) ??
+        null
+      );
+    }
+    return snapshots[0] ?? null;
+  }, [data?.snapshots, snapshotDate]);
 }
 
 function formatSnapshotDescription(snapshotDate: string | undefined) {
@@ -239,6 +371,14 @@ async function fetchMatrixPayloadFromSnapshot({
     trendRows: [],
     precalculatedRows,
     snapshotDate: response.snapshot?.snapshot_date,
+    snapshotPeriod: response.snapshot
+      ? {
+          closedPeriodLabel: response.snapshot.closed_period_label,
+          closedMonthsCount: response.snapshot.closed_months_count,
+          lastClosedMonth: response.snapshot.last_closed_month,
+          openMonthsCount: response.snapshot.open_months_count,
+        }
+      : undefined,
   };
 }
 
@@ -355,10 +495,13 @@ export function PowerBiReportMatrixView({
   });
 
   const headerLabel = headerLabelOverride ?? data?.headerLabel ?? brandLabel;
-  const sectionSummaries = useMemo(
-    () => (data ? createReportMatrixSectionSummaries(data.currentRows) : {}),
-    [data],
-  );
+  const sectionSummaries = useMemo(() => {
+    if (!data) return {};
+    if (data.currentRows.length) {
+      return createReportMatrixSectionSummaries(data.currentRows);
+    }
+    return createReportMatrixSectionSummariesFromPeriodMeta(data.snapshotPeriod);
+  }, [data]);
 
   const sections = useMemo(
     () =>
@@ -405,6 +548,7 @@ export function PowerBiReportMatrixView({
           exportFileName={exportFileName}
           group2Order={group2Order}
           headerLabel={headerLabel}
+          hideSummaryPill={Boolean(snapshotPageCode)}
           leadingColumns={reportMatrixLeadingColumns}
           rows={rows}
           sections={sections}
@@ -433,6 +577,11 @@ export function PowerBiReportMatrixPage({
   ...props
 }: PowerBiReportMatrixPageProps) {
   const [snapshotDate, setSnapshotDate] = useState<string>();
+  const activeSnapshot = useActiveAvailableSnapshot(
+    snapshotPageCode,
+    currentYear,
+    snapshotDate,
+  );
 
   return (
     <div className="app-page">
@@ -457,6 +606,11 @@ export function PowerBiReportMatrixPage({
         }
         brandLabel={brandLabel}
         caption={caption}
+        periodSummary={
+          snapshotPageCode ? (
+            <SnapshotPeriodSummaryPill snapshot={activeSnapshot} />
+          ) : null
+        }
       />
       <PowerBiReportMatrixView
         brandLabel={brandLabel}
@@ -497,6 +651,11 @@ export function PowerBiTabbedReportMatrixPage({
   const currentYear = activeTab?.view.currentYear;
   const previousYear = activeTab?.view.previousYear;
   const snapshotDate = activeTab ? snapshotDates?.[activeTab.key] : undefined;
+  const activeSnapshot = useActiveAvailableSnapshot(
+    snapshotPageCode,
+    currentYear,
+    snapshotDate,
+  );
 
   return (
     <div className="app-page">
@@ -559,6 +718,11 @@ export function PowerBiTabbedReportMatrixPage({
         }
         brandLabel={brandLabel}
         caption={caption}
+        periodSummary={
+          snapshotPageCode ? (
+            <SnapshotPeriodSummaryPill snapshot={activeSnapshot} />
+          ) : null
+        }
       />
 
       {tabs.map((tab) => (

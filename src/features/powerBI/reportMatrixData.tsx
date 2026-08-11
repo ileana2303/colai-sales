@@ -1678,6 +1678,122 @@ function formatMonthRange(startIndex: number, endIndex: number) {
   return `${getShortMonthLabel(startIndex)} - ${getShortMonthLabel(endIndex)}`;
 }
 
+export type ReportMatrixPeriodMeta = {
+  closedPeriodLabel?: string | null;
+  closedMonthsCount?: number | null;
+  lastClosedMonth?: string | null;
+  openMonthsCount?: number | null;
+};
+
+function parseMonthNumber(value: string | number | null | undefined) {
+  if (value == null || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(String(value).trim());
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 12) return null;
+  return parsed;
+}
+
+/**
+ * Builds the same section/header period summaries used by live Power BI rows,
+ * from sales_snapshots / v_available_snapshots period columns.
+ */
+export function createReportMatrixSectionSummariesFromPeriodMeta(
+  period: ReportMatrixPeriodMeta | null | undefined,
+): ReportMatrixSectionSummaries {
+  if (!period) return {};
+
+  const closedMonthsCount = period.closedMonthsCount ?? 0;
+  const lastClosedMonthNumber = parseMonthNumber(period.lastClosedMonth);
+  const lastClosedMonthIndex =
+    lastClosedMonthNumber != null ? lastClosedMonthNumber - 1 : null;
+  const closedMonthIndexes =
+    closedMonthsCount > 0 && lastClosedMonthIndex != null
+      ? Array.from({ length: closedMonthsCount }, (_, offset) => {
+          const index = lastClosedMonthIndex - (closedMonthsCount - 1 - offset);
+          return index;
+        }).filter((index) => index >= 0 && index <= 11)
+      : [];
+
+  const openMonthsCount = Math.max(
+    period.openMonthsCount ??
+      (closedMonthsCount > 0 ? 12 - closedMonthsCount : 0),
+    0,
+  );
+  const currentMonthIndex =
+    lastClosedMonthIndex != null && lastClosedMonthIndex < 11
+      ? lastClosedMonthIndex + 1
+      : openMonthsCount > 0
+        ? 0
+        : null;
+  const lastOpenMonthIndex =
+    currentMonthIndex != null && openMonthsCount > 0
+      ? Math.min(currentMonthIndex + openMonthsCount - 1, 11)
+      : null;
+
+  const previousPeriodSummary =
+    closedMonthIndexes.length && lastClosedMonthIndex != null
+      ? ({
+          details: [
+            `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
+          ],
+          label: "Κλειστή περίοδος",
+          tone: "primary",
+          value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+        } satisfies ReportMatrixSectionSummary)
+      : period.closedPeriodLabel?.trim()
+        ? ({
+            label: "Κλειστή περίοδος",
+            tone: "primary",
+            value: period.closedPeriodLabel.trim(),
+          } satisfies ReportMatrixSectionSummary)
+        : undefined;
+
+  const closedMonthsSummary =
+    closedMonthIndexes.length && lastClosedMonthIndex != null
+      ? ({
+          details: [
+            formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+          ],
+          label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
+          tone: "primary",
+          value: String(closedMonthsCount || closedMonthIndexes.length),
+        } satisfies ReportMatrixSectionSummary)
+      : undefined;
+
+  const currentYearSummary =
+    openMonthsCount > 0
+      ? ({
+          details:
+            currentMonthIndex != null && lastOpenMonthIndex != null
+              ? [formatMonthRange(currentMonthIndex, lastOpenMonthIndex)]
+              : undefined,
+          label: "Υπόλοιποι μήνες",
+          tone: "success",
+          value: `${openMonthsCount} ${
+            openMonthsCount === 1 ? "μήνας" : "μήνες"
+          }`,
+        } satisfies ReportMatrixSectionSummary)
+      : undefined;
+
+  const monthlyTargetSummary = {
+    details: [
+      `Κατάσταση: ${
+        currentMonthIndex != null && openMonthsCount > 0 ? "Ανοιχτός" : "-"
+      }`,
+    ],
+    label: "Τρέχων μήνας",
+    tone: "primary",
+    value:
+      currentMonthIndex != null ? getShortMonthLabel(currentMonthIndex) : "-",
+  } satisfies ReportMatrixSectionSummary;
+
+  return {
+    "closed-months": closedMonthsSummary,
+    "current-year": currentYearSummary,
+    "monthly-target": monthlyTargetSummary,
+    "previous-period": previousPeriodSummary,
+  };
+}
+
 export function createReportMatrixSectionSummaries(
   rows: PowerBiMatrixSourceRow[],
 ): ReportMatrixSectionSummaries {

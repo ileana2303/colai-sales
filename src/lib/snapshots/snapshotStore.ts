@@ -54,9 +54,7 @@ export async function readLatestSnapshot(
   return { rows: (rows ?? []) as SnapshotRow[], snapshot };
 }
 
-export async function listAvailableSnapshots(input: SnapshotLookup & {
-  username: string;
-}) {
+export async function listAvailableSnapshots(input: SnapshotLookup) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("v_available_snapshots")
@@ -64,18 +62,35 @@ export async function listAvailableSnapshots(input: SnapshotLookup & {
     .eq("area", input.area)
     .eq("page_code", input.pageCode)
     .eq("year", input.year)
-    .eq("username", input.username)
     .order("snapshot_date", { ascending: false });
 
   if (error) {
     throw new Error(`Failed to load available snapshots: ${error.message}`);
   }
 
-  return (data ?? []) as AvailableSnapshot[];
+  // Snapshots are shared per area/page/year. Deduplicate by date in case the
+  // view still emits one row per uploader username.
+  const byDate = new Map<string, AvailableSnapshot>();
+  for (const row of (data ?? []) as AvailableSnapshot[]) {
+    const existing = byDate.get(row.snapshot_date);
+    if (!existing) {
+      byDate.set(row.snapshot_date, row);
+      continue;
+    }
+    const existingTs = existing.snapshot_ts ?? "";
+    const nextTs = row.snapshot_ts ?? "";
+    if (nextTs > existingTs) {
+      byDate.set(row.snapshot_date, row);
+    }
+  }
+
+  return [...byDate.values()].sort((a, b) =>
+    a.snapshot_date < b.snapshot_date ? 1 : a.snapshot_date > b.snapshot_date ? -1 : 0,
+  );
 }
 
 export async function readSnapshotByDate(
-  input: SnapshotLookup & { snapshotDate: string; username: string },
+  input: SnapshotLookup & { snapshotDate: string },
 ): Promise<SnapshotReadResult> {
   const supabase = createSupabaseAdminClient();
   const { data: snapshots, error: snapshotError } = await supabase
@@ -84,8 +99,8 @@ export async function readSnapshotByDate(
     .eq("area", input.area)
     .eq("page_code", input.pageCode)
     .eq("year", input.year)
-    .eq("username", input.username)
     .eq("snapshot_date", input.snapshotDate)
+    .order("snapshot_ts", { ascending: false })
     .limit(1);
 
   if (snapshotError) {
@@ -104,7 +119,6 @@ export async function readSnapshotByDate(
     .eq("area", input.area)
     .eq("page_code", input.pageCode)
     .eq("year", input.year)
-    .eq("username", input.username)
     .eq("snapshot_date", input.snapshotDate)
     .order("report_code")
     .order("group2")

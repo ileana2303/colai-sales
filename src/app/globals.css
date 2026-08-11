@@ -1034,6 +1034,65 @@ html.dark .app-header-user__role {
   color: color-mix(in oklch, currentColor 60%, var(--muted-foreground) 40%);
 }
 
+.snapshot-period-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.55rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid color-mix(in oklch, #93c5fd 42%, var(--border) 58%);
+  border-radius: 0.9rem;
+  background: color-mix(in oklch, #dbeafe 55%, var(--background) 45%);
+}
+
+.snapshot-period-summary__item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in oklch, #93c5fd 28%, var(--border) 72%);
+  border-radius: 0.7rem;
+  background: color-mix(in oklch, var(--background) 82%, #eff6ff 18%);
+}
+
+.snapshot-period-summary__label {
+  color: color-mix(in oklch, #1d4ed8 72%, var(--muted-foreground) 28%);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.snapshot-period-summary__value {
+  color: #1e3a8a;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.snapshot-period-summary__hint {
+  color: color-mix(in oklch, #1d4ed8 55%, var(--muted-foreground) 45%);
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+@media (max-width: 1100px) {
+  .snapshot-period-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .snapshot-period-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
 .report-matrix-card__actions {
   display: flex;
   min-width: 0;
@@ -1875,6 +1934,33 @@ html[data-bs-theme="dark"] .report-matrix-card__summary-pill--rose {
   border-color: color-mix(in oklch, #f472b6 34%, var(--border) 66%);
   background: color-mix(in oklch, #be185d 30%, var(--background) 70%);
   color: #fce7f3;
+}
+
+html.dark .snapshot-period-summary,
+html[data-bs-theme="dark"] .snapshot-period-summary {
+  border-color: color-mix(in oklch, #60a5fa 36%, var(--border) 64%);
+  background: color-mix(in oklch, #1e3a8a 28%, var(--background) 72%);
+}
+
+html.dark .snapshot-period-summary__item,
+html[data-bs-theme="dark"] .snapshot-period-summary__item {
+  border-color: color-mix(in oklch, #60a5fa 24%, var(--border) 76%);
+  background: color-mix(in oklch, #0f172a 55%, #1e3a8a 45%);
+}
+
+html.dark .snapshot-period-summary__label,
+html[data-bs-theme="dark"] .snapshot-period-summary__label {
+  color: #93c5fd;
+}
+
+html.dark .snapshot-period-summary__value,
+html[data-bs-theme="dark"] .snapshot-period-summary__value {
+  color: #eff6ff;
+}
+
+html.dark .snapshot-period-summary__hint,
+html[data-bs-theme="dark"] .snapshot-period-summary__hint {
+  color: color-mix(in oklch, #bfdbfe 70%, var(--muted-foreground) 30%);
 }
 
 html.dark .report-matrix-filter-pill__label,

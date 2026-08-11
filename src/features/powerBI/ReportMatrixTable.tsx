@@ -105,6 +105,8 @@ type ReportMatrixTableProps = {
   exportFileName?: string;
   group2Order?: string[];
   headerLabel?: ReactNode;
+  /** When true, period summary is rendered elsewhere (e.g. page header). */
+  hideSummaryPill?: boolean;
   leadingColumns?: ReportMatrixLeadingColumn[];
   rows: ReportMatrixRow[];
   sections: ReportMatrixSection[];
@@ -282,6 +284,7 @@ export function ReportMatrixTable({
   exportFileName,
   group2Order,
   headerLabel,
+  hideSummaryPill = false,
   leadingColumns,
   rows,
   sections,
@@ -1360,7 +1363,7 @@ export function ReportMatrixTable({
                 : "Επέκταση όλων"}
             </Button>
           </div>
-          {mergedSummary ? (
+          {mergedSummary && !hideSummaryPill ? (
             <div
               className={cn(
                 "report-matrix-card__summary-pill",
