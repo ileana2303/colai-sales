@@ -9,14 +9,44 @@ export function isApiFailure(data: unknown): data is ApiFailure {
   );
 }
 
+/**
+ * Single error-message extractor for app `{ message }`, FastAPI `{ detail }`,
+ * and OpenAI-shaped `{ error: { message } }` payloads.
+ */
 export function getApiErrorMessage(
   data: unknown,
   fallback = "Request failed",
 ): string {
-  if (typeof data === "object" && data !== null) {
-    const msg = (data as ApiFailure).message;
-    if (typeof msg === "string" && msg.trim()) return msg.trim();
+  if (typeof data !== "object" || data === null) {
+    return fallback;
   }
+
+  const message = (data as { message?: unknown }).message;
+  if (typeof message === "string" && message.trim()) return message.trim();
+
+  const detail = (data as { detail?: unknown }).detail;
+  if (typeof detail === "string" && detail.trim()) return detail.trim();
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0];
+    if (typeof first === "string" && first.trim()) return first.trim();
+    if (
+      typeof first === "object" &&
+      first !== null &&
+      typeof (first as { msg?: unknown }).msg === "string"
+    ) {
+      return String((first as { msg: string }).msg).trim();
+    }
+  }
+
+  const error = (data as { error?: unknown }).error;
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    typeof (error as { message?: unknown }).message === "string"
+  ) {
+    return String((error as { message: string }).message).trim();
+  }
+
   return fallback;
 }
 

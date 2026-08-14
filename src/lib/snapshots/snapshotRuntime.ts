@@ -285,7 +285,7 @@ export async function ensureSnapshot(
     });
     const refreshed = await readLatestSnapshot(input);
 
-    if (!isSnapshotFresh(refreshed.snapshot?.snapshot_date, today)) {
+    if (refreshed.snapshot?.snapshot_date !== today) {
       throw new Error(
         "Power BI refresh completed without creating today's snapshot.",
       );

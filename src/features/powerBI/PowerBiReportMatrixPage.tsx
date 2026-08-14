@@ -15,6 +15,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ReportMatrixChatShell } from "@/features/chat";
 import {
   ReportMatrixTable,
   type ReportMatrixRow,
@@ -78,8 +79,8 @@ export type PowerBiReportMatrixViewProps = {
   /**
    * When set, the table is populated from the sales_snapshots row for this
    * page_code (via v_available_snapshots) whenever one is available, instead
-   * of querying Power BI live. It also ensures a same-day snapshot row
-   * exists for future loads.
+   * of querying Power BI live. It also ensures a snapshot from the last
+   * 7 days exists for future loads.
    */
   snapshotPageCode?: string;
   /**
@@ -118,7 +119,9 @@ function ReportMatrixPageHeader({
           <p className="app-report-subtitle mb-0">{caption}</p>
         </div>
         {periodSummary ? (
-          <div className="min-w-0 flex-1 lg:px-4">{periodSummary}</div>
+          <div className="report-matrix-period-slot min-w-0 flex-1 lg:px-4">
+            {periodSummary}
+          </div>
         ) : null}
         {actions}
       </div>
@@ -272,8 +275,14 @@ function SnapshotPicker({
     queryFn: () => fetchAvailableReportSnapshots({ pageCode, year }),
     ...matrixQueryOptions,
   });
-  const selectedLabel = value
-    ? new Date(`${value}T00:00:00`).toLocaleDateString("el-GR")
+  const snapshots = data?.snapshots ?? [];
+  const latestDate = snapshots[0]?.snapshot_date;
+  const historicalSnapshots = snapshots.filter(
+    (snapshot) => snapshot.snapshot_date !== latestDate,
+  );
+  const selectedValue = value && value !== latestDate ? value : "";
+  const selectedLabel = selectedValue
+    ? new Date(`${selectedValue}T00:00:00`).toLocaleDateString("el-GR")
     : "Latest snapshot";
 
   return (
@@ -291,7 +300,7 @@ function SnapshotPicker({
           <DropdownMenuLabel>Available snapshots</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuRadioGroup
-          value={value ?? ""}
+          value={selectedValue}
           onValueChange={(snapshotDate) =>
             onChange(String(snapshotDate) || undefined)
           }
@@ -299,7 +308,7 @@ function SnapshotPicker({
           <DropdownMenuRadioItem value="">
             Latest snapshot
           </DropdownMenuRadioItem>
-          {data?.snapshots.map((snapshot) => (
+          {historicalSnapshots.map((snapshot) => (
             <DropdownMenuRadioItem
               key={snapshot.snapshot_date}
               value={snapshot.snapshot_date}
@@ -342,9 +351,9 @@ async function fetchMatrixPayloadFromSnapshot({
 >): Promise<MatrixReportPayload | null> {
   if (!snapshotPageCode) return null;
 
-  // This endpoint calls ensureSnapshot: it returns today's cached rows when
-  // available, otherwise refreshes the Power BI triptych and persists today's
-  // snapshot before returning the new Supabase rows.
+  // This endpoint calls ensureSnapshot: it returns cached rows from the last
+  // 7 days when available, otherwise refreshes the Power BI triptych and
+  // persists today's snapshot before returning the new Supabase rows.
   const response = await fetchReportSnapshot({
     pageCode: snapshotPageCode,
     year: currentYear,
@@ -584,7 +593,14 @@ export function PowerBiReportMatrixPage({
   );
 
   return (
-    <div className="app-page">
+    <ReportMatrixChatShell
+      brandLabel={brandLabel}
+      reportKey={reportKey}
+      snapshotPageCode={snapshotPageCode}
+      currentYear={currentYear}
+      previousYear={previousYear}
+      snapshotDate={snapshotDate}
+    >
       <ReportMatrixPageHeader
         actions={
           snapshotPageCode ? (
@@ -623,7 +639,7 @@ export function PowerBiReportMatrixPage({
         {...props}
         snapshotDate={snapshotDate}
       />
-    </div>
+    </ReportMatrixChatShell>
   );
 }
 
@@ -658,7 +674,15 @@ export function PowerBiTabbedReportMatrixPage({
   );
 
   return (
-    <div className="app-page">
+    <ReportMatrixChatShell
+      brandLabel={brandLabel}
+      reportKey={activeTab?.view.reportKey ?? tabs[0]?.view.reportKey ?? "report"}
+      snapshotPageCode={snapshotPageCode}
+      currentYear={currentYear}
+      previousYear={previousYear}
+      snapshotDate={snapshotDate}
+      viewLabel={activeTab?.label}
+    >
       <ReportMatrixPageHeader
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -733,6 +757,6 @@ export function PowerBiTabbedReportMatrixPage({
           snapshotDate={snapshotDates?.[tab.key] || undefined}
         />
       ))}
-    </div>
+    </ReportMatrixChatShell>
   );
 }

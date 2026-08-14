@@ -2,6 +2,7 @@ import AppShell from "@/components/shell/AppShell";
 import AreaPickerGate from "@/features/auth/components/AreaPickerGate";
 import AuthHydrator from "@/features/auth/components/AuthHydrator";
 import SellersHydrator from "@/features/auth/components/SellersHydrator";
+import SellersByAreaSync from "@/features/sellersByArea/components/SellersByAreaSync";
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -20,6 +21,7 @@ export default async function AppLayout({
       <AuthHydrator />
       <AreaPickerGate />
       <SellersHydrator />
+      <SellersByAreaSync />
       {children}
     </AppShell>
   );

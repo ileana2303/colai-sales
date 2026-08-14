@@ -21,6 +21,19 @@ export type PowerBiSellerRow = {
   area: string;
 };
 
+export type SellerByAreaInfo = {
+  seller_code: string;
+  sales_person: string;
+  team: string;
+};
+
+export type SellersByAreaPayload = Record<string, SellerByAreaInfo[]>;
+
+export type AreaSellersRowInput = {
+  area: string;
+  sellers: SellerByAreaInfo[];
+};
+
 export type ResolvedReportSellerContext = {
   area: string;
   team: string;
@@ -100,6 +113,36 @@ export function getUniquePowerBiAreas(records: PowerBiSellerRow[]): string[] {
   return [...areas].sort((left, right) =>
     left.localeCompare(right, "el", { sensitivity: "base" }),
   );
+}
+
+export function buildSellersByAreaPayload(
+  records: PowerBiSellerRow[],
+): SellersByAreaPayload {
+  const byArea: SellersByAreaPayload = {};
+
+  for (const record of records) {
+    const area = record.area.trim();
+    const sellerCode = record.sellerCode.trim();
+    if (!area || !sellerCode) continue;
+
+    (byArea[area] ??= []).push({
+      seller_code: sellerCode,
+      sales_person: record.salesPerson.trim(),
+      team: record.team.trim(),
+    });
+  }
+
+  return byArea;
+}
+
+export function buildAreaSellersRows(
+  records: PowerBiSellerRow[],
+): AreaSellersRowInput[] {
+  return Object.entries(buildSellersByAreaPayload(records))
+    .map(([area, sellers]) => ({ area, sellers }))
+    .sort((left, right) =>
+      left.area.localeCompare(right.area, "el", { sensitivity: "base" }),
+    );
 }
 
 export function findPowerBiSellerByCode(

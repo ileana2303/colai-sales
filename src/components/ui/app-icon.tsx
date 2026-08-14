@@ -22,17 +22,22 @@ import { HeartPulse } from "@/icons/lucide/heart-pulse";
 import { LayoutGrid } from "@/icons/lucide/layout-grid";
 import { LineChart } from "@/icons/lucide/chart-line";
 import { LogOut } from "@/icons/lucide/log-out";
+import { MessageCircle } from "@/icons/lucide/message-circle";
 import { PieChart } from "@/icons/lucide/pie-chart";
+import { Plus } from "@/icons/lucide/plus";
 import { Repeat } from "@/icons/lucide/repeat";
 import { RotateCcw } from "@/icons/lucide/rotate-ccw";
+import { Send } from "@/icons/lucide/send";
 import { Settings } from "@/icons/lucide/settings";
 import { Sparkles } from "@/icons/lucide/sparkles";
 import { Table } from "@/icons/lucide/table";
 import { Target } from "@/icons/lucide/target";
+import { Trash2 } from "@/icons/lucide/trash-2";
 import { TrendingUp } from "@/icons/lucide/trending-up";
 import { UnfoldVertical } from "@/icons/lucide/unfold-vertical";
 import { UserPlus } from "@/icons/lucide/user-plus";
 import { Users } from "@/icons/lucide/users";
+import { X } from "@/icons/lucide/x";
 import { cn } from "@/lib/utils";
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -59,14 +64,19 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-graph-up-arrow": TrendingUp,
   "bi-grid-3x3-gap": LayoutGrid,
   "bi-hospital": Building2,
+  "bi-chat": MessageCircle,
   "bi-people": Users,
   "bi-person-plus": UserPlus,
   "bi-pie-chart": PieChart,
+  "bi-plus": Plus,
+  "bi-send": Send,
   "bi-sort-down": ArrowDown,
   "bi-sort-up": ArrowUp,
   "bi-stars": Sparkles,
   "bi-table": Table,
+  "bi-trash": Trash2,
   "bi-unfold-vertical": UnfoldVertical,
+  "bi-x": X,
 };
 
 type AppIconProps = {
