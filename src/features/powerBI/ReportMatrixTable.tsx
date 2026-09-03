@@ -272,10 +272,6 @@ function buildFilterOptions(
     );
 }
 
-function getFilterOptionLabel(options: FilterOption[], value: string) {
-  return options.find((option) => option.value === value)?.label ?? value;
-}
-
 export function ReportMatrixTable({
   brandLabel,
   caption,
@@ -369,13 +365,6 @@ export function ReportMatrixTable({
   const hasActiveFilters = Boolean(
     categoryFilter || teamFilter || effectiveSellerFilter,
   );
-  const selectedTeamLabel = teamFilter
-    ? getFilterOptionLabel(teamOptions, teamFilter)
-    : "";
-  const selectedSellerLabel = effectiveSellerFilter
-    ? getFilterOptionLabel(sellerOptions, effectiveSellerFilter)
-    : "";
-
   const filteredDetailRows = useMemo(
     () =>
       detailRows.filter((row) => {
@@ -723,8 +712,7 @@ export function ReportMatrixTable({
       const group1Label =
         row.filterValues?.category || String(row.category ?? "-");
       const skipCategoryRow =
-        !hasGroup2 &&
-        isRedundantGroup1Category(group2Label, group1Label);
+        !hasGroup2 && isRedundantGroup1Category(group2Label, group1Label);
 
       const renderCategoryChildren = () => {
         if (hasGroup3) {
@@ -1031,7 +1019,7 @@ export function ReportMatrixTable({
         <Button
           type="button"
           variant="ghost"
-          className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start p-0 text-left whitespace-normal"
           aria-expanded={isExpanded}
           onClick={() => toggleGroup3(row.key)}
         >
@@ -1062,7 +1050,7 @@ export function ReportMatrixTable({
         <Button
           type="button"
           variant="ghost"
-          className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start p-0 text-left whitespace-normal"
           aria-expanded={isExpanded}
           onClick={() => toggleCategory(row.key)}
         >
@@ -1093,7 +1081,7 @@ export function ReportMatrixTable({
         <Button
           type="button"
           variant="ghost"
-          className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start p-0 text-left whitespace-normal"
           aria-expanded={isExpanded}
           onClick={() => toggleTeam(row.key)}
         >
@@ -1155,7 +1143,7 @@ export function ReportMatrixTable({
               <Button
                 type="button"
                 variant="ghost"
-                className="report-matrix__category-toggle h-auto min-h-0 justify-start whitespace-normal p-0 text-left"
+                className="report-matrix__category-toggle h-auto min-h-0 justify-start p-0 text-left whitespace-normal"
                 aria-expanded={expandedGroup2Keys.has(row.key)}
                 onClick={() => toggleGroup2(row.key)}
               >
@@ -1290,6 +1278,26 @@ export function ReportMatrixTable({
   return (
     <section ref={cardRef} className="app-card report-matrix-card">
       <div className="report-matrix-card__header">
+        <div className="report-matrix-card__filters">
+          <PowerBiTableHeaderFilter
+            label={categoryLabel}
+            options={categoryOptions}
+            value={categoryFilter}
+            onChange={handleCategoryFilterChange}
+          />
+          <PowerBiTableHeaderFilter
+            label="TEAM"
+            options={teamOptions}
+            value={teamFilter}
+            onChange={handleTeamFilterChange}
+          />
+          <PowerBiTableHeaderFilter
+            label="Seller name - seller code"
+            options={sellerOptions}
+            value={effectiveSellerFilter}
+            onChange={setSellerFilter}
+          />
+        </div>
         <div className="min-w-0">
           {title ? (
             <h2 className="report-matrix-card__title">{title}</h2>
@@ -1358,9 +1366,7 @@ export function ReportMatrixTable({
               onClick={toggleAllCategories}
             >
               <AppIcon name="bi-unfold-vertical" size={14} />
-              {areAllExpandableRowsExpanded
-                ? "Σύμπτυξη όλων"
-                : "Επέκταση όλων"}
+              {areAllExpandableRowsExpanded ? "Σύμπτυξη όλων" : "Επέκταση όλων"}
             </Button>
           </div>
           {mergedSummary && !hideSummaryPill ? (
@@ -1392,50 +1398,6 @@ export function ReportMatrixTable({
             </div>
           ) : null}
           <div className="report-matrix-card__actions">
-            {teamFilter || effectiveSellerFilter ? (
-              <div className="report-matrix-card__active-filters">
-                {teamFilter ? (
-                  <span className="report-matrix-filter-pill">
-                    <span className="report-matrix-filter-pill__label">
-                      Team
-                    </span>
-                    <span className="report-matrix-filter-pill__value">
-                      {selectedTeamLabel}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      className="report-matrix-filter-pill__clear size-5 p-0"
-                      aria-label={`Clear Team filter ${selectedTeamLabel}`}
-                      onClick={() => handleTeamFilterChange("")}
-                    >
-                      ×
-                    </Button>
-                  </span>
-                ) : null}
-                {effectiveSellerFilter ? (
-                  <span className="report-matrix-filter-pill">
-                    <span className="report-matrix-filter-pill__label">
-                      Seller
-                    </span>
-                    <span className="report-matrix-filter-pill__value">
-                      {selectedSellerLabel}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      className="report-matrix-filter-pill__clear size-5 p-0"
-                      aria-label={`Clear Seller filter ${selectedSellerLabel}`}
-                      onClick={() => setSellerFilter("")}
-                    >
-                      ×
-                    </Button>
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
             <Button
               type="button"
               variant="outline"
@@ -1513,40 +1475,7 @@ export function ReportMatrixTable({
                     width: column.width,
                   }}
                 >
-                  {column.key === "category" ? (
-                    <PowerBiTableHeaderFilter
-                      label={
-                        typeof column.label === "string"
-                          ? column.label
-                          : categoryLabel
-                      }
-                      options={categoryOptions}
-                      value={categoryFilter}
-                      onChange={handleCategoryFilterChange}
-                    />
-                  ) : column.key === "team" ? (
-                    <PowerBiTableHeaderFilter
-                      label={
-                        typeof column.label === "string" ? column.label : "Team"
-                      }
-                      options={teamOptions}
-                      value={teamFilter}
-                      onChange={handleTeamFilterChange}
-                    />
-                  ) : column.key === "seller" ? (
-                    <PowerBiTableHeaderFilter
-                      label={
-                        typeof column.label === "string"
-                          ? column.label
-                          : "Seller"
-                      }
-                      options={sellerOptions}
-                      value={effectiveSellerFilter}
-                      onChange={setSellerFilter}
-                    />
-                  ) : (
-                    column.label
-                  )}
+                  {column.label}
                 </th>
               ))}
               {columns.map((column) => (

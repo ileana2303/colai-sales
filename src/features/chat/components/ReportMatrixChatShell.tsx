@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 
 import { ReportChatFab } from "@/features/chat/components/ReportChatFab";
 import { ReportChatPanel } from "@/features/chat/components/ReportChatPanel";
@@ -19,6 +20,14 @@ export function ReportMatrixChatShell({
   viewLabel,
 }: ReportMatrixChatShellProps) {
   const [open, setOpen] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+  const headerActions = isClient
+    ? document.getElementById("app-header-ask-ai")
+    : null;
   const context = useReportChatContext({
     brandLabel,
     reportKey,
@@ -42,9 +51,12 @@ export function ReportMatrixChatShell({
 
       {open ? (
         <ReportChatPanel context={context} onClose={() => setOpen(false)} />
-      ) : (
-        <ReportChatFab onClick={() => setOpen(true)} />
-      )}
+      ) : headerActions ? (
+        createPortal(
+          <ReportChatFab onClick={() => setOpen(true)} />,
+          headerActions,
+        )
+      ) : null}
     </div>
   );
 }

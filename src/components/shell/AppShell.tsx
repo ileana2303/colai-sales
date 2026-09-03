@@ -111,6 +111,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           <div className="app-header__actions">
             <SelectedSellerBar />
+            <div id="app-header-ask-ai" className="app-header__ask-ai" />
             <DropdownMenu>
               <DropdownMenuTrigger
                 className="app-header-user"
