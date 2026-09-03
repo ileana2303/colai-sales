@@ -1548,7 +1548,7 @@ export function createReportMatrixSections({
     {
       key: "previous-period",
       summary: summaries?.["previous-period"],
-      title: "Απολογισμός Προηγούμενου Διαστήματος",
+      title: "Απολογισμός Ολοκληρωμένων Κλειστών Μηνών Τρεχ. Ετους",
       columns: [
         {
           key: "previousTarget",
