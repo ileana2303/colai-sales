@@ -1,55 +1,17 @@
-import { getPowerBiRouteAuthContext } from "@/lib/bi-reports/powerBiRouteContext";
-import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
+import { createPowerBiAreaReportGetHandler } from "@/lib/bi-reports/createPowerBiAreaReportRoute";
 import {
   buildBbmSalesLastYearQuery,
   normalizeBbmSalesLastYearRows,
 } from "@/lib/bi-reports/bbm";
-import {
-  getPreviousReportYear,
-  executePowerBiQuery,
-  POWERBI_NO_CACHE_HEADERS,
-  PowerBiRequestError,
-  type PowerBiExecuteQueriesResponse,
-} from "@/lib/bi-reports/powerBi";
-import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  const auth = await getPowerBiRouteAuthContext();
-  if (!auth.ok) {
-    return auth.response;
-  }
-
-  const { token, reportContext } = auth;
-  const area = reportContext.area;
-
-  let data: PowerBiExecuteQueriesResponse;
-  try {
-    data = await executePowerBiQuery(
-      buildBbmSalesLastYearQuery(area),
-      resolveBiReportPowerBiTarget("bbm_sales_last_year"),
-      { amsaAccessToken: token },
-    );
-  } catch (err) {
-    const status = err instanceof PowerBiRequestError ? err.status : 500;
-    const message =
-      err instanceof Error ? err.message : "Power BI request failed";
-
-    return NextResponse.json(
-      { ok: false, message },
-      { status, headers: POWERBI_NO_CACHE_HEADERS },
-    );
-  }
-
-  return NextResponse.json(
-    {
-      ok: true,
-      report: "bbm_sales_last_year",
-      year: getPreviousReportYear(),
-      area,
-      records: normalizeBbmSalesLastYearRows(data),
-    },
-    { headers: POWERBI_NO_CACHE_HEADERS },
-  );
-}
+export const GET = createPowerBiAreaReportGetHandler({
+  report: "bbm_sales_last_year",
+  year: "previous",
+  getQueries: (area) => ({
+    query: buildBbmSalesLastYearQuery(area),
+    targetKey: "bbm_sales_last_year",
+  }),
+  normalize: normalizeBbmSalesLastYearRows,
+});

@@ -16,9 +16,10 @@ import { cn } from "@/lib/utils";
 import {
   ALL_FILTER_VALUE,
   type FilterOption,
-} from "@/features/powerBI/PowerBiTable/types";
+} from "@/features/powerBI/types/PowerBiTable.types";
 
 type PowerBiTableHeaderFilterProps = {
+  fitContent?: boolean;
   label: string;
   onChange: (value: string) => void;
   options: FilterOption[];
@@ -35,6 +36,7 @@ function matchesSearch(label: string, query: string) {
 }
 
 export function PowerBiTableHeaderFilter({
+  fitContent = false,
   label,
   onChange,
   options,
@@ -83,24 +85,41 @@ export function PowerBiTableHeaderFilter({
   }
 
   return (
-    <DropdownMenu modal={false} open={open} onOpenChange={handleOpenChange}>
-      <DropdownMenuTrigger
-        aria-label={`${label}: ${selectedLabel}`}
-        title={`${label}: ${selectedLabel}`}
-        className={cn(
-          "flex h-auto min-h-8 w-full max-w-44 min-w-26 items-center justify-between gap-2 rounded-md border border-border/60 bg-muted/40 px-2 py-1 text-left hover:bg-muted/70",
-        )}
-      >
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            {label}
+    <div
+      className={cn(
+        "power-bi-table-header-filter",
+        fitContent && "w-fit max-w-full",
+      )}
+    >
+      <DropdownMenu modal={false} open={open} onOpenChange={handleOpenChange}>
+        <DropdownMenuTrigger
+          aria-label={`${label}: ${selectedLabel}`}
+          title={`${label}: ${selectedLabel}`}
+          className={cn(
+            "power-bi-table-header-filter__trigger flex h-auto min-h-11 items-center justify-between gap-3 rounded-xl border border-border bg-background px-3.5 py-2 text-left shadow-sm transition-colors hover:border-border hover:bg-muted/35",
+            fitContent ? "w-auto max-w-full" : "w-full max-w-56 min-w-36",
+          )}
+        >
+          <span className={cn(fitContent ? "" : "min-w-0 flex-1")}>
+            <span
+              className={cn(
+                "block text-xs font-bold uppercase tracking-wider text-foreground/65",
+                !fitContent && "truncate",
+              )}
+            >
+              {label}
+            </span>
+            <span
+              className={cn(
+                "block text-base font-semibold leading-tight text-foreground",
+                fitContent ? "whitespace-nowrap" : "truncate",
+              )}
+            >
+              {selectedLabel}
+            </span>
           </span>
-          <span className="block truncate text-xs font-medium text-foreground">
-            {selectedLabel}
-          </span>
-        </span>
-        <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
-      </DropdownMenuTrigger>
+          <ChevronDown className="size-5 shrink-0 text-foreground/60" />
+        </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
         sideOffset={4}
@@ -156,5 +175,6 @@ export function PowerBiTableHeaderFilter({
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+    </div>
   );
 }

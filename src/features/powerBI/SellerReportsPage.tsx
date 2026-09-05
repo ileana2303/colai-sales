@@ -2,14 +2,10 @@ import Link from "next/link";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import type { ReportTile } from "@/lib/bi-reports/biReports";
-
-type SellerReportsPageProps = {
-  subtitle?: string;
-};
-
-type SellerReportTile = Omit<ReportTile, "href"> & {
-  slug: string;
-};
+import type {
+  SellerReportTile,
+  SellerReportsPageProps,
+} from "@/features/powerBI/types/SellerReportsPage.types";
 
 const sellerReportTiles: SellerReportTile[] = [
   {

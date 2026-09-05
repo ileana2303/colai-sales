@@ -1,35 +1,12 @@
-import type { PowerBiExecuteQueriesResponse } from "@/lib/bi-reports/powerBi";
+import type { PowerBiExecuteQueriesResponse } from "@/lib/bi-reports/powerBi.types";
+import {
+  readNumber,
+  readOptionalString,
+  readString,
+} from "@/lib/bi-reports/powerBiRowParsing";
+import type { TrendSalesRow } from "@/lib/bi-reports/salesRows.types";
 
-export type TrendSalesRow = {
-  sellerCode: string;
-  group1: string;
-  group2: string;
-  group3?: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vTrend: number | null;
-};
-
-function toNullableNumber(value: unknown): number | null {
-  if (value == null || value === "") return null;
-
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
-}
-
-function readString(row: Record<string, unknown>, key: string): string {
-  return String(row[`[${key}]`] ?? row[key] ?? "").trim();
-}
-
-function readNumber(row: Record<string, unknown>, key: string): number | null {
-  return toNullableNumber(row[`[${key}]`] ?? row[key]);
-}
-
-function readOptionalString(row: Record<string, unknown>, key: string) {
-  const value = readString(row, key);
-  return value || undefined;
-}
+export type { TrendSalesRow };
 
 export function normalizeTrendSalesRows(
   response: PowerBiExecuteQueriesResponse,

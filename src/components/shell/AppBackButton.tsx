@@ -1,30 +1,43 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { buttonVariants } from "@/components/ui/button";
-import { getBackRoute } from "@/lib/navigation/backRoutes";
+import { getBackRoute, getRouteLabel } from "@/lib/navigation/backRoutes";
 import { cn } from "@/lib/utils";
+import { useNavigationHistoryStore } from "@/stores/navigationHistoryStore";
 
 export function AppBackButton() {
   const pathname = usePathname();
-  const backRoute = getBackRoute(pathname);
+  const router = useRouter();
+  const previousPath = useNavigationHistoryStore((state) => {
+    if (state.stack.length < 2) return null;
+    return state.stack[state.stack.length - 2] ?? null;
+  });
 
-  if (!backRoute) return null;
+  if (!pathname || pathname === "/") return null;
+
+  const fallbackRoute = getBackRoute(pathname);
+  const backHref = previousPath ?? fallbackRoute?.href;
+  const backLabel = previousPath
+    ? getRouteLabel(previousPath)
+    : fallbackRoute?.label;
+
+  if (!backHref || !backLabel) return null;
 
   return (
-    <Link
-      href={backRoute.href}
+    <button
+      type="button"
       className={cn(
         buttonVariants({ variant: "outline", size: "sm" }),
-        "app-back-button self-start",
+        "app-header-back-button",
       )}
+      onClick={() => router.push(backHref)}
     >
-      <AppIcon name="bi-chevron-left" className="mr-1.5" size={16} />
+      <AppIcon name="bi-chevron-left" className="mr-1" size={16} />
       <span className="text-muted-foreground">Πίσω ·</span>
-      <span>{backRoute.label}</span>
-    </Link>
+      <span>{backLabel}</span>
+    </button>
   );
 }

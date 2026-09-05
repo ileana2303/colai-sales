@@ -6,16 +6,25 @@ import {
   type ReportMatrixSection,
   type ReportMatrixSectionSummary,
   type ReportMatrixTone,
-} from "@/features/powerBI/ReportMatrixTable";
+} from "@/features/powerBI/types/ReportMatrixTable.types";
+import {
+  type BuildReportMatrixRowsInput,
+  type MatrixAggregate,
+  type MatrixLySales,
+  type MatrixRowOptions,
+  type MonthlyTargetMetrics,
+  type PowerBiMatrixSourceRow,
+  type ReportMatrixFinalValues,
+  type ReportMatrixPeriodMeta,
+  type ReportMatrixSectionSummaries,
+} from "@/features/powerBI/types/reportMatrixData.types";
 import {
   getMonthLabel,
   getMonthIndex,
   getYearComparisonTone,
 } from "@/lib/bi-reports/reportUtils";
-import {
-  findPowerBiSellerByCode,
-  type PowerBiSellerRow,
-} from "@/lib/bi-reports/sellers";
+import { findPowerBiSellerByCode } from "@/lib/bi-reports/sellers";
+import type { PowerBiSellerRow } from "@/lib/bi-reports/sellers.types";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import {
   formatPercentGR,
@@ -24,31 +33,13 @@ import {
 } from "@/lib/utils/number";
 import type { ReactNode } from "react";
 
-export type PowerBiMatrixSourceRow = {
-  group1?: string | null;
-  group2?: string | null;
-  group3?: string | null;
-  team?: string | null;
-  sellerCode?: string | null;
-  sellerName?: string | null;
-  month?: string | null;
-  closedMonthStatus?: string | null;
-  currency?: number | null;
-  tcy?: number | null;
-  vcy?: number | null;
-  vly?: number | null;
-  vlc?: number | null;
-  vTrend?: number | null;
-};
-
-export type BuildReportMatrixRowsInput = {
-  categoryOrder?: string[];
-  currentRows: PowerBiMatrixSourceRow[];
-  group2Order?: string[];
-  previousRows: PowerBiMatrixSourceRow[];
-  trendRows: PowerBiMatrixSourceRow[];
-  sellersCatalog?: PowerBiSellerRow[];
-};
+export type {
+  BuildReportMatrixRowsInput,
+  MatrixLySales,
+  PowerBiMatrixSourceRow,
+  ReportMatrixFinalValues,
+  ReportMatrixPeriodMeta,
+} from "@/features/powerBI/types/reportMatrixData.types";
 
 export function enrichMatrixRowsWithSellers(
   rows: PowerBiMatrixSourceRow[],
@@ -89,60 +80,6 @@ function filterMatrixRowsBySellersCatalog(
   });
 }
 
-type MatrixAggregate = {
-  group1: string;
-  group2: string;
-  group3: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  currency: number | null;
-  tcyAll: number;
-  vcyAll: number;
-  tcyClosed: number;
-  vcyClosed: number;
-  vlc: number;
-  vlcAll: number;
-  vTrend: number;
-  openMonthTcyByMonth: Map<string, number>;
-  closedMonthKeys: Set<string>;
-  hasClosedMonthStatus: boolean;
-};
-
-type MonthlyTargetMetrics = {
-  extraMonthlyTarget: number | null;
-  monthlyTarget: number | null;
-  newMonthlyTarget: number | null;
-};
-
-export type ReportMatrixFinalValues = {
-  currentCover: number | null;
-  currentDifference: number | null;
-  currentResult: number;
-  currentTarget: number;
-  currentTrend: number;
-  extraMonthlyTarget: number | null;
-  monthlyTarget: number | null;
-  newMonthlyTarget: number | null;
-  previousCover: number | null;
-  previousDifference: number | null;
-  previousResult: number;
-  previousTarget: number;
-  yearComparison: number | null;
-  yearDifference: number | null;
-  yearResult: number | null;
-  yearResultAll: number;
-};
-
-type MatrixRowOptions = {
-  childCount?: number;
-  extraMonthlyTargetSum?: number | null;
-  key?: string;
-  parentKey?: string;
-  rowKind?: ReportMatrixRow["rowKind"];
-  leadingValues?: Record<string, ReactNode>;
-};
-
 const EMPTY_VALUE = "-";
 const TOTAL_CURRENCY_BUCKETS = [0, 1] as const;
 const greekShortMonthLabels = [
@@ -162,13 +99,6 @@ const greekShortMonthLabels = [
 
 type TotalCurrencyBucket = (typeof TOTAL_CURRENCY_BUCKETS)[number];
 
-type ReportMatrixSectionSummaries = Partial<
-  Record<
-    "closed-months" | "current-year" | "monthly-target" | "previous-period",
-    ReportMatrixSectionSummary
-  >
->;
-
 type CurrencySplitRowOptions = {
   aggregates: MatrixAggregate[];
   keyPrefix: string;
@@ -183,9 +113,7 @@ const currencyFormatter = matrixCurrencyFormatter;
 const numberFormatter = matrixNumberFormatter;
 
 export const reportMatrixLeadingColumns: ReportMatrixLeadingColumn[] = [
-  { key: "category", label: "Κατηγορία Στόχου", width: 196 },
-  { key: "team", label: "Team", width: 108 },
-  { key: "seller", label: "Seller Name - Seller code", width: 168 },
+  { key: "category", label: "Κατηγορία Στόχου", width: 168 },
 ];
 
 function usesPlainNumberFormat(aggregate: MatrixAggregate) {
@@ -333,13 +261,6 @@ function buildMetricCellTones(values: {
 
   return Object.keys(cellTones).length ? cellTones : undefined;
 }
-
-export type MatrixLySales = {
-  /** 2025 sales summed for the same closed months as 2026. */
-  vlcSamePeriod: number;
-  /** 2025 sales summed for all months in the dataset. */
-  vlcAll: number;
-};
 
 function metricsFromAggregate(
   aggregate: MatrixAggregate,
@@ -615,14 +536,16 @@ function ensureAggregate(
   return aggregate;
 }
 
+function getMatrixSellerLabel(sellerName?: string | null) {
+  return sellerName?.trim() || "-";
+}
+
 function renderSeller(aggregate: MatrixAggregate) {
-  const sellerName = aggregate.sellerName || "-";
-  const sellerCode = aggregate.sellerCode || "-";
+  const sellerName = getMatrixSellerLabel(aggregate.sellerName);
 
   return (
     <span className="report-matrix__seller-cell">
       <span className="report-matrix__seller-name">{sellerName}</span>
-      <span className="report-matrix__seller-code">{sellerCode}</span>
     </span>
   );
 }
@@ -945,9 +868,7 @@ export function getReportMatrixFinalValues(
     newMonthlyTarget: monthlyTargets.newMonthlyTarget,
     previousCover,
     previousDifference:
-      closedPeriod.target === 0
-        ? 0
-        : closedPeriod.result - closedPeriod.target,
+      closedPeriod.target === 0 ? 0 : closedPeriod.result - closedPeriod.target,
     previousResult: closedPeriod.result,
     previousTarget: closedPeriod.target,
     yearComparison: hasYearBaseline
@@ -975,9 +896,7 @@ function aggregateToMatrixRow(
   const category = getCategoryLabel(aggregate, isTotal);
   const sellerLabel = isTotal
     ? EMPTY_VALUE
-    : [aggregate.sellerName, aggregate.sellerCode]
-        .filter(Boolean)
-        .join(" - ") || "-";
+    : getMatrixSellerLabel(aggregate.sellerName);
   const rowKind = options.rowKind ?? (isTotal ? "total" : "detail");
   const displayCategory =
     rowKind === "group3" ? getGroup3Label(aggregate) || "-" : category;
@@ -1553,13 +1472,11 @@ export function createReportMatrixSections({
         {
           key: "previousTarget",
           label: "Στόχος",
-          headerTone: "danger",
           width: 82,
         },
         {
           key: "previousResult",
           label: "Αποτέλεσμα",
-          headerTone: "danger",
           width: 86,
         },
         { key: "previousCover", label: "% Κάλυψη Στόχου", width: 56 },
@@ -1574,7 +1491,6 @@ export function createReportMatrixSections({
         {
           key: "yearResult",
           label: `Αποτέλεσμα ${resolvedPreviousYear}`,
-          headerTone: "danger",
           width: 84,
         },
         {
@@ -1597,7 +1513,6 @@ export function createReportMatrixSections({
         {
           key: "currentTarget",
           label: `Στόχος ${currentYear}`,
-          headerTone: "danger",
           width: 82,
         },
         { key: "currentTrend", label: `Τάση ${currentYear}`, width: 86 },
@@ -1628,7 +1543,6 @@ export function createReportMatrixSections({
         {
           key: "monthlyTarget",
           label: "Στόχος μήνα",
-          headerTone: "danger",
           width: 70,
         },
         {
@@ -1678,16 +1592,10 @@ function formatMonthRange(startIndex: number, endIndex: number) {
   return `${getShortMonthLabel(startIndex)} - ${getShortMonthLabel(endIndex)}`;
 }
 
-export type ReportMatrixPeriodMeta = {
-  closedPeriodLabel?: string | null;
-  closedMonthsCount?: number | null;
-  lastClosedMonth?: string | null;
-  openMonthsCount?: number | null;
-};
-
 function parseMonthNumber(value: string | number | null | undefined) {
   if (value == null || value === "") return null;
-  const parsed = typeof value === "number" ? value : Number(String(value).trim());
+  const parsed =
+    typeof value === "number" ? value : Number(String(value).trim());
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 12) return null;
   return parsed;
 }
@@ -1735,13 +1643,13 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
           details: [
             `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
           ],
-          label: "Κλειστή περίοδος",
+          label: "Κλειστη περιοδος",
           tone: "primary",
           value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
         } satisfies ReportMatrixSectionSummary)
       : period.closedPeriodLabel?.trim()
         ? ({
-            label: "Κλειστή περίοδος",
+            label: "Κλειστη περιοδος",
             tone: "primary",
             value: period.closedPeriodLabel.trim(),
           } satisfies ReportMatrixSectionSummary)
@@ -1766,7 +1674,7 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
             currentMonthIndex != null && lastOpenMonthIndex != null
               ? [formatMonthRange(currentMonthIndex, lastOpenMonthIndex)]
               : undefined,
-          label: "Υπόλοιποι μήνες",
+          label: "Υπολοιποι μηνες",
           tone: "success",
           value: `${openMonthsCount} ${
             openMonthsCount === 1 ? "μήνας" : "μήνες"
@@ -1780,7 +1688,7 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
         currentMonthIndex != null && openMonthsCount > 0 ? "Ανοιχτός" : "-"
       }`,
     ],
-    label: "Τρέχων μήνας",
+    label: "Τρεχων μηνας",
     tone: "primary",
     value:
       currentMonthIndex != null ? getShortMonthLabel(currentMonthIndex) : "-",
@@ -1828,7 +1736,7 @@ export function createReportMatrixSectionSummaries(
           details: [
             `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
           ],
-          label: "Κλειστή περίοδος",
+          label: "Κλειστη περιοδος",
           tone: "primary",
           value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
         } satisfies ReportMatrixSectionSummary)
@@ -1858,7 +1766,7 @@ export function createReportMatrixSectionSummaries(
                   )}`,
                 ]
               : undefined,
-          label: "Υπόλοιποι μήνες",
+          label: "Υπολοιποι μηνες",
           tone: "success",
           value: `${remainingMonths} ${
             remainingMonths === 1 ? "μήνας" : "μήνες"
@@ -1868,7 +1776,7 @@ export function createReportMatrixSectionSummaries(
 
   const monthlyTargetSummary = {
     details: [`Κατάσταση: ${currentMonthStatus}`],
-    label: "Τρέχων μήνας",
+    label: "Τρεχων μηνας",
     tone: "primary",
     value:
       currentMonthIndex != null ? getShortMonthLabel(currentMonthIndex) : "-",

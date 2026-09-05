@@ -1,3 +1,7 @@
+import {
+  readNullableString as readString,
+  readNumber,
+} from "@/lib/bi-reports/powerBiRowParsing";
 import type { JoinedSnapshotSourceRow } from "@/lib/snapshots/types";
 
 const MONTH_LOOKUP: Record<string, number> = {
@@ -31,25 +35,7 @@ export function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function readString(
-  row: Record<string, unknown>,
-  key: string,
-): string | null {
-  const value = row[`[${key}]`] ?? row[key];
-  if (value == null) return null;
-  const text = String(value).trim();
-  return text || null;
-}
-
-export function readNumber(
-  row: Record<string, unknown>,
-  key: string,
-): number | null {
-  const value = row[`[${key}]`] ?? row[key];
-  if (value == null || value === "") return null;
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
-}
+export { readString, readNumber };
 
 export function parseMonth(value: string | null): number | null {
   if (!value) return null;

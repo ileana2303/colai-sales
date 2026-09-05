@@ -1,14 +1,9 @@
-import { parseProxyJson } from "@/lib/api/client";
+import { parseProxyJson, API_NO_CACHE_HEADERS } from "@/lib/api/client";
 import type {
   AvailableSnapshotsResponse,
   RefreshSnapshotResponse,
   SnapshotResponse,
 } from "@/lib/snapshots/types";
-
-const NO_CACHE_HEADERS = {
-  "Cache-Control": "no-cache",
-  Pragma: "no-cache",
-} as const;
 
 export async function fetchReportSnapshot(input: {
   area?: string;
@@ -31,7 +26,7 @@ export async function fetchReportSnapshot(input: {
 
   const res = await fetch(`/api/report-snapshots?${params.toString()}`, {
     cache: "no-store",
-    headers: NO_CACHE_HEADERS,
+    headers: API_NO_CACHE_HEADERS,
   });
   return parseProxyJson<Extract<SnapshotResponse, { ok: true }>>(
     res,
@@ -51,7 +46,7 @@ export async function fetchAvailableReportSnapshots(input: {
     `/api/report-snapshots/available?${params.toString()}`,
     {
       cache: "no-store",
-      headers: NO_CACHE_HEADERS,
+      headers: API_NO_CACHE_HEADERS,
     },
   );
   return parseProxyJson<Extract<AvailableSnapshotsResponse, { ok: true }>>(
@@ -71,7 +66,7 @@ export async function refreshReportSnapshot(input: {
     method: "POST",
     cache: "no-store",
     headers: {
-      ...NO_CACHE_HEADERS,
+      ...API_NO_CACHE_HEADERS,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(input),

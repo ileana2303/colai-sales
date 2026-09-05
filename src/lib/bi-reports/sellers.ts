@@ -10,35 +10,24 @@ import {
   type PowerBiExecuteQueriesResponse,
   type PowerBiTokenOptions,
 } from "@/lib/bi-reports/powerBi";
+import { readString } from "@/lib/bi-reports/powerBiRowParsing";
+import type {
+  AreaSellersRowInput,
+  PowerBiSellerRow,
+  ResolvedReportSellerContext,
+  SellerByAreaInfo,
+  SellersByAreaPayload,
+} from "@/lib/bi-reports/sellers.types";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
 import type { ApiUserInfo } from "@/types/api/schemas";
 import type { SessionUserInfo } from "@/lib/sessionUser";
 
-export type PowerBiSellerRow = {
-  sellerCode: string;
-  salesPerson: string;
-  team: string;
-  area: string;
-};
-
-export type SellerByAreaInfo = {
-  seller_code: string;
-  sales_person: string;
-  team: string;
-};
-
-export type SellersByAreaPayload = Record<string, SellerByAreaInfo[]>;
-
-export type AreaSellersRowInput = {
-  area: string;
-  sellers: SellerByAreaInfo[];
-};
-
-export type ResolvedReportSellerContext = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
+export type {
+  AreaSellersRowInput,
+  PowerBiSellerRow,
+  ResolvedReportSellerContext,
+  SellerByAreaInfo,
+  SellersByAreaPayload,
 };
 
 const SELLERS_CATALOG_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -47,15 +36,6 @@ let sellersCatalogCache: {
   fetchedAt: number;
   records: PowerBiSellerRow[];
 } | null = null;
-
-function toNullableString(value: unknown): string {
-  if (value == null) return "";
-  return String(value).trim();
-}
-
-function readString(row: Record<string, unknown>, key: string): string {
-  return toNullableString(row[`[${key}]`] ?? row[key]);
-}
 
 export function buildPowerBiSellersQuery(): string {
   return joinDaxQuery([

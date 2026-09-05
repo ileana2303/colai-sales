@@ -1,30 +1,6 @@
+import { getAreaMatrixPageProps } from "@/features/powerBI/areaMatrixPages";
 import { PowerBiReportMatrixPage } from "@/features/powerBI/PowerBiReportMatrixPage";
-import {
-  AKRATEIA_CATEGORY_ORDER,
-  AKRATEIA_GROUP2_ORDER,
-} from "@/lib/bi-reports/akrateia";
-import {
-  getCurrentReportYear,
-  getPreviousReportYear,
-} from "@/lib/bi-reports/powerBi";
-import { REPORT_SNAPSHOT_PAGE_CODES } from "@/lib/snapshots/pageAvailability";
 
 export default function Page() {
-  return (
-    <PowerBiReportMatrixPage
-      brandLabel="AKRATEIA"
-      caption="AKRATEIA target planning matrix"
-      categoryOrder={AKRATEIA_CATEGORY_ORDER}
-      group2Order={AKRATEIA_GROUP2_ORDER}
-      currentSalesPath="/api/powerbi/akrateia-sales-current-year"
-      currentYear={getCurrentReportYear()}
-      emptyMessage="Δεν βρέθηκαν Akrateia στοιχεία για το area του login."
-      fallbackError="Failed to load Akrateia matrix"
-      previousSalesPath="/api/powerbi/akrateia-sales-last-year"
-      previousYear={getPreviousReportYear()}
-      reportKey="akrateia"
-      snapshotPageCode={REPORT_SNAPSHOT_PAGE_CODES.akrateia}
-      trendPath="/api/powerbi/akrateia-trend-current-year"
-    />
-  );
+  return <PowerBiReportMatrixPage {...getAreaMatrixPageProps("akrateia")} />;
 }

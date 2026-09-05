@@ -51,6 +51,30 @@ function titleCaseSegment(segment: string) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+const PAGE_LABELS: Record<string, string> = {
+  "/": "Αρχική",
+  "/settings": "Ρυθμίσεις",
+  "/select-seller": "Επιλογή πωλητή",
+  "/salesWC": "Sales WC",
+  "/diadikasia-wc": "Διαδικασία WC",
+  ...PARENT_LABELS,
+  "/powerbi/seller-reports": "Seller Reports",
+  "/powerbi/seller-reports/akrateia": "Akrateia",
+  "/powerbi/seller-reports/sales-per-month": "Sales Per Month",
+  "/powerbi/seller-reports/sales-per-year": "Sales Per Year",
+};
+
+export function getRouteLabel(pathname: string): string {
+  const normalizedPath = pathname || "/";
+  const exactLabel = PAGE_LABELS[normalizedPath];
+  if (exactLabel) return exactLabel;
+
+  const segments = normalizedPath.split("/").filter(Boolean);
+  if (!segments.length) return "Αρχική";
+
+  return titleCaseSegment(segments[segments.length - 1] ?? "Πίσω");
+}
+
 export function getBackRoute(pathname: string): BackRoute | null {
   if (!pathname || pathname === "/") return null;
 

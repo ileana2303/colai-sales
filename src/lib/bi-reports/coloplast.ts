@@ -18,6 +18,7 @@ import {
   indentDaxArgs,
   joinDaxQuery,
   LAST_CALENDAR_YEAR_DAX,
+  quoteDaxStrings,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -52,36 +53,6 @@ export type ColoplastQuerySpec = {
   targetKey: BiReportPowerBiTargetKey;
 };
 
-export type ColoplastSalesRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  group1: string;
-  group2: string;
-  month: string;
-  closedMonthStatus?: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vcy: number | null;
-  vlc?: number | null;
-  tcy?: number | null;
-};
-
-export type ColoplastTrendRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  group1: string;
-  group2: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vTrend: number | null;
-};
-
 export const COLOPLAST_GROUP2_ORDER = [
   "STOMIES",
   "COMFEEL",
@@ -105,10 +76,6 @@ export const COLOPLAST_CATEGORY_ORDER = [
 
 const OC_GROUPS = ["KS", "LOIP", "NEF", "OURAMF"];
 const HOSPITAL_CATEGORIES = ["1.TRAUMA", "2.OSTOMIES", "3.CATHETERS"];
-
-function quoteDaxStrings(values: string[]): string {
-  return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
-}
 
 const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
   {
@@ -224,21 +191,6 @@ const COLOPLAST_CATEGORIES: ColoplastCategory[] = [
     useCalendarYearFilter: true,
   },
 ];
-
-function toNullableNumber(value: unknown): number | null {
-  if (value == null || value === "") return null;
-
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
-}
-
-function readString(row: Record<string, unknown>, key: string): string {
-  return String(row[`[${key}]`] ?? row[key] ?? "").trim();
-}
-
-function readNumber(row: Record<string, unknown>, key: string): number | null {
-  return toNullableNumber(row[`[${key}]`] ?? row[key]);
-}
 
 function buildBaseArgs(
   areaName: string,

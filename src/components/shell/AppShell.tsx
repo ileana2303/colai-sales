@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AppBackButton } from "@/components/shell/AppBackButton";
+import { NavigationHistoryTracker } from "@/components/shell/NavigationHistoryTracker";
 import { SelectedSellerBar } from "@/components/shell/SelectedSellerBar";
 import { AppIcon } from "@/components/ui/app-icon";
 import {
@@ -20,6 +21,7 @@ import {
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { isAreaPickerUser } from "@/lib/managerPickerAccess";
 import { useAuthStore } from "@/stores/authStore";
+import { useNavigationHistoryStore } from "@/stores/navigationHistoryStore";
 import { useSellersStore } from "@/stores/sellersStore";
 import { ChevronDown } from "@/icons/lucide/chevron-down";
 import type { ApiUserInfo } from "@/types/api/schemas";
@@ -66,6 +68,9 @@ function getUserMeta(
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const logoutMutation = useLogout();
+  const resetNavigationHistory = useNavigationHistoryStore(
+    (state) => state.reset,
+  );
   const userInfos = useAuthStore((s) => s.userInfos);
   const matchedSeller = useSellersStore((s) => s.matched);
   const isPickerUser = isAreaPickerUser(userInfos);
@@ -86,28 +91,33 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const onLogout = async () => {
     try {
       await logoutMutation.mutateAsync();
+      resetNavigationHistory();
       router.replace("/login");
     } catch (e) {}
   };
 
   return (
     <div className="app-viewport flex flex-col">
+      <NavigationHistoryTracker />
       <header className="app-header">
         <div className="app-header__inner">
-          <Link
-            href="/"
-            className="app-logo-link"
-            aria-label="Μετάβαση στην αρχική"
-          >
-            <Image
-              src="/mono_logo.png"
-              alt="App logo"
-              width={132}
-              height={30}
-              priority
-              style={{ height: 30, width: "auto" }}
-            />
-          </Link>
+          <div className="app-header__brand">
+            <Link
+              href="/"
+              className="app-logo-link"
+              aria-label="Μετάβαση στην αρχική"
+            >
+              <Image
+                src="/mono_logo.png"
+                alt="App logo"
+                width={132}
+                height={30}
+                priority
+                style={{ height: 30, width: "auto" }}
+              />
+            </Link>
+            <AppBackButton />
+          </div>
 
           <div className="app-header__actions">
             <SelectedSellerBar />
@@ -169,7 +179,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="app-content">
-        <AppBackButton />
         {children}
       </main>
     </div>

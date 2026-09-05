@@ -13,6 +13,7 @@ import {
   PowerBiRequestError,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
+import { toNullableNumber } from "@/lib/bi-reports/powerBiRowParsing";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -50,13 +51,6 @@ function buildAkrateiaCoverSummaryQuery(sellerCode: string): string {
   const escapedSellerCode = escapeDaxString(sellerCode);
 
   return `EVALUATE SUMMARIZECOLUMNS(FILTER('U Sales Person', 'U Sales Person'[SellerCode] = "${escapedSellerCode}"), "% CC Sales Cover", [% CC Sales Cover], "% CC NEW PER Cover", [% CC NEW PER Cover], "% CC REP PER Cover", [% CC REP PER Cover], "% CC PER Cover", [% CC PER Cover])`;
-}
-
-function toNullableNumber(value: unknown): number | null {
-  if (value == null || value === "") return null;
-
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
 }
 
 function getMonthSortIndex(month: string): number {

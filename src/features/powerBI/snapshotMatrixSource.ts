@@ -1,18 +1,15 @@
-import type { PowerBiMatrixSourceRow } from "@/features/powerBI/reportMatrixData";
+import type { PowerBiMatrixSourceRow } from "@/features/powerBI/types/reportMatrixData.types";
+import type { SnapshotMatrixSource } from "@/features/powerBI/types/snapshotMatrixSource.types";
 import type {
   ReportMatrixRow,
   ReportMatrixTone,
-} from "@/features/powerBI/ReportMatrixTable";
+} from "@/features/powerBI/types/ReportMatrixTable.types";
 import type {
   JoinedSnapshotSourceRow,
   SnapshotRow,
 } from "@/lib/snapshots/types";
 
-export type SnapshotMatrixSource = {
-  currentRows: PowerBiMatrixSourceRow[];
-  previousRows: PowerBiMatrixSourceRow[];
-  trendRows: PowerBiMatrixSourceRow[];
-};
+export type { SnapshotMatrixSource };
 
 function toText(value: string | null | undefined) {
   return String(value ?? "").trim();
@@ -121,9 +118,7 @@ export function mapSnapshotRowsToMatrixRows(
   return rows
     .filter((row) => row.row_kind === "detail")
     .map((row) => {
-      const sellerLabel = [row.seller_name, row.seller_code]
-        .filter(Boolean)
-        .join(" - ") || "-";
+      const sellerLabel = row.seller_name?.trim() || "-";
 
       return {
         key: row.row_key,

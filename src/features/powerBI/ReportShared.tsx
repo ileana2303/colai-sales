@@ -191,3 +191,18 @@ export function ReportError({
     </Alert>
   );
 }
+
+export function ReportSectionTitle({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="app-card p-5">
+      <div className="font-semibold">{title}</div>
+      <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
+    </div>
+  );
+}

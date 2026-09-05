@@ -51,3 +51,7 @@ export type StreamChatMessageInput = {
   content: string;
   model?: string;
 };
+
+export type ChatConversationRouteContext = {
+  params: Promise<{ id: string }>;
+};

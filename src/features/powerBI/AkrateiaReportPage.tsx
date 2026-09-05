@@ -16,12 +16,14 @@ import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
   ReportHeader,
+  ReportSectionTitle,
   ReportToneValue,
   TargetBar,
   ValuePill,
 } from "@/features/powerBI/ReportShared";
 import {
   accentColors,
+  filterRowsThroughCurrentMonth,
   formatCurrency,
   formatNullableCurrency,
   formatNullableInt,
@@ -29,7 +31,6 @@ import {
   formatNullableRatioPercent,
   getCoverRatioTone,
   getValueToneClassName,
-  getMonthIndex,
   getMonthLabel,
   sumNullable,
 } from "@/lib/bi-reports/reportUtils";
@@ -40,39 +41,6 @@ import type {
   AkrateiaRow,
 } from "@/lib/bi-reports/biReports";
 import { formatIntGR } from "@/lib/utils/number";
-
-function getCurrentAthensMonthIndex() {
-  const month = new Intl.DateTimeFormat("en-US", {
-    month: "numeric",
-    timeZone: "Europe/Athens",
-  }).format(new Date());
-
-  return Number(month) - 1;
-}
-
-function filterRowsThroughCurrentMonth<T extends { month: string }>(rows: T[]) {
-  const currentMonthIndex = getCurrentAthensMonthIndex();
-
-  return rows.filter((row) => {
-    const monthIndex = getMonthIndex(row.month);
-    return monthIndex == null || monthIndex <= currentMonthIndex;
-  });
-}
-
-function ReportSectionTitle({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="app-card p-5">
-      <div className="font-semibold">{title}</div>
-      <div className="text-sm text-muted-foreground mt-1">{subtitle}</div>
-    </div>
-  );
-}
 
 function AkrateiaMonthCard({
   row,

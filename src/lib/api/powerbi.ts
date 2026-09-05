@@ -1,22 +1,20 @@
-import { parseProxyJson } from "@/lib/api/client";
+import { parseProxyJson, API_NO_CACHE_HEADERS } from "@/lib/api/client";
 import type {
   AkrateiaResponse,
   SalesPerMonthResponse,
   SalesPerYearResponse,
 } from "@/lib/bi-reports/biReports";
-import type { BbmSalesRow, BbmTrendRow } from "@/lib/bi-reports/bbm";
-import type { AreaCategoryTargetsRow } from "@/lib/bi-reports/areaCategoryTargets";
 import type {
-  CovidienSalesRow,
-  CovidienTrendRow,
-} from "@/lib/bi-reports/covidien";
-import type { PorgesSalesRow, PorgesTrendRow } from "@/lib/bi-reports/porges";
-import type { PowerBiSellerRow } from "@/lib/bi-reports/sellers";
+  AreaCategoryTargetsResponse,
+  AreaReportResponse,
+  PowerBiSellersResponse,
+} from "@/lib/api/powerbi.types";
 
-const NO_CACHE_HEADERS = {
-  "Cache-Control": "no-cache",
-  Pragma: "no-cache",
-} as const;
+export type {
+  AreaCategoryTargetsResponse,
+  AreaReportResponse,
+  PowerBiSellersResponse,
+};
 
 async function fetchPowerBi<T>(
   path: string,
@@ -24,16 +22,10 @@ async function fetchPowerBi<T>(
 ): Promise<T> {
   const res = await fetch(path, {
     cache: "no-store",
-    headers: NO_CACHE_HEADERS,
+    headers: API_NO_CACHE_HEADERS,
   });
   return parseProxyJson<T>(res, fallbackError);
 }
-
-export type AreaReportResponse<TRow> = {
-  ok: true;
-  area?: string;
-  records: TRow[];
-};
 
 export function fetchPowerBiAreaReport<TRow>(
   apiPath: string,
@@ -63,59 +55,6 @@ export function fetchAkrateiaReport() {
   );
 }
 
-export function fetchCovidienSalesReport(
-  apiPath: string,
-  year: number | string,
-) {
-  return fetchPowerBi<AreaReportResponse<CovidienSalesRow>>(
-    apiPath,
-    `Failed to load Covidien sales ${year}`,
-  );
-}
-
-export function fetchCovidienTrendsReport() {
-  return fetchPowerBi<AreaReportResponse<CovidienTrendRow>>(
-    "/api/powerbi/covidien-trend-current-year",
-    "Failed to load Covidien trends",
-  );
-}
-
-export function fetchBbmSalesReport(apiPath: string, year: number | string) {
-  return fetchPowerBi<AreaReportResponse<BbmSalesRow>>(
-    apiPath,
-    `Failed to load BBM sales ${year}`,
-  );
-}
-
-export function fetchBbmTrendsReport() {
-  return fetchPowerBi<AreaReportResponse<BbmTrendRow>>(
-    "/api/powerbi/bbm-trends-current-year",
-    "Failed to load BBM trends",
-  );
-}
-
-export function fetchPorgesSalesReport(apiPath: string, year: number | string) {
-  return fetchPowerBi<AreaReportResponse<PorgesSalesRow>>(
-    apiPath,
-    `Failed to load Porges sales ${year}`,
-  );
-}
-
-export function fetchPorgesTrendsReport() {
-  return fetchPowerBi<AreaReportResponse<PorgesTrendRow>>(
-    "/api/powerbi/porges-trend-current-year",
-    "Failed to load Porges trends",
-  );
-}
-
-export type PowerBiSellersResponse = {
-  ok: true;
-  report: "sellers";
-  area: string;
-  matched: PowerBiSellerRow | null;
-  records: PowerBiSellerRow[];
-};
-
 export function fetchPowerBiSellers(scope?: "all") {
   const query = scope === "all" ? "?scope=all" : "";
 
@@ -124,14 +63,6 @@ export function fetchPowerBiSellers(scope?: "all") {
     "Failed to load Power BI sellers",
   );
 }
-
-export type AreaCategoryTargetsResponse = {
-  ok: true;
-  report: "area_category_targets";
-  year: number;
-  area: string;
-  record: AreaCategoryTargetsRow | null;
-};
 
 export function fetchAreaCategoryTargets() {
   return fetchPowerBi<AreaCategoryTargetsResponse>(

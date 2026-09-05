@@ -13,6 +13,7 @@ import {
   PowerBiRequestError,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
+import { toNullableNumber } from "@/lib/bi-reports/powerBiRowParsing";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
@@ -34,13 +35,6 @@ function buildSalesPerYearCoverSummaryQuery(sellerCode: string): string {
   const escapedSellerCode = escapeDaxString(sellerCode);
 
   return `EVALUATE SUMMARIZECOLUMNS(FILTER('U Sales Person', 'U Sales Person'[SellerCode] = "${escapedSellerCode}"), "% HOSPITAL COVER ALL", [% HOSPITAL COVER ALL], "% WC COVER ALL", [% WC COVER ALL], "% CC COVER ALL", [% CC COVER ALL], "% TOTAL COVER ALL", [% TOTAL COVER ALL])`;
-}
-
-function toNullableNumber(value: unknown): number | null {
-  if (value == null || value === "") return null;
-
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
 }
 
 function normalizeSalesPerYearRows(

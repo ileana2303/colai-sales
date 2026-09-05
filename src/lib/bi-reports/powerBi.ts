@@ -1,3 +1,13 @@
+import type {
+  AmsaPowerBiTokenResponse,
+  PowerBiAuthInfo,
+  PowerBiDatasetTarget,
+  PowerBiErrorResponse,
+  PowerBiExecuteQueriesResponse,
+  PowerBiExecuteQueryOptions,
+  PowerBiTokenOptions,
+} from "@/lib/bi-reports/powerBi.types";
+
 const MAVROGENIS_SA_REPORTS_WORKSPACE_ID =
   "a279f8cd-3d0e-4362-af29-2e5af5b043d1";
 const MAVROGENIS_SALES_REPORTS_2023_CLP_APP_DATASET_ID =
@@ -9,55 +19,12 @@ export const POWERBI_NO_CACHE_HEADERS = {
   Pragma: "no-cache",
 };
 
-export type PowerBiExecuteQueriesResponse = {
-  results?: Array<{
-    tables?: Array<{
-      rows?: Array<Record<string, unknown>>;
-    }>;
-  }>;
-};
-
-export type PowerBiDatasetTarget = {
-  datasetId?: string;
-  workspaceId?: string;
-};
-
-export type PowerBiAuthInfo = {
-  mode: "amsa_token_service" | "client_credentials" | "missing";
-  tenantId: string | null;
-  clientId: string | null;
-  hasAmsaApiBaseUrl: boolean;
-};
-
-type AmsaPowerBiTokenResponse = {
-  statusCode?: number;
-  message?: string;
-  detailedMessage?: string;
-  token?: string;
-  token_data?: string;
-};
-
-export type PowerBiTokenOptions = {
-  amsaAccessToken?: string | null;
-};
-
-type PowerBiExecuteQueryOptions = {
-  includeNulls?: boolean;
-};
-
-type PowerBiErrorResponse = {
-  error?: {
-    code?: string;
-    message?: string;
-    details?: unknown;
-    ["pbi.error"]?: {
-      code?: string;
-      details?: unknown[];
-      parameters?: Record<string, unknown>;
-    };
-  };
-  message?: string;
-};
+export type {
+  PowerBiAuthInfo,
+  PowerBiDatasetTarget,
+  PowerBiExecuteQueriesResponse,
+  PowerBiTokenOptions,
+} from "@/lib/bi-reports/powerBi.types";
 
 function getPowerBiDetailMessages(data: PowerBiErrorResponse): string[] {
   const detailSources = [
@@ -100,6 +67,10 @@ export class PowerBiRequestError extends Error {
 
 export function escapeDaxString(value: string): string {
   return value.replaceAll('"', '""');
+}
+
+export function quoteDaxStrings(values: readonly string[]): string {
+  return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
 }
 
 export function joinDaxQuery(lines: readonly string[]): string {

@@ -1,5 +1,10 @@
 import type { ApiFailure } from "@/types/api";
 
+export const API_NO_CACHE_HEADERS = {
+  "Cache-Control": "no-cache",
+  Pragma: "no-cache",
+} as const;
+
 export function isApiFailure(data: unknown): data is ApiFailure {
   return (
     typeof data === "object" &&

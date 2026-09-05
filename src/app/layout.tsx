@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Geist } from "next/font/google";
+import { Geist, Noto_Sans, Outfit } from "next/font/google";
 
 import "./globals.css";
 
@@ -9,6 +9,13 @@ import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+
+const notoSans = Noto_Sans({
+  subsets: ["latin", "greek"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-noto-sans",
+  display: "swap",
+});
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -55,7 +62,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(outfit.className, "font-sans", geist.variable)}
+      className={cn(
+        outfit.className,
+        "font-sans",
+        geist.variable,
+        notoSans.variable,
+      )}
       suppressHydrationWarning
     >
       <head>

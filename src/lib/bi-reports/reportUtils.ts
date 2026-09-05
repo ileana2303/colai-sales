@@ -4,6 +4,9 @@ import {
   formatIntGR,
   formatPercentGR,
 } from "@/lib/utils/number";
+import type { ValueTone } from "@/lib/bi-reports/reportUtils.types";
+
+export type { ValueTone };
 
 export const accentColors = [
   "#2563eb",
@@ -77,8 +80,6 @@ export function formatNullableInt(value: number | null) {
 export function formatNullableRatioPercent(value: number | null) {
   return value == null ? "-" : `${formatPercentGR(value * 100)}%`;
 }
-
-export type ValueTone = "danger" | "success";
 
 export function getSignedValueTone(
   value: number | null | undefined,
@@ -168,4 +169,24 @@ export function getDelta(current: number, previous?: number) {
 
 export function sumNullable<T>(rows: T[], selector: (row: T) => number | null) {
   return rows.reduce((sum, row) => sum + (selector(row) ?? 0), 0);
+}
+
+export function getCurrentAthensMonthIndex() {
+  const month = new Intl.DateTimeFormat("en-US", {
+    month: "numeric",
+    timeZone: "Europe/Athens",
+  }).format(new Date());
+
+  return Number(month) - 1;
+}
+
+export function filterRowsThroughCurrentMonth<T extends { month: string }>(
+  rows: T[],
+) {
+  const currentMonthIndex = getCurrentAthensMonthIndex();
+
+  return rows.filter((row) => {
+    const monthIndex = getMonthIndex(row.month);
+    return monthIndex == null || monthIndex <= currentMonthIndex;
+  });
 }

@@ -1,18 +1,13 @@
-import { parseProxyJson } from "@/lib/api/client";
+import { parseProxyJson, API_NO_CACHE_HEADERS } from "@/lib/api/client";
 import type { EnsureSellersByAreaResponse } from "@/lib/sellersByArea/types";
 
-const NO_CACHE_HEADERS = {
-  "Cache-Control": "no-cache",
-  Pragma: "no-cache",
-} as const;
-
-export type { EnsureSellersByAreaResponse } from "@/lib/sellersByArea/types";
+export type { EnsureSellersByAreaResponse };
 
 export async function ensureSellersByAreaCatalog() {
   const res = await fetch("/api/sellers-by-area/ensure", {
     method: "POST",
     cache: "no-store",
-    headers: NO_CACHE_HEADERS,
+    headers: API_NO_CACHE_HEADERS,
   });
   return parseProxyJson<EnsureSellersByAreaResponse>(
     res,

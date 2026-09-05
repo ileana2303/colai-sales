@@ -3,13 +3,11 @@ import { ReportHeader } from "@/features/powerBI/ReportShared";
 
 type UnderConstructionReportPageProps = {
   brandLabel: string;
-  caption?: string;
   icon?: string;
 };
 
 export function UnderConstructionReportPage({
   brandLabel,
-  caption = "Target planning matrix",
   icon = "bi-gear",
 }: UnderConstructionReportPageProps) {
   return (
@@ -17,7 +15,7 @@ export function UnderConstructionReportPage({
       <ReportHeader
         badgeClassName=""
         icon={icon}
-        subtitle={caption}
+        subtitle=""
         title={brandLabel}
       />
 

@@ -11,8 +11,16 @@ import {
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { PowerBiTableHeaderFilter } from "@/features/powerBI/PowerBiTable/PowerBiTableHeaderFilter";
-import type { FilterOption } from "@/features/powerBI/PowerBiTable/types";
-import { exportReportMatrixToExcel } from "@/features/powerBI/reportMatrixExport";
+import { ExcelFileIcon } from "@/icons/excel-file";
+import { PdfFileIcon } from "@/icons/pdf-file";
+import type { FilterOption } from "@/features/powerBI/types/PowerBiTable.types";
+import { getMatrixExportFileName } from "@/features/powerBI/PowerBiTable/utils";
+import {
+  buildSellerFilteredBodyRows,
+  exportReportMatrixToExcel,
+  getMatrixMetricDisplayValue,
+} from "@/features/powerBI/reportMatrixExport";
+import { exportReportMatrixToPdf } from "@/features/powerBI/reportMatrixPdfExport";
 import {
   buildReportMatrixGroup2Rows,
   buildReportMatrixGroup3Rows,
@@ -23,99 +31,22 @@ import {
   reportMatrixDetailRowsHaveGroup2,
   reportMatrixDetailRowsHaveGroup3,
 } from "@/features/powerBI/reportMatrixData";
+import type {
+  ReportMatrixColumn,
+  ReportMatrixRow,
+  ReportMatrixTableProps,
+} from "@/features/powerBI/types/ReportMatrixTable.types";
+import { cn } from "@/lib/utils";
 
-export type ReportMatrixTone =
-  | "danger"
-  | "default"
-  | "muted"
-  | "primary"
-  | "rose"
-  | "success"
-  | "warning";
-
-export type ReportMatrixColumn = {
-  key: string;
-  label: ReactNode;
-  align?: "center" | "left" | "right";
-  headerTone?: ReportMatrixTone;
-  cellTone?: ReportMatrixTone;
-  width?: number;
-};
-
-export type ReportMatrixLeadingColumn = {
-  key: string;
-  label: ReactNode;
-  width: number;
-};
-
-export type ReportMatrixSectionSummary = {
-  details?: ReactNode[];
-  label: ReactNode;
-  tone?: ReportMatrixTone;
-  value: ReactNode;
-};
-
-export type ReportMatrixSection = {
-  key: string;
-  summary?: ReportMatrixSectionSummary;
-  title: ReactNode;
-  columns: ReportMatrixColumn[];
-  tone?: ReportMatrixTone;
-};
-
-export type ReportMatrixRowMetrics = {
-  currency: number | null;
-  hasClosedMonthStatus: boolean;
-  openMonthTcyByMonth: Record<string, number>;
-  tcyAll: number;
-  tcyClosed: number;
-  vTrend: number;
-  vcyAll: number;
-  vcyClosed: number;
-  vlc: number;
-  vlcAll: number;
-};
-
-export type ReportMatrixRow = {
-  key: string;
-  category: ReactNode;
-  childCount?: number;
-  filterValues?: {
-    category: string;
-    group2: string;
-    group3?: string;
-    seller: string;
-    sellerLabel: string;
-    team: string;
-  };
-  leadingValues?: Record<string, ReactNode>;
-  metrics?: ReportMatrixRowMetrics;
-  parentKey?: string;
-  rowKind?: "category" | "detail" | "group2" | "group3" | "team" | "total";
-  values: Record<string, ReactNode>;
-  cellTones?: Record<string, ReportMatrixTone>;
-  isTotal?: boolean;
-};
-
-type ReportMatrixTableProps = {
-  brandLabel: string;
-  caption: string;
-  categoryLabel?: string;
-  description?: string;
-  exportFileName?: string;
-  group2Order?: string[];
-  headerLabel?: ReactNode;
-  /** When true, period summary is rendered elsewhere (e.g. page header). */
-  hideSummaryPill?: boolean;
-  leadingColumns?: ReportMatrixLeadingColumn[];
-  rows: ReportMatrixRow[];
-  sections: ReportMatrixSection[];
-  title?: string;
-};
-
-function cn(...classes: Array<false | null | string | undefined>) {
-  return classes.filter(Boolean).join(" ");
-}
+export type {
+  ReportMatrixColumn,
+  ReportMatrixLeadingColumn,
+  ReportMatrixRow,
+  ReportMatrixRowMetrics,
+  ReportMatrixSection,
+  ReportMatrixSectionSummary,
+  ReportMatrixTone,
+} from "@/features/powerBI/types/ReportMatrixTable.types";
 
 const REPORT_MATRIX_MIN_VIEWPORT_HEIGHT = 240;
 
@@ -200,20 +131,20 @@ function renderTruncatedCell(value: ReactNode, title?: string) {
   );
 }
 
-function canExpandCategory(row: ReportMatrixRow) {
-  return row.rowKind === "category" && (row.childCount ?? 0) > 1;
+function canExpandCategory(_row: ReportMatrixRow) {
+  return false;
 }
 
 function canExpandGroup2(row: ReportMatrixRow) {
-  return row.rowKind === "group2" && (row.childCount ?? 0) >= 1;
+  return row.rowKind === "group2" && (row.childCount ?? 0) > 1;
 }
 
-function canExpandGroup3(row: ReportMatrixRow) {
-  return row.rowKind === "group3" && (row.childCount ?? 0) > 1;
+function canExpandGroup3(_row: ReportMatrixRow) {
+  return false;
 }
 
-function canExpandTeam(row: ReportMatrixRow) {
-  return row.rowKind === "team" && (row.childCount ?? 0) > 1;
+function canExpandTeam(_row: ReportMatrixRow) {
+  return false;
 }
 
 function isGroup2SubcategoryRow(
@@ -231,6 +162,66 @@ function isGroup2SubcategoryRow(
 function getLeadingValue(row: ReportMatrixRow, key: string) {
   if (key === "category") return row.category;
   return row.leadingValues?.[key];
+}
+
+const CATEGORY_COLUMN_MIN_WIDTH = 112;
+const CATEGORY_COLUMN_MAX_WIDTH = 480;
+const CATEGORY_COLUMN_HORIZONTAL_PADDING = 24;
+const CATEGORY_COLUMN_CHEVRON_EXTRA = 22;
+
+const CATEGORY_COLUMN_MEASURE_FONTS = [
+  '900 0.88rem system-ui, -apple-system, "Segoe UI", sans-serif',
+  '850 0.88rem system-ui, -apple-system, "Segoe UI", sans-serif',
+  '800 0.78rem system-ui, -apple-system, "Segoe UI", sans-serif',
+  '700 0.9rem system-ui, -apple-system, "Segoe UI", sans-serif',
+];
+
+function getCategoryColumnLabelText(value: ReactNode) {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  return "";
+}
+
+function measureReportMatrixTextWidth(text: string, fonts: string[]) {
+  if (!text || typeof document === "undefined") return 0;
+
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  if (!context) return 0;
+
+  let maxWidth = 0;
+  for (const font of fonts) {
+    context.font = font;
+    maxWidth = Math.max(maxWidth, context.measureText(text).width);
+  }
+
+  return maxWidth;
+}
+
+function measureReportMatrixCategoryColumnWidth(
+  labels: string[],
+  includeChevron = false,
+) {
+  if (!labels.length) return 168;
+
+  let maxTextWidth = 0;
+  for (const label of labels) {
+    maxTextWidth = Math.max(
+      maxTextWidth,
+      measureReportMatrixTextWidth(label, CATEGORY_COLUMN_MEASURE_FONTS),
+    );
+  }
+
+  const extra =
+    CATEGORY_COLUMN_HORIZONTAL_PADDING +
+    (includeChevron ? CATEGORY_COLUMN_CHEVRON_EXTRA : 0);
+
+  return Math.min(
+    Math.max(Math.ceil(maxTextWidth) + extra, CATEGORY_COLUMN_MIN_WIDTH),
+    CATEGORY_COLUMN_MAX_WIDTH,
+  );
 }
 
 function isLeadingContextLabel(row: ReportMatrixRow, columnKey: string) {
@@ -272,9 +263,81 @@ function buildFilterOptions(
     );
 }
 
+function resolveFilterLabel(value: string, options: FilterOption[]) {
+  if (!value) return "Όλα";
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function resolveSellerFilterLabel(value: string, options: FilterOption[]) {
+  if (!value) return "Όλα";
+
+  const label = options.find((option) => option.value === value)?.label;
+  if (label) return label;
+
+  return value.split("|").slice(1).join("|").trim() || value;
+}
+
+function resolveSelectedSellerGroup2(
+  rows: ReportMatrixRow[],
+  category: string,
+) {
+  const matchingRows = category
+    ? rows.filter((row) => {
+        const categoryValue =
+          row.filterValues?.category ?? String(row.category ?? "");
+        return categoryValue === category;
+      })
+    : rows;
+
+  return [
+    ...new Set(
+      matchingRows
+        .map((row) => row.filterValues?.group2?.trim() ?? "")
+        .filter(Boolean),
+    ),
+  ].join(", ");
+}
+
+function sellerExistsForFilters(
+  rows: ReportMatrixRow[],
+  seller: string,
+  category: string,
+  team: string,
+) {
+  return rows.some((row) => {
+    const categoryValue =
+      row.filterValues?.category ?? String(row.category ?? "");
+    const teamValue =
+      row.filterValues?.team ?? String(row.leadingValues?.team ?? "");
+    const sellerValue = row.filterValues?.seller ?? "";
+
+    if (category && categoryValue !== category) return false;
+    if (team && teamValue !== team) return false;
+    return sellerValue === seller;
+  });
+}
+
+function getSectionGroupCellClassName(column: {
+  isLastSection: boolean;
+  isSectionBoundary: boolean;
+  isSectionEnd: boolean;
+  isSectionStart: boolean;
+  sectionIndex: number;
+}) {
+  return cn(
+    column.isSectionStart && "report-matrix__section-group-start",
+    column.isSectionEnd &&
+      !column.isLastSection &&
+      "report-matrix__section-group-end",
+    column.sectionIndex === 0 &&
+      column.isSectionStart &&
+      "report-matrix__section-start",
+    column.isSectionBoundary && "report-matrix__section-boundary",
+  );
+}
+
 export function ReportMatrixTable({
   brandLabel,
-  caption,
   categoryLabel = "Κατηγορία Στόχου",
   description,
   exportFileName,
@@ -282,6 +345,7 @@ export function ReportMatrixTable({
   headerLabel,
   hideSummaryPill = false,
   leadingColumns,
+  periodSummary,
   rows,
   sections,
   title,
@@ -441,6 +505,9 @@ export function ReportMatrixTable({
     selectedSellerTeams,
     teamFilter,
   ]);
+  const aggregationDetailRows = effectiveSellerFilter
+    ? filteredDetailRows
+    : comparisonDetailRows;
   const hasGroup3 = useMemo(
     () => reportMatrixDetailRowsHaveGroup3(detailRows),
     [detailRows],
@@ -453,131 +520,22 @@ export function ReportMatrixTable({
   const group2Rows = useMemo(
     () =>
       hasGroup2
-        ? buildReportMatrixGroup2Rows(comparisonDetailRows, group2Order)
+        ? buildReportMatrixGroup2Rows(aggregationDetailRows, group2Order)
         : [],
-    [comparisonDetailRows, group2Order, hasGroup2],
+    [aggregationDetailRows, group2Order, hasGroup2],
   );
   const categoryRows = useMemo(
-    () => buildReportMatrixCategoryRows(comparisonDetailRows),
-    [comparisonDetailRows],
+    () => buildReportMatrixCategoryRows(aggregationDetailRows),
+    [aggregationDetailRows],
   );
   const group3Rows = useMemo(
-    () => (hasGroup3 ? buildReportMatrixGroup3Rows(comparisonDetailRows) : []),
-    [comparisonDetailRows, hasGroup3],
+    () => (hasGroup3 ? buildReportMatrixGroup3Rows(aggregationDetailRows) : []),
+    [aggregationDetailRows, hasGroup3],
   );
   const teamRows = useMemo(
-    () => buildReportMatrixTeamRows(comparisonDetailRows),
-    [comparisonDetailRows],
+    () => buildReportMatrixTeamRows(aggregationDetailRows),
+    [aggregationDetailRows],
   );
-  const expandableCategoryKeys = useMemo(
-    () =>
-      effectiveSellerFilter
-        ? []
-        : categoryRows
-            .filter((row) => canExpandCategory(row))
-            .map((row) => row.key),
-    [categoryRows, effectiveSellerFilter],
-  );
-  const expandableGroup3Keys = useMemo(
-    () =>
-      effectiveSellerFilter
-        ? []
-        : group3Rows
-            .filter((row) => canExpandGroup3(row))
-            .map((row) => row.key),
-    [effectiveSellerFilter, group3Rows],
-  );
-  const expandableTeamKeys = useMemo(
-    () =>
-      effectiveSellerFilter
-        ? []
-        : teamRows.filter((row) => canExpandTeam(row)).map((row) => row.key),
-    [effectiveSellerFilter, teamRows],
-  );
-  const expandableGroup2Keys = useMemo(
-    () =>
-      effectiveSellerFilter
-        ? []
-        : group2Rows
-            .filter((row) => canExpandGroup2(row))
-            .map((row) => row.key),
-    [effectiveSellerFilter, group2Rows],
-  );
-  const hasExpandableRows =
-    expandableGroup2Keys.length > 0 ||
-    expandableCategoryKeys.length > 0 ||
-    expandableGroup3Keys.length > 0 ||
-    expandableTeamKeys.length > 0;
-  const areAllExpandableRowsExpanded =
-    hasExpandableRows &&
-    expandableGroup2Keys.every((key) => expandedGroup2Keys.has(key)) &&
-    expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key)) &&
-    expandableGroup3Keys.every((key) => expandedGroup3Keys.has(key)) &&
-    expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
-
-  const hierarchyStepCount = useMemo(() => {
-    let count = 0;
-    if (hasGroup2 && expandableGroup2Keys.length > 0) count++;
-    if (expandableCategoryKeys.length > 0) count++;
-    if (hasGroup3 && expandableGroup3Keys.length > 0) count++;
-    return count;
-  }, [
-    expandableCategoryKeys.length,
-    expandableGroup2Keys.length,
-    expandableGroup3Keys.length,
-    hasGroup2,
-    hasGroup3,
-  ]);
-
-  const currentExpansionLevel = useMemo(() => {
-    let step = 0;
-    let level = 0;
-
-    if (hasGroup2 && expandableGroup2Keys.length > 0) {
-      const group2Expanded = expandableGroup2Keys.every((key) =>
-        expandedGroup2Keys.has(key),
-      );
-      if (!group2Expanded) return 0;
-      level = step + 1;
-      step++;
-    }
-
-    if (expandableCategoryKeys.length > 0) {
-      const categoriesExpanded = expandableCategoryKeys.every((key) =>
-        expandedCategoryKeys.has(key),
-      );
-      if (!categoriesExpanded) return level;
-      level = step + 1;
-      step++;
-    }
-
-    if (hasGroup3 && expandableGroup3Keys.length > 0) {
-      const group3Expanded = expandableGroup3Keys.every((key) =>
-        expandedGroup3Keys.has(key),
-      );
-      if (!group3Expanded) return level;
-      level = step + 1;
-    }
-
-    return level;
-  }, [
-    expandableCategoryKeys,
-    expandableGroup2Keys,
-    expandableGroup3Keys,
-    expandedCategoryKeys,
-    expandedGroup2Keys,
-    expandedGroup3Keys,
-    hasGroup2,
-    hasGroup3,
-  ]);
-
-  const canExpandOneHierarchyLevel =
-    !effectiveSellerFilter &&
-    hierarchyStepCount > 0 &&
-    currentExpansionLevel < hierarchyStepCount;
-  const canCollapseOneHierarchyLevel =
-    !effectiveSellerFilter && currentExpansionLevel > 0;
-  const nextExpansionLevel = currentExpansionLevel + 1;
 
   const group3RowsByCategory = useMemo(() => {
     const groupedRows = new Map<string, ReportMatrixRow[]>();
@@ -670,19 +628,27 @@ export function ReportMatrixTable({
   }, [filteredDetailRows]);
 
   const bodyRows = useMemo(() => {
+    if (effectiveSellerFilter) {
+      return buildSellerFilteredBodyRows({
+        categoryRows,
+        categoryRowsByGroup2,
+        group2Rows,
+        group3Rows,
+        group3RowsByCategory,
+        hasGroup2,
+        hasGroup3,
+      });
+    }
+
     const renderTeamBranch = (row: ReportMatrixRow) => {
       const sellerRows = detailRowsByTeam.get(row.key) ?? [];
-
-      if (effectiveSellerFilter) {
-        return sellerRows.length ? [row, ...sellerRows] : [row];
-      }
 
       if (canExpandTeam(row) && !expandedTeamKeys.has(row.key)) {
         return [row];
       }
 
       if (!canExpandTeam(row)) {
-        return sellerRows.length ? sellerRows : [row];
+        return [row];
       }
 
       return [row, ...sellerRows];
@@ -692,16 +658,12 @@ export function ReportMatrixTable({
       const group3TeamRows = teamRowsByGroup3.get(row.key) ?? [];
       const expandedTeamRows = group3TeamRows.flatMap(renderTeamBranch);
 
-      if (effectiveSellerFilter) {
-        return expandedTeamRows.length ? [row, ...expandedTeamRows] : [row];
-      }
-
       if (canExpandGroup3(row) && !expandedGroup3Keys.has(row.key)) {
         return [row];
       }
 
       if (!canExpandGroup3(row)) {
-        return expandedTeamRows.length ? expandedTeamRows : [row];
+        return [row];
       }
 
       return [row, ...expandedTeamRows];
@@ -711,64 +673,58 @@ export function ReportMatrixTable({
       const group2Label = row.filterValues?.group2 ?? "";
       const group1Label =
         row.filterValues?.category || String(row.category ?? "-");
+      const parentGroup2Row = row.parentKey
+        ? group2Rows.find((group2Row) => group2Row.key === row.parentKey)
+        : undefined;
       const skipCategoryRow =
-        !hasGroup2 && isRedundantGroup1Category(group2Label, group1Label);
+        isRedundantGroup1Category(group2Label, group1Label) &&
+        !(parentGroup2Row && canExpandGroup2(parentGroup2Row));
 
-      const renderCategoryChildren = () => {
-        if (hasGroup3) {
-          const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
-          const directTeamRows = teamRowsByCategory.get(row.key) ?? [];
-          const expandedGroup3Rows =
-            groupedGroup3Rows.flatMap(renderGroup3Branch);
-          const expandedDirectTeamRows =
-            directTeamRows.flatMap(renderTeamBranch);
-          const expandedChildren = [
-            ...expandedGroup3Rows,
-            ...expandedDirectTeamRows,
-          ];
+      if (skipCategoryRow) {
+        return [];
+      }
 
-          if (effectiveSellerFilter) {
-            return expandedChildren.length ? expandedChildren : [];
-          }
-
-          if (skipCategoryRow) {
-            return expandedChildren;
-          }
-
-          if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
-            return [row];
-          }
-
-          if (!canExpandCategory(row)) {
-            return expandedChildren.length ? expandedChildren : [row];
-          }
-
-          return [row, ...expandedChildren];
-        }
-
+      if (!hasGroup3) {
         const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
         const expandedTeamRows = categoryTeamRows.flatMap(renderTeamBranch);
-
-        if (effectiveSellerFilter) {
-          return expandedTeamRows.length ? expandedTeamRows : [];
-        }
-
-        if (skipCategoryRow) {
-          return expandedTeamRows.length ? expandedTeamRows : [];
-        }
 
         if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
           return [row];
         }
 
         if (!canExpandCategory(row)) {
-          return expandedTeamRows.length ? expandedTeamRows : [row];
+          return [row];
         }
 
         return [row, ...expandedTeamRows];
-      };
+      }
 
-      return renderCategoryChildren();
+      const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
+      const directTeamRows = teamRowsByCategory.get(row.key) ?? [];
+      const expandedGroup3Rows = groupedGroup3Rows.flatMap(renderGroup3Branch);
+      const expandedDirectTeamRows = directTeamRows.flatMap(renderTeamBranch);
+      const expandedChildren = [
+        ...expandedGroup3Rows,
+        ...expandedDirectTeamRows,
+      ];
+
+      if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
+        return [row];
+      }
+
+      if (!canExpandCategory(row)) {
+        if (groupedGroup3Rows.length) {
+          return groupedGroup3Rows;
+        }
+
+        if (directTeamRows.length) {
+          return directTeamRows;
+        }
+
+        return [row];
+      }
+
+      return [row, ...expandedChildren];
     };
 
     if (hasGroup2) {
@@ -778,16 +734,8 @@ export function ReportMatrixTable({
         const categoryBranches =
           groupedCategoryRows.flatMap(renderCategoryBranch);
 
-        if (effectiveSellerFilter) {
-          return canExpandGroup2(group2Row)
-            ? [group2Row, ...categoryBranches]
-            : categoryBranches.length
-              ? categoryBranches
-              : [group2Row];
-        }
-
         if (
-          canExpandGroup2(group2Row) &&
+          !canExpandGroup2(group2Row) ||
           !expandedGroup2Keys.has(group2Row.key)
         ) {
           return [group2Row];
@@ -812,22 +760,57 @@ export function ReportMatrixTable({
     expandedGroup3Keys,
     expandedTeamKeys,
     group2Rows,
+    group3Rows,
     group3RowsByCategory,
-    hasGroup3,
     hasGroup2,
+    hasGroup3,
     teamRowsByCategory,
     teamRowsByGroup3,
   ]);
 
   const totalRows = useMemo(
-    () => buildReportMatrixTotalRows(comparisonDetailRows),
-    [comparisonDetailRows],
+    () => buildReportMatrixTotalRows(aggregationDetailRows),
+    [aggregationDetailRows],
   );
 
   const filteredRows = useMemo(
     () => [...bodyRows, ...totalRows],
     [bodyRows, totalRows],
   );
+
+  const categoryColumnWidth = useMemo(() => {
+    const labels = filteredRows
+      .map((row) =>
+        getCategoryColumnLabelText(getLeadingValue(row, "category")),
+      )
+      .filter(Boolean);
+    const headerText = getCategoryColumnLabelText(categoryLabel);
+
+    if (headerText) {
+      labels.push(headerText);
+    }
+
+    const includeChevron = filteredRows.some(
+      (row) =>
+        row.rowKind === "group2" &&
+        canExpandGroup2(row) &&
+        !effectiveSellerFilter,
+    );
+
+    return measureReportMatrixCategoryColumnWidth(labels, includeChevron);
+  }, [categoryLabel, effectiveSellerFilter, filteredRows]);
+
+  const resolvedLeadingColumns = useMemo(() => {
+    const columns = leadingColumns ?? [
+      { key: "category", label: categoryLabel, width: 168 },
+    ];
+
+    return columns.map((column) =>
+      column.key === "category"
+        ? { ...column, width: categoryColumnWidth }
+        : column,
+    );
+  }, [categoryColumnWidth, categoryLabel, leadingColumns]);
 
   useLayoutEffect(() => {
     const card = cardRef.current;
@@ -905,65 +888,6 @@ export function ReportMatrixTable({
     });
   }
 
-  function applyExpansionLevel(targetLevel: number) {
-    let step = 0;
-
-    if (hasGroup2 && expandableGroup2Keys.length > 0) {
-      setExpandedGroup2Keys(
-        targetLevel > step ? new Set(expandableGroup2Keys) : new Set(),
-      );
-      step++;
-    }
-
-    if (expandableCategoryKeys.length > 0) {
-      setExpandedCategoryKeys(
-        targetLevel > step ? new Set(expandableCategoryKeys) : new Set(),
-      );
-      step++;
-    } else {
-      setExpandedCategoryKeys(new Set());
-    }
-
-    if (hasGroup3 && expandableGroup3Keys.length > 0) {
-      setExpandedGroup3Keys(
-        targetLevel > step ? new Set(expandableGroup3Keys) : new Set(),
-      );
-    } else {
-      setExpandedGroup3Keys(new Set());
-    }
-
-    setExpandedTeamKeys(new Set());
-  }
-
-  function expandOneHierarchyLevel() {
-    applyExpansionLevel(currentExpansionLevel + 1);
-  }
-
-  function collapseOneHierarchyLevel() {
-    applyExpansionLevel(currentExpansionLevel - 1);
-  }
-
-  function toggleAllCategories() {
-    const shouldCollapse =
-      expandableGroup2Keys.every((key) => expandedGroup2Keys.has(key)) &&
-      expandableCategoryKeys.every((key) => expandedCategoryKeys.has(key)) &&
-      expandableGroup3Keys.every((key) => expandedGroup3Keys.has(key)) &&
-      expandableTeamKeys.every((key) => expandedTeamKeys.has(key));
-
-    if (shouldCollapse) {
-      setExpandedGroup2Keys(new Set());
-      setExpandedCategoryKeys(new Set());
-      setExpandedGroup3Keys(new Set());
-      setExpandedTeamKeys(new Set());
-      return;
-    }
-
-    setExpandedGroup2Keys(new Set(expandableGroup2Keys));
-    setExpandedCategoryKeys(new Set(expandableCategoryKeys));
-    setExpandedGroup3Keys(new Set(expandableGroup3Keys));
-    setExpandedTeamKeys(new Set(expandableTeamKeys));
-  }
-
   function toggleTeam(rowKey: string) {
     setExpandedTeamKeys((current) => {
       const next = new Set(current);
@@ -980,7 +904,18 @@ export function ReportMatrixTable({
 
   function handleCategoryFilterChange(nextCategory: string) {
     setCategoryFilter(nextCategory);
-    setSellerFilter("");
+
+    if (
+      sellerFilter &&
+      !sellerExistsForFilters(
+        detailRows,
+        sellerFilter,
+        nextCategory,
+        teamFilter,
+      )
+    ) {
+      setSellerFilter("");
+    }
   }
 
   function handleTeamFilterChange(nextTeam: string) {
@@ -988,17 +923,77 @@ export function ReportMatrixTable({
     setSellerFilter("");
   }
 
-  const resolvedLeadingColumns = leadingColumns ?? [
-    { key: "category", label: categoryLabel, width: 220 },
-  ];
+  function handleSellerFilterChange(nextSeller: string) {
+    if (!nextSeller) {
+      setSellerFilter("");
+      return;
+    }
+
+    const team =
+      sellerOptionRows.find((row) => row.filterValues?.seller === nextSeller)
+        ?.filterValues?.team ?? "";
+
+    setSellerFilter(nextSeller);
+    if (team) {
+      setTeamFilter(team);
+    }
+  }
+
+  function resolveExportFileName() {
+    return getMatrixExportFileName(exportFileName, brandLabel, {
+      category: categoryFilter
+        ? {
+            value: categoryFilter,
+            label: resolveFilterLabel(categoryFilter, categoryOptions),
+          }
+        : undefined,
+      seller: effectiveSellerFilter
+        ? {
+            value: effectiveSellerFilter,
+            label: resolveSellerFilterLabel(
+              effectiveSellerFilter,
+              sellerOptions,
+            ),
+          }
+        : undefined,
+    });
+  }
 
   function handleExport() {
     exportReportMatrixToExcel({
       brandLabel,
-      exportFileName,
+      exportFileName: resolveExportFileName(),
       leadingColumns: resolvedLeadingColumns,
       rows: filteredRows,
       sections,
+      sellerFilterActive: Boolean(effectiveSellerFilter),
+    });
+  }
+
+  async function handlePdfExport() {
+    await exportReportMatrixToPdf({
+      brandLabel,
+      categoryLabel,
+      description,
+      exportFileName: resolveExportFileName(),
+      filters: {
+        category: resolveFilterLabel(categoryFilter, categoryOptions),
+        group2:
+          effectiveSellerFilter && categoryFilter
+            ? resolveSelectedSellerGroup2(filteredDetailRows, categoryFilter)
+            : undefined,
+        team: resolveFilterLabel(teamFilter, teamOptions),
+        seller: resolveSellerFilterLabel(effectiveSellerFilter, sellerOptions),
+      },
+      headerLabel:
+        typeof (headerLabel ?? brandLabel) === "string"
+          ? String(headerLabel ?? brandLabel)
+          : brandLabel,
+      leadingColumns: resolvedLeadingColumns,
+      periodSummary,
+      rows: filteredRows,
+      sections,
+      sellerFilterActive: Boolean(effectiveSellerFilter),
     });
   }
 
@@ -1008,6 +1003,10 @@ export function ReportMatrixTable({
     content: ReactNode,
     isContextLabel = false,
   ) {
+    if (row.isSellerFlattened && columnKey === "category") {
+      return content;
+    }
+
     if (columnKey === "category" && row.rowKind === "group3") {
       if (effectiveSellerFilter || !canExpandGroup3(row)) {
         return content;
@@ -1125,7 +1124,10 @@ export function ReportMatrixTable({
             !isGroup2Subcategory &&
             "report-matrix__row--category",
           isGroup2Subcategory && "report-matrix__row--group2-subcategory",
-          row.rowKind === "group3" && "report-matrix__row--group3",
+          row.rowKind === "group3" &&
+            !row.isSellerFlattened &&
+            "report-matrix__row--group3",
+          row.isSellerFlattened && "report-matrix__row--seller-flat",
           row.rowKind === "team" && "report-matrix__row--team",
           row.rowKind === "detail" && "report-matrix__row--detail",
           row.isTotal && "report-matrix__row--total",
@@ -1178,10 +1180,14 @@ export function ReportMatrixTable({
               column.key === "seller"
                 ? row.filterValues?.sellerLabel
                 : getTruncationTitle(rawValue);
+            const cellContent =
+              row.isSellerFlattened && column.key === "category"
+                ? renderValue(rawValue)
+                : renderTruncatedCell(rawValue, title);
             const content = renderLeadingCellContent(
               row,
               column.key,
-              renderTruncatedCell(rawValue, title),
+              cellContent,
               isContextLabel,
             );
             const className = cn(
@@ -1221,6 +1227,11 @@ export function ReportMatrixTable({
         {columns.map((column) => {
           const tone =
             row.cellTones?.[column.key] ?? column.cellTone ?? "default";
+          const metricValue = getMatrixMetricDisplayValue(row, column.key, {
+            sellerFilterActive: Boolean(effectiveSellerFilter),
+          });
+          const displayTone =
+            metricValue === "" || metricValue == null ? "default" : tone;
 
           return (
             <td
@@ -1228,11 +1239,12 @@ export function ReportMatrixTable({
               className={cn(
                 "report-matrix__cell",
                 getAlignClass(column.align),
-                column.isSectionStart && "report-matrix__section-start",
-                tone !== "default" && `report-matrix__cell--${tone}`,
+                getSectionGroupCellClassName(column),
+                displayTone !== "default" &&
+                  `report-matrix__cell--${displayTone}`,
               )}
             >
-              {renderValue(row.values[column.key])}
+              {renderValue(metricValue)}
             </td>
           );
         })}
@@ -1251,7 +1263,6 @@ export function ReportMatrixTable({
     (sum, column) => sum + column.width,
     0,
   );
-  const resolvedHeaderLabel = headerLabel ?? brandLabel;
   const previousPeriodSummary = sections.find(
     (section) => section.key === "previous-period",
   )?.summary;
@@ -1263,14 +1274,18 @@ export function ReportMatrixTable({
     previousPeriodSummary ?? closedMonthsSummary ?? fallbackSummary;
   const summaryPillDetails = [
     ...(closedMonthsSummary?.value != null && closedMonthsSummary.value !== ""
-      ? [`Κλειστοί μήνες: ${String(closedMonthsSummary.value)}`]
+      ? [`Κλειστοι μηνες: ${String(closedMonthsSummary.value)}`]
       : []),
     ...(previousPeriodSummary?.details ?? []).map((detail) => String(detail)),
   ];
-  const columns = sections.flatMap((section) =>
-    section.columns.map((column, index) => ({
+  const columns = sections.flatMap((section, sectionIndex) =>
+    section.columns.map((column, columnIndex) => ({
       ...column,
-      isSectionStart: index === 0,
+      isLastSection: sectionIndex === sections.length - 1,
+      isSectionStart: columnIndex === 0,
+      isSectionEnd: columnIndex === section.columns.length - 1,
+      isSectionBoundary: sectionIndex > 0 && columnIndex === 0,
+      sectionIndex,
       sectionKey: section.key,
       sectionTone: section.tone,
     })),
@@ -1292,10 +1307,11 @@ export function ReportMatrixTable({
             onChange={handleTeamFilterChange}
           />
           <PowerBiTableHeaderFilter
-            label="Seller name - seller code"
+            fitContent
+            label="Seller name"
             options={sellerOptions}
             value={effectiveSellerFilter}
-            onChange={setSellerFilter}
+            onChange={handleSellerFilterChange}
           />
         </div>
         <div className="min-w-0">
@@ -1307,68 +1323,6 @@ export function ReportMatrixTable({
           ) : null}
         </div>
         <div className="report-matrix-card__controls">
-          <div className="report-matrix-card__hierarchy-controls">
-            {!effectiveSellerFilter && hierarchyStepCount > 0 ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className={cn(
-                  "report-matrix-card__hierarchy-button",
-                  !canCollapseOneHierarchyLevel &&
-                    "report-matrix-card__hierarchy-button--reserved",
-                )}
-                disabled={!canCollapseOneHierarchyLevel}
-                aria-hidden={!canCollapseOneHierarchyLevel}
-                tabIndex={canCollapseOneHierarchyLevel ? 0 : -1}
-                aria-label={`Collapse hierarchy level ${currentExpansionLevel || 1}`}
-                onClick={
-                  canCollapseOneHierarchyLevel
-                    ? collapseOneHierarchyLevel
-                    : undefined
-                }
-              >
-                <AppIcon name="bi-chevron-left" size={14} />
-                Σύμπτυξη επιπέδου{" "}
-                <span className="report-matrix-card__hierarchy-button-level">
-                  {currentExpansionLevel || 1}
-                </span>
-              </Button>
-            ) : null}
-            {canExpandOneHierarchyLevel ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="report-matrix-card__hierarchy-button"
-                aria-label={`Expand hierarchy level ${nextExpansionLevel}`}
-                onClick={expandOneHierarchyLevel}
-              >
-                <AppIcon name="bi-chevron-down" size={14} />
-                Επέκταση επιπέδου{" "}
-                <span className="report-matrix-card__hierarchy-button-level">
-                  {nextExpansionLevel}
-                </span>
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="report-matrix-card__hierarchy-button"
-              disabled={!hasExpandableRows || Boolean(effectiveSellerFilter)}
-              aria-label={
-                areAllExpandableRowsExpanded
-                  ? "Collapse all expandable rows"
-                  : "Expand all expandable rows"
-              }
-              aria-pressed={areAllExpandableRowsExpanded}
-              onClick={toggleAllCategories}
-            >
-              <AppIcon name="bi-unfold-vertical" size={14} />
-              {areAllExpandableRowsExpanded ? "Σύμπτυξη όλων" : "Επέκταση όλων"}
-            </Button>
-          </div>
           {mergedSummary && !hideSummaryPill ? (
             <div
               className={cn(
@@ -1401,68 +1355,52 @@ export function ReportMatrixTable({
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="lg"
+              className="h-10 px-3.5 text-sm"
               disabled={!hasActiveFilters}
               onClick={resetFilters}
             >
               <AppIcon
                 name="bi-arrow-counterclockwise"
-                className="mr-1"
-                size={14}
+                className="size-5"
+                size={20}
               />
               Reset filters
             </Button>
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="lg"
+              className="h-10 px-3.5 text-sm"
               disabled={!filteredRows.length}
               onClick={handleExport}
             >
-              <AppIcon
-                name="bi-file-earmark-excel"
-                className="mr-1"
-                size={14}
-              />
+              <ExcelFileIcon className="size-5" size={20} />
               Excel
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-10 px-3.5 text-sm"
+              disabled={!filteredRows.length}
+              onClick={() => void handlePdfExport()}
+            >
+              <PdfFileIcon className="size-5" size={20} />
+              PDF
             </Button>
           </div>
         </div>
       </div>
       <div ref={viewportRef} className="report-matrix__viewport">
         <table className="report-matrix">
-          <caption className="sr-only">{caption}</caption>
+          <caption className="sr-only">{brandLabel}</caption>
           <thead>
-            <tr>
-              <th
-                className="report-matrix__brand-cell"
-                colSpan={resolvedLeadingColumns.length}
-                scope="colgroup"
-                style={{ left: 0, minWidth: leadingWidth, width: leadingWidth }}
-              >
-                {resolvedHeaderLabel}
-              </th>
-              {sections.map((section) => (
-                <th
-                  key={section.key}
-                  className={cn(
-                    "report-matrix__section-heading",
-                    section.tone &&
-                      `report-matrix__section-heading--${section.tone}`,
-                  )}
-                  colSpan={section.columns.length}
-                  scope="colgroup"
-                >
-                  <span className="report-matrix__section-title">
-                    {section.title}
-                  </span>
-                </th>
-              ))}
-            </tr>
             <tr>
               {resolvedLeadingColumns.map((column, index) => (
                 <th
                   key={column.key}
+                  rowSpan={2}
                   className={cn(
                     "report-matrix__leading-heading",
                     index === 0 && "report-matrix__category-heading",
@@ -1478,12 +1416,34 @@ export function ReportMatrixTable({
                   {column.label}
                 </th>
               ))}
+              {sections.map((section, sectionIndex) => (
+                <th
+                  key={section.key}
+                  className={cn(
+                    "report-matrix__section-heading",
+                    "report-matrix__section-group-start",
+                    sectionIndex < sections.length - 1 &&
+                      "report-matrix__section-group-end",
+                    sectionIndex > 0 && "report-matrix__section-boundary",
+                    section.tone &&
+                      `report-matrix__section-heading--${section.tone}`,
+                  )}
+                  colSpan={section.columns.length}
+                  scope="colgroup"
+                >
+                  <span className="report-matrix__section-title">
+                    {section.title}
+                  </span>
+                </th>
+              ))}
+            </tr>
+            <tr>
               {columns.map((column) => (
                 <th
                   key={`${column.sectionKey}-${column.key}`}
                   className={cn(
                     "report-matrix__column-heading",
-                    column.isSectionStart && "report-matrix__section-start",
+                    getSectionGroupCellClassName(column),
                     column.sectionTone &&
                       `report-matrix__column-heading--section-${column.sectionTone}`,
                     column.headerTone &&

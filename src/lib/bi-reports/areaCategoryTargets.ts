@@ -1,12 +1,15 @@
-import type { ReportCategoryKey } from "@/lib/bi-reports/reportCategories";
+import type { ReportCategoryKey } from "@/lib/bi-reports/reportCategories.types";
 import {
   joinDaxQuery,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
+import {
+  readNumber,
+  readString,
+} from "@/lib/bi-reports/powerBiRowParsing";
+import type { AreaCategoryTargetsRow } from "@/lib/bi-reports/areaCategoryTargets.types";
 
-export type AreaCategoryTargetsRow = {
-  area: string;
-} & Partial<Record<ReportCategoryKey, number | null>>;
+export type { AreaCategoryTargetsRow };
 
 export const AREA_CATEGORY_TARGET_KEYS = [
   "coloplast-travma",
@@ -16,21 +19,6 @@ export const AREA_CATEGORY_TARGET_KEYS = [
   "porges",
   "covidien",
 ] as const satisfies readonly ReportCategoryKey[];
-
-function toNullableNumber(value: unknown): number | null {
-  if (value == null || value === "") return null;
-
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : null;
-}
-
-function readString(row: Record<string, unknown>, key: string): string {
-  return String(row[`[${key}]`] ?? row[key] ?? "").trim();
-}
-
-function readNumber(row: Record<string, unknown>, key: string): number | null {
-  return toNullableNumber(row[`[${key}]`] ?? row[key]);
-}
 
 function normalizeArea(area: string | null | undefined): string {
   return String(area ?? "")

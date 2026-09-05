@@ -17,6 +17,7 @@ import {
   indentDaxArgs,
   joinDaxQuery,
   LAST_CALENDAR_YEAR_DAX,
+  quoteDaxStrings,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
@@ -60,36 +61,6 @@ type ResolvedAkrateiaQuery = {
   summarizeSellerCodeOnly: boolean;
 };
 
-export type AkrateiaSalesRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  group1: string;
-  group2: string;
-  month: string;
-  closedMonthStatus?: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vcy: number | null;
-  vlc?: number | null;
-  tcy?: number | null;
-};
-
-export type AkrateiaTrendRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  group1: string;
-  group2: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vTrend: number | null;
-};
-
 export const AKRATEIA_GROUP2_ORDER = [
   "IC",
   "PERISTEEN",
@@ -111,10 +82,6 @@ export const AKRATEIA_CATEGORY_ORDER = [
 ];
 
 const IC_TYPES = ["IC", "IC-RESTART", "ICST"];
-
-function quoteDaxStrings(values: string[]): string {
-  return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
-}
 
 const AKRATEIA_CATEGORIES: AkrateiaCategory[] = [
   {
@@ -208,9 +175,7 @@ const AKRATEIA_CATEGORIES: AkrateiaCategory[] = [
     businessUnit: "COLOPLAST",
     currency: 1,
     currentYearCalendarFilter: true,
-    filters: [
-      `TREATAS({"3.CATHETERS"}, 'U HOSPITAL SUBS'[Κατηγορία])`,
-    ],
+    filters: [`TREATAS({"3.CATHETERS"}, 'U HOSPITAL SUBS'[Κατηγορία])`],
     group1: "ΝΟΣΟΚΟΜΕΙΑΚΟ",
     group2: "ΝΟΣΟΚΟΜΕΙΑΚΟ",
     groupByColumns: ["'U HOSPITAL SUBS'[Κατηγορία]"],
@@ -242,7 +207,9 @@ function resolveAkrateiaQuery(
           category.currentYearFullPersonColumns === true
             ? false
             : (category.summarizeSellerCodeOnly ?? false),
-        calendarYear: category.currentYearCalendarFilter ? "current" : undefined,
+        calendarYear: category.currentYearCalendarFilter
+          ? "current"
+          : undefined,
         fullPersonColumns: category.currentYearFullPersonColumns === true,
       };
     case "lastYear":
@@ -393,13 +360,13 @@ function buildAkrateiaSalesCurrentYearQuery(
   const selectColumns = query.fullPersonColumns
     ? [
         '  "Area", COALESCE(\'U Sales Person\'[Area], "ΔΕΝ ΟΡΙΖΕΤΑΙ"),',
-        '  "Team", \'U Sales Person\'[Team],',
-        '  "SellerCode", \'U Sales Person\'[SellerCode],',
-        '  "SellerName", \'U Sales Person\'[Πωλητής],',
+        "  \"Team\", 'U Sales Person'[Team],",
+        "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+        "  \"SellerName\", 'U Sales Person'[Πωλητής],",
         `  "Group1", ${group1},`,
         '  "Group2", [Group2],',
-        '  "Month", \'U Months\'[Month],',
-        '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+        "  \"Month\", 'U Months'[Month],",
+        "  \"ClosedMonthStatus\", 'U Months'[Status of Closed Month],",
         '  "REPORT_CODE", [REPORT_CODE],',
         '  "REPORT_DESC", [REPORT_DESC],',
         '  "VCY", [VCY],',
@@ -407,11 +374,11 @@ function buildAkrateiaSalesCurrentYearQuery(
         '  "CURRENCY", [CURRENCY]',
       ]
     : [
-        '  "SellerCode", \'U Sales Person\'[SellerCode],',
+        "  \"SellerCode\", 'U Sales Person'[SellerCode],",
         `  "Group1", ${group1},`,
         '  "Group2", [Group2],',
-        '  "Month", \'U Months\'[Month],',
-        '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+        "  \"Month\", 'U Months'[Month],",
+        "  \"ClosedMonthStatus\", 'U Months'[Status of Closed Month],",
         '  "REPORT_CODE", [REPORT_CODE],',
         '  "REPORT_DESC", [REPORT_DESC],',
         '  "Currency", [CURRENCY],',
@@ -458,10 +425,10 @@ function buildAkrateiaSalesLastYearQuery(
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
     `  "Group1", ${group1},`,
     '  "Group2", [Group2],',
-    '  "Month", \'U Months\'[Month],',
+    "  \"Month\", 'U Months'[Month],",
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
     '  "Currency", [CURRENCY],',
@@ -495,7 +462,7 @@ function buildAkrateiaTrendCurrentYearQuery(
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
     `  "Group1", ${group1},`,
     '  "Group2", [Group2],',
     '  "REPORT_CODE", [REPORT_CODE],',
@@ -507,7 +474,9 @@ function buildAkrateiaTrendCurrentYearQuery(
   ]);
 }
 
-export function buildAkrateiaSalesCurrentYearQueries(areaName: string): string[] {
+export function buildAkrateiaSalesCurrentYearQueries(
+  areaName: string,
+): string[] {
   return AKRATEIA_CATEGORIES.map((category) =>
     buildAkrateiaSalesCurrentYearQuery(areaName, category),
   );
@@ -519,7 +488,9 @@ export function buildAkrateiaSalesLastYearQueries(areaName: string): string[] {
   );
 }
 
-export function buildAkrateiaTrendCurrentYearQueries(areaName: string): string[] {
+export function buildAkrateiaTrendCurrentYearQueries(
+  areaName: string,
+): string[] {
   return AKRATEIA_CATEGORIES.map((category) =>
     buildAkrateiaTrendCurrentYearQuery(areaName, category),
   );

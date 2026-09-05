@@ -18,7 +18,6 @@ import {
 import { ReportMatrixChatShell } from "@/features/chat";
 import {
   ReportMatrixTable,
-  type ReportMatrixRow,
 } from "@/features/powerBI/ReportMatrixTable";
 import {
   buildReportMatrixRows,
@@ -30,6 +29,13 @@ import {
 } from "@/features/powerBI/reportMatrixData";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { RefreshSnapshotButton } from "@/features/powerBI/RefreshSnapshotButton";
+import { buildSnapshotPeriodSummaryItems } from "@/features/powerBI/reportMatrixPeriodSummary";
+import type {
+  MatrixReportPayload,
+  PowerBiReportMatrixPageProps,
+  PowerBiReportMatrixViewProps,
+  PowerBiTabbedReportMatrixPageProps,
+} from "@/features/powerBI/types/PowerBiReportMatrixPage.types";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   filterSnapshotRowsByCurrency,
@@ -44,56 +50,7 @@ import type { AvailableSnapshot } from "@/lib/snapshots/types";
 import { useSellersStore } from "@/stores/sellersStore";
 import { cn } from "@/lib/utils";
 
-type MatrixReportPayload = {
-  area: string;
-  headerLabel: string;
-  currentRows: PowerBiMatrixSourceRow[];
-  previousRows: PowerBiMatrixSourceRow[];
-  trendRows: PowerBiMatrixSourceRow[];
-  precalculatedRows?: ReportMatrixRow[];
-  /** Set when this payload was read from Supabase instead of live Power BI. */
-  snapshotDate?: string;
-  snapshotPeriod?: {
-    closedPeriodLabel: string | null;
-    closedMonthsCount: number | null;
-    lastClosedMonth: string | null;
-    openMonthsCount: number | null;
-  };
-};
-
-export type PowerBiReportMatrixViewProps = {
-  brandLabel: string;
-  caption: string;
-  categoryOrder?: string[];
-  currentSalesPath: string;
-  currentYear: number;
-  emptyMessage: string;
-  exportFileName: string;
-  fallbackError: string;
-  group2Order?: string[];
-  headerLabel?: string;
-  hidden?: boolean;
-  previousSalesPath: string;
-  previousYear: number;
-  reportKey: string;
-  /**
-   * When set, the table is populated from the sales_snapshots row for this
-   * page_code (via v_available_snapshots) whenever one is available, instead
-   * of querying Power BI live. It also ensures a snapshot from the last
-   * 7 days exists for future loads.
-   */
-  snapshotPageCode?: string;
-  /**
-   * Some pages store more than one business view under the same page_code
-   * (e.g. AMOENA "SALES" vs "ΠΕΡΙΣΤΑΤΙΚΑ"). Set this to the currency flag
-   * (0 or 1) used by this view's Power BI queries to select the matching
-   * subset of snapshot rows.
-   */
-  snapshotCurrency?: 0 | 1;
-  /** ISO date of a user-selected historical snapshot. */
-  snapshotDate?: string;
-  trendPath: string;
-};
+export type { PowerBiReportMatrixViewProps } from "@/features/powerBI/types/PowerBiReportMatrixPage.types";
 
 const matrixQueryOptions = {
   staleTime: 60_000,
@@ -103,12 +60,10 @@ const matrixQueryOptions = {
 function ReportMatrixPageHeader({
   actions,
   brandLabel,
-  caption,
   periodSummary,
 }: {
   actions?: ReactNode;
   brandLabel: string;
-  caption: string;
   periodSummary?: ReactNode;
 }) {
   return (
@@ -116,7 +71,6 @@ function ReportMatrixPageHeader({
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 shrink-0">
           <h1 className="app-report-title mb-0">{brandLabel}</h1>
-          <p className="app-report-subtitle mb-0">{caption}</p>
         </div>
         {periodSummary ? (
           <div className="report-matrix-period-slot min-w-0 flex-1 lg:px-4">
@@ -134,73 +88,10 @@ function SnapshotPeriodSummaryPill({
 }: {
   snapshot: AvailableSnapshot | null | undefined;
 }) {
-  const summaries = useMemo(
-    () =>
-      createReportMatrixSectionSummariesFromPeriodMeta(
-        snapshot
-          ? {
-              closedPeriodLabel: snapshot.closed_period_label,
-              closedMonthsCount: snapshot.closed_months_count,
-              lastClosedMonth: snapshot.last_closed_month,
-              openMonthsCount: snapshot.open_months_count,
-            }
-          : null,
-      ),
+  const items = useMemo(
+    () => buildSnapshotPeriodSummaryItems(snapshot),
     [snapshot],
   );
-
-  const previousPeriodSummary = summaries["previous-period"];
-  const closedMonthsSummary = summaries["closed-months"];
-  const openMonthsSummary = summaries["current-year"];
-  const currentMonthSummary = summaries["monthly-target"];
-
-  const items = [
-    previousPeriodSummary
-      ? {
-          key: "closed-period",
-          label: previousPeriodSummary.label,
-          value: String(previousPeriodSummary.value),
-          hint: previousPeriodSummary.details?.[0]
-            ? String(previousPeriodSummary.details[0])
-            : null,
-        }
-      : null,
-    closedMonthsSummary
-      ? {
-          key: "closed-months",
-          label: "Κλειστοί μήνες",
-          value: String(closedMonthsSummary.value),
-          hint: closedMonthsSummary.details?.[0]
-            ? String(closedMonthsSummary.details[0])
-            : null,
-        }
-      : null,
-    openMonthsSummary
-      ? {
-          key: "open-months",
-          label: openMonthsSummary.label,
-          value: String(openMonthsSummary.value),
-          hint: openMonthsSummary.details?.[0]
-            ? String(openMonthsSummary.details[0])
-            : null,
-        }
-      : null,
-    currentMonthSummary
-      ? {
-          key: "current-month",
-          label: currentMonthSummary.label,
-          value: String(currentMonthSummary.value),
-          hint: currentMonthSummary.details?.[0]
-            ? String(currentMonthSummary.details[0]).replace(/^Κατάσταση:\s*/, "")
-            : null,
-        }
-      : null,
-  ].filter(Boolean) as Array<{
-    key: string;
-    label: string;
-    value: string;
-    hint: string | null;
-  }>;
 
   if (!items.length) return null;
 
@@ -209,7 +100,9 @@ function SnapshotPeriodSummaryPill({
       {items.map((item) => (
         <div key={item.key} className="snapshot-period-summary__item">
           <span className="snapshot-period-summary__label">{item.label}</span>
-          <strong className="snapshot-period-summary__value">{item.value}</strong>
+          <strong className="snapshot-period-summary__value">
+            {item.value}
+          </strong>
           {item.hint ? (
             <span className="snapshot-period-summary__hint">{item.hint}</span>
           ) : null}
@@ -256,7 +149,7 @@ function formatSnapshotDescription(snapshotDate: string | undefined) {
     ? snapshotDate
     : parsed.toLocaleDateString("el-GR");
 
-  return `Δεδομένα από στιγμιότυπο (Supabase) της ${formatted}`;
+  return `Δεδομένα από στιγμιότυπο της ${formatted}`;
 }
 
 function SnapshotPicker({
@@ -290,7 +183,7 @@ function SnapshotPicker({
       <DropdownMenuTrigger
         aria-label="Select a past snapshot"
         disabled={isLoading}
-        className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md border border-input bg-background px-4 text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+        className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border px-4 text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50"
       >
         {isLoading ? "Loading snapshots…" : selectedLabel}
         <AppIcon name="bi-chevron-down" size={14} />
@@ -459,7 +352,6 @@ async function fetchMatrixPayload(
 
 export function PowerBiReportMatrixView({
   brandLabel,
-  caption,
   categoryOrder,
   currentSalesPath,
   currentYear,
@@ -476,6 +368,7 @@ export function PowerBiReportMatrixView({
   snapshotDate,
   snapshotPageCode,
   trendPath,
+  periodSummary,
 }: PowerBiReportMatrixViewProps) {
   const sellersCatalog = useSellersStore((state) => state.records);
   const { data, error, isError, isLoading, refetch } = useQuery({
@@ -509,7 +402,9 @@ export function PowerBiReportMatrixView({
     if (data.currentRows.length) {
       return createReportMatrixSectionSummaries(data.currentRows);
     }
-    return createReportMatrixSectionSummariesFromPeriodMeta(data.snapshotPeriod);
+    return createReportMatrixSectionSummariesFromPeriodMeta(
+      data.snapshotPeriod,
+    );
   }, [data]);
 
   const sections = useMemo(
@@ -552,13 +447,13 @@ export function PowerBiReportMatrixView({
       {rows.length ? (
         <ReportMatrixTable
           brandLabel={brandLabel}
-          caption={caption}
           description={formatSnapshotDescription(data?.snapshotDate)}
           exportFileName={exportFileName}
           group2Order={group2Order}
           headerLabel={headerLabel}
           hideSummaryPill={Boolean(snapshotPageCode)}
           leadingColumns={reportMatrixLeadingColumns}
+          periodSummary={periodSummary}
           rows={rows}
           sections={sections}
         />
@@ -571,14 +466,8 @@ export function PowerBiReportMatrixView({
   );
 }
 
-type PowerBiReportMatrixPageProps = Omit<
-  PowerBiReportMatrixViewProps,
-  "exportFileName" | "hidden"
->;
-
 export function PowerBiReportMatrixPage({
   brandLabel,
-  caption,
   reportKey,
   snapshotPageCode,
   currentYear,
@@ -590,6 +479,13 @@ export function PowerBiReportMatrixPage({
     snapshotPageCode,
     currentYear,
     snapshotDate,
+  );
+  const periodSummary = useMemo(
+    () =>
+      snapshotPageCode
+        ? buildSnapshotPeriodSummaryItems(activeSnapshot)
+        : undefined,
+    [activeSnapshot, snapshotPageCode],
   );
 
   return (
@@ -621,7 +517,6 @@ export function PowerBiReportMatrixPage({
           ) : null
         }
         brandLabel={brandLabel}
-        caption={caption}
         periodSummary={
           snapshotPageCode ? (
             <SnapshotPeriodSummaryPill snapshot={activeSnapshot} />
@@ -630,12 +525,12 @@ export function PowerBiReportMatrixPage({
       />
       <PowerBiReportMatrixView
         brandLabel={brandLabel}
-        caption={caption}
-        exportFileName={`${reportKey}-matrix`}
+        exportFileName={reportKey}
         reportKey={reportKey}
         snapshotPageCode={snapshotPageCode}
         currentYear={currentYear}
         previousYear={previousYear}
+        periodSummary={periodSummary}
         {...props}
         snapshotDate={snapshotDate}
       />
@@ -643,21 +538,8 @@ export function PowerBiReportMatrixPage({
   );
 }
 
-type ReportMatrixTab = {
-  key: string;
-  label: string;
-  view: PowerBiReportMatrixViewProps;
-};
-
-type PowerBiTabbedReportMatrixPageProps = {
-  brandLabel: string;
-  caption: string;
-  tabs: ReportMatrixTab[];
-};
-
 export function PowerBiTabbedReportMatrixPage({
   brandLabel,
-  caption,
   tabs,
 }: PowerBiTabbedReportMatrixPageProps) {
   const [activeTabKey, setActiveTabKey] = useState(tabs[0]?.key ?? "");
@@ -672,11 +554,20 @@ export function PowerBiTabbedReportMatrixPage({
     currentYear,
     snapshotDate,
   );
+  const periodSummary = useMemo(
+    () =>
+      snapshotPageCode
+        ? buildSnapshotPeriodSummaryItems(activeSnapshot)
+        : undefined,
+    [activeSnapshot, snapshotPageCode],
+  );
 
   return (
     <ReportMatrixChatShell
       brandLabel={brandLabel}
-      reportKey={activeTab?.view.reportKey ?? tabs[0]?.view.reportKey ?? "report"}
+      reportKey={
+        activeTab?.view.reportKey ?? tabs[0]?.view.reportKey ?? "report"
+      }
       snapshotPageCode={snapshotPageCode}
       currentYear={currentYear}
       previousYear={previousYear}
@@ -686,9 +577,7 @@ export function PowerBiTabbedReportMatrixPage({
       <ReportMatrixPageHeader
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            {snapshotPageCode &&
-            currentYear != null &&
-            previousYear != null ? (
+            {snapshotPageCode && currentYear != null && previousYear != null ? (
               <>
                 <RefreshSnapshotButton
                   brandLabel={brandLabel}
@@ -711,7 +600,7 @@ export function PowerBiTabbedReportMatrixPage({
               </>
             ) : null}
             <div
-              className="inline-flex flex-wrap gap-1 rounded-xl border border-border bg-muted/40 p-1"
+              className="border-border bg-muted/40 inline-flex flex-wrap gap-1 rounded-xl border p-1"
               role="tablist"
               aria-label={`${brandLabel} report views`}
             >
@@ -741,7 +630,6 @@ export function PowerBiTabbedReportMatrixPage({
           </div>
         }
         brandLabel={brandLabel}
-        caption={caption}
         periodSummary={
           snapshotPageCode ? (
             <SnapshotPeriodSummaryPill snapshot={activeSnapshot} />
@@ -754,6 +642,7 @@ export function PowerBiTabbedReportMatrixPage({
           key={tab.key}
           hidden={tab.key !== activeTabKey}
           {...tab.view}
+          periodSummary={periodSummary}
           snapshotDate={snapshotDates?.[tab.key] || undefined}
         />
       ))}

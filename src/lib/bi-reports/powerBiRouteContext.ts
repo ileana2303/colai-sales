@@ -15,24 +15,14 @@ import {
 import { POWERBI_NO_CACHE_HEADERS } from "@/lib/bi-reports/powerBi";
 import type { ApiUserInfo } from "@/types/api/schemas";
 import type { SessionUserInfo } from "@/lib/sessionUser";
+import type {
+  PowerBiRouteAuthFailure,
+  PowerBiRouteAuthResult,
+} from "@/lib/bi-reports/powerBiRouteContext.types";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-type PowerBiRouteAuthSuccess = {
-  ok: true;
-  token: string;
-  userInfo: ApiUserInfo | null;
-  reportContext: ResolvedReportSellerContext;
-};
-
-type PowerBiRouteAuthFailure = {
-  ok: false;
-  response: NextResponse;
-};
-
-export type PowerBiRouteAuthResult =
-  | PowerBiRouteAuthSuccess
-  | PowerBiRouteAuthFailure;
+export type { PowerBiRouteAuthResult };
 
 function unauthorizedResponse(message = "Not authenticated") {
   return NextResponse.json(

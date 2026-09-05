@@ -14,44 +14,13 @@ import {
   buildCalendarYearFilter,
   CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
+  quoteDaxStrings,
   joinDaxQuery,
   LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
 const BBM_BUSINESS_UNITS = ["BAUSCH & LOMB", "BVI", "MORIA"];
-
-export type BbmSalesRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  group1: string;
-  group2: string;
-  month: string;
-  closedMonthStatus?: string;
-  reportCode: string;
-  reportDesc: string;
-  currency?: number | null;
-  vcy: number | null;
-  vlc?: number | null;
-  tcy?: number | null;
-};
-
-export type BbmTrendRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  group1: string;
-  group2: string;
-  reportCode: string;
-  reportDesc: string;
-  vTrend: number | null;
-};
-
-function quoteDaxStrings(values: string[]): string {
-  return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
-}
 
 function getBbmSalesQueryContext(areaName: string) {
   const area = escapeDaxString(areaName);

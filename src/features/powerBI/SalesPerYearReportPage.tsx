@@ -16,6 +16,7 @@ import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   MetricCard,
   ReportHeader,
+  ReportSectionTitle,
   ReportToneValue,
   TargetBar,
   ValuePill,
@@ -30,6 +31,7 @@ import {
   getValueToneClassName,
   getMonthIndex,
   getMonthLabel,
+  getCurrentAthensMonthIndex,
   type ValueTone,
 } from "@/lib/bi-reports/reportUtils";
 import { cn } from "@/lib/utils";
@@ -38,30 +40,6 @@ import type {
   SalesPerYearMonthlyRow,
   SalesPerYearRow,
 } from "@/lib/bi-reports/biReports";
-
-function getCurrentAthensMonthIndex() {
-  const month = new Intl.DateTimeFormat("en-US", {
-    month: "numeric",
-    timeZone: "Europe/Athens",
-  }).format(new Date());
-
-  return Number(month) - 1;
-}
-
-function ReportSectionTitle({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="app-card p-5">
-      <div className="font-semibold">{title}</div>
-      <div className="text-sm text-muted-foreground mt-1">{subtitle}</div>
-    </div>
-  );
-}
 
 function SalesPerYearTargetPanel({
   title,

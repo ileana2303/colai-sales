@@ -14,6 +14,7 @@ import {
   buildCalendarYearFilter,
   CURRENT_CALENDAR_YEAR_DAX,
   escapeDaxString,
+  quoteDaxStrings,
   joinDaxQuery,
   LAST_CALENDAR_YEAR_DAX,
   type PowerBiExecuteQueriesResponse,
@@ -33,39 +34,6 @@ const COVIDIEN_EXCLUDED_DOCUMENT_TYPES = [
   "ΔΧΓ - Δελτίο Αποστολής",
   "ΔΧΔ - Δελτίο Αποστολής (χωρίς αξία)",
 ];
-
-export type CovidienSalesRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  sellerName: string;
-  group1: string;
-  group2: string;
-  month: string;
-  closedMonthStatus: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vcy: number | null;
-  vlc?: number | null;
-  tcy: number | null;
-};
-
-export type CovidienTrendRow = {
-  area: string;
-  team: string;
-  sellerCode: string;
-  group1: string;
-  group2: string;
-  reportCode: string;
-  reportDesc: string;
-  currency: number | null;
-  vTrend: number | null;
-};
-
-function quoteDaxStrings(values: string[]): string {
-  return values.map((value) => `"${escapeDaxString(value)}"`).join(", ");
-}
 
 function getCovidienQueryConstants() {
   return {

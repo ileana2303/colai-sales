@@ -1,20 +1,9 @@
-export type ReportCategoryKey =
-  | "abbott"
-  | "amoena"
-  | "bbm"
-  | "coloplast-travma"
-  | "covidien"
-  | "coloplast-akrateia"
-  | "porges";
+import type {
+  ReportCategoryDefinition,
+  ReportCategoryKey,
+} from "@/lib/bi-reports/reportCategories.types";
 
-export type ReportCategoryDefinition = {
-  accent: string;
-  description: string;
-  href: string;
-  icon: string;
-  key: ReportCategoryKey;
-  title: string;
-};
+export type { ReportCategoryDefinition, ReportCategoryKey };
 
 export const AREA_REPORT_CATEGORIES: ReportCategoryDefinition[] = [
   {

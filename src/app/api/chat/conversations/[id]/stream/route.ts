@@ -6,15 +6,15 @@ import {
   requireChatRouteAuth,
 } from "@/lib/chat/routeHelpers";
 import { streamChatConversation } from "@/lib/chat/upstream";
+import type { ChatConversationRouteContext } from "@/lib/chat/types";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-export async function POST(request: Request, context: RouteContext) {
+export async function POST(
+  request: Request,
+  context: ChatConversationRouteContext,
+) {
   const auth = await requireChatRouteAuth();
   if (!auth.ok) return auth.response;
 

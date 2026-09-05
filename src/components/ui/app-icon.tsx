@@ -18,6 +18,7 @@ import { Coins } from "@/icons/lucide/coins";
 import { Database } from "@/icons/lucide/database";
 import { Droplet } from "@/icons/lucide/droplet";
 import { FileSpreadsheet } from "@/icons/lucide/file-spreadsheet";
+import { FileText } from "@/icons/lucide/file-text";
 import { HeartPulse } from "@/icons/lucide/heart-pulse";
 import { LayoutGrid } from "@/icons/lucide/layout-grid";
 import { LineChart } from "@/icons/lucide/chart-line";
@@ -60,6 +61,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-database": Database,
   "bi-droplet-half": Droplet,
   "bi-file-earmark-excel": FileSpreadsheet,
+  "bi-file-earmark-pdf": FileText,
   "bi-gear": Settings,
   "bi-graph-up-arrow": TrendingUp,
   "bi-grid-3x3-gap": LayoutGrid,

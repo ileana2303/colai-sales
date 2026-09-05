@@ -13,20 +13,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { filterAreasBySearch } from "@/features/manager/areaSelectSearch";
-
-type AreaSelectMenuContentProps = {
-  areas: string[];
-  error?: unknown;
-  isError?: boolean;
-  isLoading?: boolean;
-  isOpen: boolean;
-  onRetry?: () => void;
-  onSearchQueryChange: (value: string) => void;
-  onSelect: (area: string) => void;
-  pendingArea?: string | null;
-  searchQuery: string;
-  selectedArea: string;
-};
+import type { AreaSelectMenuContentProps } from "@/features/manager/AreaSelectMenuContent.types";
 
 export function AreaSelectMenuContent({
   areas,
