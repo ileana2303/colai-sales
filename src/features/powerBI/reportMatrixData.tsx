@@ -568,6 +568,21 @@ function getCategoryRowKey(group2: string, category: string) {
   return `category:${normalizeKeyPart(group2)}|${normalizeKeyPart(category)}`;
 }
 
+export function getDetailRowBranchParentKey(
+  row: ReportMatrixRow,
+  hasGroup3: boolean,
+) {
+  const group2 = row.filterValues?.group2 ?? "";
+  const category = row.filterValues?.category ?? String(row.category ?? "-");
+  const group3 = row.filterValues?.group3 ?? "";
+
+  if (hasGroup3 && group3) {
+    return getGroup3RowKey(group2, category, group3);
+  }
+
+  return getCategoryRowKey(group2, category);
+}
+
 function getGroup3Label(aggregate: MatrixAggregate) {
   return aggregate.group3 || "";
 }

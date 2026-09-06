@@ -18,7 +18,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLogin } from "@/features/auth/hooks/useLogin";
+import { Eye } from "@/icons/lucide/eye";
+import { EyeOff } from "@/icons/lucide/eye-off";
 import { useAuthStore } from "@/stores/authStore";
+import { cn } from "@/lib/utils";
 
 export default function LoginPage({ appVersion }: { appVersion: string }) {
   const router = useRouter();
@@ -29,6 +32,7 @@ export default function LoginPage({ appVersion }: { appVersion: string }) {
   const next = params.get("next") || "/";
   const [username, setUsername] = React.useState("");
   const [password, setPassword] = React.useState("");
+  const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
@@ -97,13 +101,33 @@ export default function LoginPage({ appVersion }: { appVersion: string }) {
 
               <div className="flex flex-col gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    className={cn(
+                      "absolute top-1/2 right-2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                    )}
+                    aria-label={
+                      showPassword ? "Απόκρυψη κωδικού" : "Εμφάνιση κωδικού"
+                    }
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword((current) => !current)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="size-4" aria-hidden />
+                    ) : (
+                      <Eye className="size-4" aria-hidden />
+                    )}
+                  </button>
+                </div>
               </div>
 
               <Button

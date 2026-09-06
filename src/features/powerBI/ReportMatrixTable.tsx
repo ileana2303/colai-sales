@@ -35,6 +35,7 @@ import type {
   ReportMatrixColumn,
   ReportMatrixRow,
   ReportMatrixTableProps,
+  ReportMatrixTableFiltersState,
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 import { cn } from "@/lib/utils";
 
@@ -341,18 +342,38 @@ export function ReportMatrixTable({
   categoryLabel = "Κατηγορία Στόχου",
   description,
   exportFileName,
+  filters: filtersProp,
   group2Order,
   headerLabel,
   hideSummaryPill = false,
   leadingColumns,
+  onFiltersChange,
   periodSummary,
   rows,
   sections,
   title,
 }: ReportMatrixTableProps) {
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [teamFilter, setTeamFilter] = useState("");
-  const [sellerFilter, setSellerFilter] = useState("");
+  const [internalFilters, setInternalFilters] =
+    useState<ReportMatrixTableFiltersState>({
+      category: "",
+      team: "",
+      seller: "",
+    });
+  const filters = filtersProp ?? internalFilters;
+
+  function updateFilters(patch: Partial<ReportMatrixTableFiltersState>) {
+    const nextFilters = { ...filters, ...patch };
+
+    if (onFiltersChange) {
+      onFiltersChange(nextFilters);
+      return;
+    }
+
+    setInternalFilters(nextFilters);
+  }
+
+  const { category: categoryFilter, team: teamFilter, seller: sellerFilter } =
+    filters;
   const [expandedGroup2Keys, setExpandedGroup2Keys] = useState<Set<string>>(
     () => new Set(),
   );
@@ -532,6 +553,10 @@ export function ReportMatrixTable({
     () => (hasGroup3 ? buildReportMatrixGroup3Rows(aggregationDetailRows) : []),
     [aggregationDetailRows, hasGroup3],
   );
+  const comparisonTeamRows = useMemo(
+    () => buildReportMatrixTeamRows(comparisonDetailRows),
+    [comparisonDetailRows],
+  );
   const teamRows = useMemo(
     () => buildReportMatrixTeamRows(aggregationDetailRows),
     [aggregationDetailRows],
@@ -632,11 +657,13 @@ export function ReportMatrixTable({
       return buildSellerFilteredBodyRows({
         categoryRows,
         categoryRowsByGroup2,
+        comparisonTeamRows,
         group2Rows,
         group3Rows,
         group3RowsByCategory,
         hasGroup2,
         hasGroup3,
+        sellerDetailRows: filteredDetailRows,
       });
     }
 
@@ -753,12 +780,14 @@ export function ReportMatrixTable({
   }, [
     categoryRowsByGroup2,
     categoryRows,
+    comparisonTeamRows,
     detailRowsByTeam,
     effectiveSellerFilter,
     expandedGroup2Keys,
     expandedCategoryKeys,
     expandedGroup3Keys,
     expandedTeamKeys,
+    filteredDetailRows,
     group2Rows,
     group3Rows,
     group3RowsByCategory,
@@ -837,9 +866,11 @@ export function ReportMatrixTable({
   }, [filteredRows.length, title, description, sections.length]);
 
   function resetFilters() {
-    setCategoryFilter("");
-    setTeamFilter("");
-    setSellerFilter("");
+    updateFilters({
+      category: "",
+      team: "",
+      seller: "",
+    });
     setExpandedGroup2Keys(new Set());
     setExpandedCategoryKeys(new Set());
     setExpandedGroup3Keys(new Set());
@@ -903,7 +934,9 @@ export function ReportMatrixTable({
   }
 
   function handleCategoryFilterChange(nextCategory: string) {
-    setCategoryFilter(nextCategory);
+    const nextFilters: Partial<ReportMatrixTableFiltersState> = {
+      category: nextCategory,
+    };
 
     if (
       sellerFilter &&
@@ -914,18 +947,22 @@ export function ReportMatrixTable({
         teamFilter,
       )
     ) {
-      setSellerFilter("");
+      nextFilters.seller = "";
     }
+
+    updateFilters(nextFilters);
   }
 
   function handleTeamFilterChange(nextTeam: string) {
-    setTeamFilter(nextTeam);
-    setSellerFilter("");
+    updateFilters({
+      team: nextTeam,
+      seller: "",
+    });
   }
 
   function handleSellerFilterChange(nextSeller: string) {
     if (!nextSeller) {
-      setSellerFilter("");
+      updateFilters({ seller: "" });
       return;
     }
 
@@ -933,10 +970,10 @@ export function ReportMatrixTable({
       sellerOptionRows.find((row) => row.filterValues?.seller === nextSeller)
         ?.filterValues?.team ?? "";
 
-    setSellerFilter(nextSeller);
-    if (team) {
-      setTeamFilter(team);
-    }
+    updateFilters({
+      seller: nextSeller,
+      ...(team ? { team } : {}),
+    });
   }
 
   function resolveExportFileName() {
@@ -1004,6 +1041,10 @@ export function ReportMatrixTable({
     isContextLabel = false,
   ) {
     if (row.isSellerFlattened && columnKey === "category") {
+      return content;
+    }
+
+    if (row.isSellerTeamSummary && columnKey === "category") {
       return content;
     }
 
@@ -1128,6 +1169,7 @@ export function ReportMatrixTable({
             !row.isSellerFlattened &&
             "report-matrix__row--group3",
           row.isSellerFlattened && "report-matrix__row--seller-flat",
+          row.isSellerTeamSummary && "report-matrix__row--seller-team-summary",
           row.rowKind === "team" && "report-matrix__row--team",
           row.rowKind === "detail" && "report-matrix__row--detail",
           row.isTotal && "report-matrix__row--total",
@@ -1181,7 +1223,8 @@ export function ReportMatrixTable({
                 ? row.filterValues?.sellerLabel
                 : getTruncationTitle(rawValue);
             const cellContent =
-              row.isSellerFlattened && column.key === "category"
+              (row.isSellerFlattened || row.isSellerTeamSummary) &&
+              column.key === "category"
                 ? renderValue(rawValue)
                 : renderTruncatedCell(rawValue, title);
             const content = renderLeadingCellContent(

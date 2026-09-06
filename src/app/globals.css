@@ -1893,6 +1893,28 @@ html[data-bs-theme="dark"]
   background: color-mix(in oklch, #e0f2fe 52%, var(--background) 48%);
 }
 
+.report-matrix tbody tr.report-matrix__row--seller-team-summary td,
+.report-matrix tbody tr.report-matrix__row--seller-team-summary .report-matrix__category-cell,
+.report-matrix tbody tr.report-matrix__row--seller-team-summary .report-matrix__dimension-cell,
+.report-matrix tbody tr.report-matrix__row--seller-team-summary .report-matrix__cell {
+  background: color-mix(in oklch, #eff6ff 52%, var(--background) 48%);
+  font-weight: 700;
+}
+
+.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover td,
+.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover .report-matrix__category-cell,
+.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover .report-matrix__dimension-cell,
+.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover .report-matrix__cell {
+  background: color-mix(in oklch, #dbeafe 58%, var(--background) 42%);
+}
+
+.report-matrix__row--seller-team-summary .report-matrix__category-cell {
+  color: #1e3a5f;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  white-space: normal;
+}
+
 .report-matrix__row--seller-flat .report-matrix__category-cell {
   color: #1e3a5f;
   font-size: 0.8rem;

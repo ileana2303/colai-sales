@@ -5,7 +5,10 @@ import {
   getExportFileName,
   getMatrixExportFileName,
 } from "@/features/powerBI/PowerBiTable/utils";
-import { isRedundantGroup1Category } from "@/features/powerBI/reportMatrixData";
+import {
+  getDetailRowBranchParentKey,
+  isRedundantGroup1Category,
+} from "@/features/powerBI/reportMatrixData";
 import type {
   ReportMatrixLeadingColumn,
   ReportMatrixRow,
@@ -68,25 +71,79 @@ export function buildMatrixHierarchyBreadcrumb(
 export function buildSellerFilteredBodyRows({
   categoryRows,
   categoryRowsByGroup2,
+  comparisonTeamRows,
   group2Rows,
   group3Rows,
   group3RowsByCategory,
   hasGroup2,
   hasGroup3,
+  sellerDetailRows,
 }: {
   categoryRows: ReportMatrixRow[];
   categoryRowsByGroup2: Map<string, ReportMatrixRow[]>;
+  comparisonTeamRows: ReportMatrixRow[];
   group2Rows: ReportMatrixRow[];
   group3Rows: ReportMatrixRow[];
   group3RowsByCategory: Map<string, ReportMatrixRow[]>;
   hasGroup2: boolean;
   hasGroup3: boolean;
+  sellerDetailRows: ReportMatrixRow[];
 }) {
+  const teamRowsByParentKey = new Map<string, ReportMatrixRow[]>();
+
+  for (const teamRow of comparisonTeamRows) {
+    const parentKey = teamRow.parentKey;
+    if (!parentKey) continue;
+
+    const existing = teamRowsByParentKey.get(parentKey) ?? [];
+    existing.push(teamRow);
+    teamRowsByParentKey.set(parentKey, existing);
+  }
+
+  const sellerTeamByParentKey = new Map<string, string>();
+
+  for (const row of sellerDetailRows) {
+    const parentKey = getDetailRowBranchParentKey(row, hasGroup3);
+    const team = row.filterValues?.team ?? "";
+
+    if (team && !sellerTeamByParentKey.has(parentKey)) {
+      sellerTeamByParentKey.set(parentKey, team);
+    }
+  }
+
   const withBreadcrumb = (row: ReportMatrixRow): ReportMatrixRow => ({
     ...row,
     category: buildMatrixHierarchyBreadcrumb(row, hasGroup2),
     isSellerFlattened: true,
   });
+
+  const toSellerBranchRows = (
+    parentKey: string,
+    sellerRow: ReportMatrixRow,
+  ): ReportMatrixRow[] => {
+    const breadcrumb = nodeToExportString(sellerRow.category);
+    const sellerTeam = sellerTeamByParentKey.get(parentKey) ?? "";
+    const teamRow = (teamRowsByParentKey.get(parentKey) ?? []).find(
+      (row) => nodeToExportString(row.leadingValues?.team) === sellerTeam,
+    );
+
+    if (!teamRow) {
+      return [sellerRow];
+    }
+
+    const teamName = nodeToExportString(teamRow.leadingValues?.team);
+
+    return [
+      {
+        ...teamRow,
+        category: teamName
+          ? `${breadcrumb} › ${teamName}`
+          : breadcrumb,
+        isSellerTeamSummary: true,
+      },
+      sellerRow,
+    ];
+  };
 
   if (hasGroup3) {
     if (hasGroup2) {
@@ -94,21 +151,30 @@ export function buildSellerFilteredBodyRows({
         const categories = categoryRowsByGroup2.get(group2Row.key) ?? [];
 
         return categories.flatMap((categoryRow) =>
-          (group3RowsByCategory.get(categoryRow.key) ?? []).map(withBreadcrumb),
+          (group3RowsByCategory.get(categoryRow.key) ?? []).flatMap(
+            (group3Row) =>
+              toSellerBranchRows(group3Row.key, withBreadcrumb(group3Row)),
+          ),
         );
       });
     }
 
-    return group3Rows.map(withBreadcrumb);
+    return group3Rows.flatMap((group3Row) =>
+      toSellerBranchRows(group3Row.key, withBreadcrumb(group3Row)),
+    );
   }
 
   if (hasGroup2) {
     return group2Rows.flatMap((group2Row) =>
-      (categoryRowsByGroup2.get(group2Row.key) ?? []).map(withBreadcrumb),
+      (categoryRowsByGroup2.get(group2Row.key) ?? []).flatMap((categoryRow) =>
+        toSellerBranchRows(categoryRow.key, withBreadcrumb(categoryRow)),
+      ),
     );
   }
 
-  return categoryRows.map(withBreadcrumb);
+  return categoryRows.flatMap((categoryRow) =>
+    toSellerBranchRows(categoryRow.key, withBreadcrumb(categoryRow)),
+  );
 }
 
 export function getLeadingExportValue(row: ReportMatrixRow, key: string) {
@@ -140,7 +206,12 @@ export function getMatrixMetricDisplayValue(
     sellerFilterActive: boolean;
   },
 ) {
-  if (options.sellerFilterActive && !row.isTotal && !row.isSellerFlattened) {
+  if (
+    options.sellerFilterActive &&
+    !row.isTotal &&
+    !row.isSellerFlattened &&
+    !row.isSellerTeamSummary
+  ) {
     return "";
   }
 

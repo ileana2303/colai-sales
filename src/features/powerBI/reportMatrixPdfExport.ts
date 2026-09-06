@@ -110,6 +110,10 @@ function getRowFillColor(
   }
 
   if (sellerFilterActive) {
+    if (row.isSellerTeamSummary) {
+      return [219, 234, 254] as [number, number, number];
+    }
+
     return PDF_SELLER_FILTER_ROW_FILL_COLOR;
   }
 
@@ -158,7 +162,9 @@ function getPdfRowFontStyle(
   if (row.isTotal) return "bold";
   if (row.rowKind === "group2") return "bold";
   if (isGroup2SubcategoryRow(row, group2Keys)) return "normal";
-  if (row.rowKind === "category" || row.isSellerFlattened) return "bold";
+  if (row.rowKind === "category" || row.isSellerFlattened || row.isSellerTeamSummary) {
+    return "bold";
+  }
   return "normal";
 }
 

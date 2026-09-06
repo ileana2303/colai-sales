@@ -96,14 +96,14 @@ export function PowerBiTableHeaderFilter({
           aria-label={`${label}: ${selectedLabel}`}
           title={`${label}: ${selectedLabel}`}
           className={cn(
-            "power-bi-table-header-filter__trigger flex h-auto min-h-11 items-center justify-between gap-3 rounded-xl border border-border bg-background px-3.5 py-2 text-left shadow-sm transition-colors hover:border-border hover:bg-muted/35",
+            "power-bi-table-header-filter__trigger border-border bg-background hover:border-border hover:bg-muted/35 flex h-auto min-h-11 items-center justify-between gap-3 rounded-xl border px-3.5 py-2 text-left shadow-sm transition-colors",
             fitContent ? "w-auto max-w-full" : "w-full max-w-56 min-w-36",
           )}
         >
           <span className={cn(fitContent ? "" : "min-w-0 flex-1")}>
             <span
               className={cn(
-                "block text-xs font-bold uppercase tracking-wider text-foreground/65",
+                "text-foreground/65 block text-xs font-bold tracking-wider uppercase",
                 !fitContent && "truncate",
               )}
             >
@@ -111,70 +111,70 @@ export function PowerBiTableHeaderFilter({
             </span>
             <span
               className={cn(
-                "block text-base font-semibold leading-tight text-foreground",
+                "text-foreground block text-base leading-tight font-semibold",
                 fitContent ? "whitespace-nowrap" : "truncate",
               )}
             >
               {selectedLabel}
             </span>
           </span>
-          <ChevronDown className="size-5 shrink-0 text-foreground/60" />
+          <ChevronDown className="text-foreground/60 size-5 shrink-0" />
         </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        sideOffset={4}
-        className="w-max min-w-48 max-w-[min(28rem,calc(100vw-2rem))] p-0"
-      >
-        <div className="sticky top-0 z-10 border-b border-border/60 bg-popover p-1.5">
-          <div className="px-0.5 pb-1 text-xs font-medium text-muted-foreground">
-            {label}
-          </div>
-          <Input
-            ref={searchInputRef}
-            aria-label={`Αναζήτηση ${label}`}
-            autoComplete="off"
-            className="h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-            placeholder="Αναζήτηση..."
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-            onMouseDown={(event) => event.stopPropagation()}
-            onMouseDownCapture={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-            onPointerDownCapture={(event) => event.stopPropagation()}
-          />
-        </div>
-        <DropdownMenuGroup className="max-h-72 overflow-y-auto p-1">
-          {filteredItems.length ? (
-            filteredItems.map((item) => {
-              const isSelected = currentValue === item.value;
-
-              return (
-                <DropdownMenuItem
-                  key={item.value}
-                  className={cn(
-                    "cursor-pointer whitespace-normal wrap-break-word",
-                    isSelected && "bg-accent/60",
-                  )}
-                  onClick={() => selectValue(item.value)}
-                >
-                  <span className="min-w-0 flex-1">{item.label}</span>
-                  {isSelected ? (
-                    <Check className="ml-2 size-4 shrink-0" />
-                  ) : null}
-                </DropdownMenuItem>
-              );
-            })
-          ) : (
-            <div className="px-2 py-2 text-xs text-muted-foreground">
-              Δεν βρέθηκαν τιμές
+        <DropdownMenuContent
+          align="start"
+          sideOffset={4}
+          className="w-max max-w-[min(28rem,calc(100vw-2rem))] min-w-48 p-0"
+        >
+          <div className="border-border/60 bg-popover sticky top-0 z-10 border-b p-1.5">
+            <div className="text-muted-foreground px-0.5 pb-1 text-xs font-medium">
+              {label}
             </div>
-          )}
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+            <Input
+              ref={searchInputRef}
+              aria-label={`Αναζήτηση ${label}`}
+              autoComplete="off"
+              className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full min-w-0 rounded-lg border bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:ring-3"
+              placeholder="Αναζήτηση..."
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              onMouseDownCapture={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onPointerDownCapture={(event) => event.stopPropagation()}
+            />
+          </div>
+          <DropdownMenuGroup className="max-h-72 overflow-y-auto p-1">
+            {filteredItems.length ? (
+              filteredItems.map((item) => {
+                const isSelected = currentValue === item.value;
+
+                return (
+                  <DropdownMenuItem
+                    key={item.value}
+                    className={cn(
+                      "cursor-pointer wrap-break-word whitespace-normal",
+                      isSelected && "bg-accent/60",
+                    )}
+                    onClick={() => selectValue(item.value)}
+                  >
+                    <span className="min-w-0 flex-1">{item.label}</span>
+                    {isSelected ? (
+                      <Check className="ml-2 size-4 shrink-0" />
+                    ) : null}
+                  </DropdownMenuItem>
+                );
+              })
+            ) : (
+              <div className="text-muted-foreground px-2 py-2 text-xs">
+                Δεν βρέθηκαν τιμές
+              </div>
+            )}
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

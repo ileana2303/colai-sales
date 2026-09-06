@@ -67,6 +67,7 @@ export type ReportMatrixRow = {
     team: string;
   };
   isSellerFlattened?: boolean;
+  isSellerTeamSummary?: boolean;
   leadingValues?: Record<string, ReactNode>;
   metrics?: ReportMatrixRowMetrics;
   parentKey?: string;
@@ -76,16 +77,24 @@ export type ReportMatrixRow = {
   isTotal?: boolean;
 };
 
+export type ReportMatrixTableFiltersState = {
+  category: string;
+  seller: string;
+  team: string;
+};
+
 export type ReportMatrixTableProps = {
   brandLabel: string;
   categoryLabel?: string;
   description?: string;
   exportFileName?: string;
+  filters?: ReportMatrixTableFiltersState;
   group2Order?: string[];
   headerLabel?: ReactNode;
   /** When true, period summary is rendered elsewhere (e.g. page header). */
   hideSummaryPill?: boolean;
   leadingColumns?: ReportMatrixLeadingColumn[];
+  onFiltersChange?: (filters: ReportMatrixTableFiltersState) => void;
   periodSummary?: ReportMatrixPeriodSummaryItem[];
   rows: ReportMatrixRow[];
   sections: ReportMatrixSection[];

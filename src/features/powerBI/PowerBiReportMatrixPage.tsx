@@ -2,7 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import type {
   PowerBiReportMatrixViewProps,
   PowerBiTabbedReportMatrixPageProps,
 } from "@/features/powerBI/types/PowerBiReportMatrixPage.types";
+import type { ReportMatrixTableFiltersState } from "@/features/powerBI/types/ReportMatrixTable.types";
 import { ReportQueryBoundary } from "@/features/powerBI/ReportQueryBoundary";
 import {
   filterSnapshotRowsByCurrency,
@@ -55,6 +56,7 @@ export type { PowerBiReportMatrixViewProps } from "@/features/powerBI/types/Powe
 const matrixQueryOptions = {
   staleTime: 60_000,
   retry: 1,
+  placeholderData: keepPreviousData,
 } as const;
 
 function ReportMatrixPageHeader({
@@ -371,6 +373,13 @@ export function PowerBiReportMatrixView({
   periodSummary,
 }: PowerBiReportMatrixViewProps) {
   const sellersCatalog = useSellersStore((state) => state.records);
+  const [matrixFilters, setMatrixFilters] = useState<ReportMatrixTableFiltersState>(
+    {
+      category: "",
+      team: "",
+      seller: "",
+    },
+  );
   const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: powerBiKeys.reportMatrix(
       reportKey,
@@ -438,7 +447,7 @@ export function PowerBiReportMatrixView({
 
   return (
     <ReportQueryBoundary
-      isLoading={isLoading}
+      isLoading={isLoading && !data}
       isError={isError}
       error={error}
       fallbackError={fallbackError}
@@ -449,10 +458,12 @@ export function PowerBiReportMatrixView({
           brandLabel={brandLabel}
           description={formatSnapshotDescription(data?.snapshotDate)}
           exportFileName={exportFileName}
+          filters={matrixFilters}
           group2Order={group2Order}
           headerLabel={headerLabel}
           hideSummaryPill={Boolean(snapshotPageCode)}
           leadingColumns={reportMatrixLeadingColumns}
+          onFiltersChange={setMatrixFilters}
           periodSummary={periodSummary}
           rows={rows}
           sections={sections}
