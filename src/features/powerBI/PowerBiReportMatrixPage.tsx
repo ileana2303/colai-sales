@@ -101,13 +101,17 @@ function SnapshotPeriodSummaryPill({
     <div className="snapshot-period-summary" aria-label="Περίοδος στιγμιοτύπου">
       {items.map((item) => (
         <div key={item.key} className="snapshot-period-summary__item">
-          <span className="snapshot-period-summary__label">{item.label}</span>
+          <div className="snapshot-period-summary__heading">
+            <span className="snapshot-period-summary__label">{item.label}</span>
+            {item.hint ? (
+              <span className="snapshot-period-summary__hint">
+                {item.hint}
+              </span>
+            ) : null}
+          </div>
           <strong className="snapshot-period-summary__value">
             {item.value}
           </strong>
-          {item.hint ? (
-            <span className="snapshot-period-summary__hint">{item.hint}</span>
-          ) : null}
         </div>
       ))}
     </div>
