@@ -12,16 +12,20 @@ export type ReportMatrixPdfFilters = {
   seller: string;
 };
 
+export type ReportMatrixPdfPage = {
+  filters: ReportMatrixPdfFilters;
+  rows: ReportMatrixRow[];
+  sellerFilterActive?: boolean;
+};
+
 export type ReportMatrixPdfExportOptions = {
   brandLabel: string;
   categoryLabel?: string;
   description?: string;
   exportFileName?: string;
-  filters: ReportMatrixPdfFilters;
   headerLabel?: string;
   leadingColumns: ReportMatrixLeadingColumn[];
+  pages: ReportMatrixPdfPage[];
   periodSummary?: ReportMatrixPeriodSummaryItem[];
-  rows: ReportMatrixRow[];
   sections: ReportMatrixSection[];
-  sellerFilterActive?: boolean;
 };

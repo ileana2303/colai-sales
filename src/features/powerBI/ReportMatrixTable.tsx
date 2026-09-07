@@ -16,21 +16,20 @@ import { PdfFileIcon } from "@/icons/pdf-file";
 import type { FilterOption } from "@/features/powerBI/types/PowerBiTable.types";
 import { getMatrixExportFileName } from "@/features/powerBI/PowerBiTable/utils";
 import {
-  buildSellerFilteredBodyRows,
   exportReportMatrixToExcel,
   getMatrixMetricDisplayValue,
 } from "@/features/powerBI/reportMatrixExport";
 import { exportReportMatrixToPdf } from "@/features/powerBI/reportMatrixPdfExport";
+import { ReportMatrixPdfExportDialog } from "@/features/powerBI/ReportMatrixPdfExportDialog";
+import type { ReportMatrixPdfPage } from "@/features/powerBI/types/reportMatrixPdfExport.types";
 import {
-  buildReportMatrixGroup2Rows,
-  buildReportMatrixGroup3Rows,
-  buildReportMatrixCategoryRows,
-  buildReportMatrixTeamRows,
-  buildReportMatrixTotalRows,
-  isRedundantGroup1Category,
-  reportMatrixDetailRowsHaveGroup2,
-  reportMatrixDetailRowsHaveGroup3,
-} from "@/features/powerBI/reportMatrixData";
+  buildReportMatrixFilteredView,
+  canExpandCategory,
+  canExpandGroup2,
+  canExpandGroup3,
+  canExpandTeam,
+  collectReportMatrixExportMembers,
+} from "@/features/powerBI/reportMatrixVisibleRows";
 import type {
   ReportMatrixColumn,
   ReportMatrixRow,
@@ -131,22 +130,6 @@ function renderTruncatedCell(value: ReactNode, title?: string) {
       {text}
     </span>
   );
-}
-
-function canExpandCategory(_row: ReportMatrixRow) {
-  return false;
-}
-
-function canExpandGroup2(row: ReportMatrixRow) {
-  return row.rowKind === "group2" && (row.childCount ?? 0) > 1;
-}
-
-function canExpandGroup3(_row: ReportMatrixRow) {
-  return false;
-}
-
-function canExpandTeam(_row: ReportMatrixRow) {
-  return false;
 }
 
 function isGroup2SubcategoryRow(
@@ -409,6 +392,8 @@ export function ReportMatrixTable({
   const [expandedTeamKeys, setExpandedTeamKeys] = useState<Set<string>>(
     () => new Set(),
   );
+  const [isPdfExporting, setIsPdfExporting] = useState(false);
+  const [isPdfExportDialogOpen, setIsPdfExportDialogOpen] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -475,358 +460,57 @@ export function ReportMatrixTable({
     effectiveSellerFilter ||
     (!lockedTeamFilter && teamFilter),
   );
-  const filteredDetailRows = useMemo(
+  const matrixView = useMemo(
     () =>
-      detailRows.filter((row) => {
-        const categoryValue =
-          row.filterValues?.category ?? String(row.category ?? "");
-        const teamValue =
-          row.filterValues?.team ?? String(row.leadingValues?.team ?? "");
-        const sellerValue = row.filterValues?.seller ?? "";
-
-        if (categoryFilter && categoryValue !== categoryFilter) {
-          return false;
-        }
-        if (effectiveTeamFilter && teamValue !== effectiveTeamFilter) {
-          return false;
-        }
-        if (effectiveSellerFilter && sellerValue !== effectiveSellerFilter) {
-          return false;
-        }
-        return true;
+      buildReportMatrixFilteredView({
+        categoryFilter,
+        detailRows,
+        expansion: {
+          categoryKeys: expandedCategoryKeys,
+          group2Keys: expandedGroup2Keys,
+          group3Keys: expandedGroup3Keys,
+          teamKeys: expandedTeamKeys,
+        },
+        group2Order,
+        sellerFilter: effectiveSellerFilter,
+        teamFilter: effectiveTeamFilter,
       }),
-    [categoryFilter, detailRows, effectiveSellerFilter, effectiveTeamFilter],
+    [
+      categoryFilter,
+      detailRows,
+      effectiveSellerFilter,
+      effectiveTeamFilter,
+      expandedCategoryKeys,
+      expandedGroup2Keys,
+      expandedGroup3Keys,
+      expandedTeamKeys,
+      group2Order,
+    ],
   );
-
-  const selectedSellerTeams = useMemo(() => {
-    if (!effectiveSellerFilter || effectiveTeamFilter) return new Set<string>();
-
-    return new Set(
-      detailRows
-        .filter((row) => row.filterValues?.seller === effectiveSellerFilter)
-        .map((row) => row.filterValues?.team ?? "")
-        .filter(Boolean),
-    );
-  }, [detailRows, effectiveSellerFilter, effectiveTeamFilter]);
-
-  const comparisonDetailRows = useMemo(() => {
-    const visibleCategories = effectiveSellerFilter
-      ? new Set(
-          filteredDetailRows.map(
-            (row) => row.filterValues?.category ?? String(row.category ?? ""),
-          ),
-        )
-      : null;
-
-    return detailRows.filter((row) => {
-      const categoryValue =
-        row.filterValues?.category ?? String(row.category ?? "");
-      const teamValue =
-        row.filterValues?.team ?? String(row.leadingValues?.team ?? "");
-
-      if (categoryFilter && categoryValue !== categoryFilter) {
-        return false;
-      }
-      if (effectiveTeamFilter && teamValue !== effectiveTeamFilter) {
-        return false;
-      }
-      if (
-        !effectiveTeamFilter &&
-        selectedSellerTeams.size > 0 &&
-        !selectedSellerTeams.has(teamValue)
-      ) {
-        return false;
-      }
-      if (visibleCategories && !visibleCategories.has(categoryValue)) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [
-    categoryFilter,
-    detailRows,
-    effectiveSellerFilter,
+  const {
+    bodyRows,
     filteredDetailRows,
-    selectedSellerTeams,
-    effectiveTeamFilter,
-  ]);
-  const aggregationDetailRows = effectiveSellerFilter
-    ? filteredDetailRows
-    : comparisonDetailRows;
-  const hasGroup3 = useMemo(
-    () => reportMatrixDetailRowsHaveGroup3(detailRows),
-    [detailRows],
-  );
-  const hasGroup2 = useMemo(
-    () => reportMatrixDetailRowsHaveGroup2(detailRows),
-    [detailRows],
-  );
-
-  const group2Rows = useMemo(
-    () =>
-      hasGroup2
-        ? buildReportMatrixGroup2Rows(aggregationDetailRows, group2Order)
-        : [],
-    [aggregationDetailRows, group2Order, hasGroup2],
-  );
-  const categoryRows = useMemo(
-    () => buildReportMatrixCategoryRows(aggregationDetailRows),
-    [aggregationDetailRows],
-  );
-  const group3Rows = useMemo(
-    () => (hasGroup3 ? buildReportMatrixGroup3Rows(aggregationDetailRows) : []),
-    [aggregationDetailRows, hasGroup3],
-  );
-  const teamRows = useMemo(
-    () => buildReportMatrixTeamRows(aggregationDetailRows),
-    [aggregationDetailRows],
-  );
-
-  const group3RowsByCategory = useMemo(() => {
-    const groupedRows = new Map<string, ReportMatrixRow[]>();
-
-    for (const row of group3Rows) {
-      const parentKey = row.parentKey;
-      if (!parentKey) continue;
-
-      const existing = groupedRows.get(parentKey);
-      if (existing) {
-        existing.push(row);
-      } else {
-        groupedRows.set(parentKey, [row]);
-      }
-    }
-
-    return groupedRows;
-  }, [group3Rows]);
-
-  const teamRowsByCategory = useMemo(() => {
-    const groupedRows = new Map<string, ReportMatrixRow[]>();
-
-    for (const row of teamRows) {
-      const parentKey = row.parentKey;
-      if (!parentKey) continue;
-
-      const existing = groupedRows.get(parentKey);
-      if (existing) {
-        existing.push(row);
-      } else {
-        groupedRows.set(parentKey, [row]);
-      }
-    }
-
-    return groupedRows;
-  }, [teamRows]);
-
-  const categoryRowsByGroup2 = useMemo(() => {
-    const groupedRows = new Map<string, ReportMatrixRow[]>();
-
-    for (const row of categoryRows) {
-      const parentKey = row.parentKey;
-      if (!parentKey) continue;
-
-      const existing = groupedRows.get(parentKey);
-      if (existing) {
-        existing.push(row);
-      } else {
-        groupedRows.set(parentKey, [row]);
-      }
-    }
-
-    return groupedRows;
-  }, [categoryRows]);
-
-  const teamRowsByGroup3 = useMemo(() => {
-    const groupedRows = new Map<string, ReportMatrixRow[]>();
-
-    for (const row of teamRows) {
-      const parentKey = row.parentKey;
-      if (!parentKey) continue;
-
-      const existing = groupedRows.get(parentKey);
-      if (existing) {
-        existing.push(row);
-      } else {
-        groupedRows.set(parentKey, [row]);
-      }
-    }
-
-    return groupedRows;
-  }, [teamRows]);
-
-  const detailRowsByTeam = useMemo(() => {
-    const groupedRows = new Map<string, ReportMatrixRow[]>();
-
-    for (const row of filteredDetailRows) {
-      const parentKey = row.parentKey;
-      if (!parentKey) continue;
-
-      const existing = groupedRows.get(parentKey);
-      if (existing) {
-        existing.push(row);
-      } else {
-        groupedRows.set(parentKey, [row]);
-      }
-    }
-
-    return groupedRows;
-  }, [filteredDetailRows]);
-
-  const bodyRows = useMemo(() => {
-    if (effectiveSellerFilter) {
-      return buildSellerFilteredBodyRows({
-        categoryRows,
-        categoryRowsByGroup2,
-        expandedGroup2Keys,
-        group2Rows,
-        group3Rows,
-        group3RowsByCategory,
-        hasGroup2,
-        hasGroup3,
-        sellerDetailRows: filteredDetailRows,
-        sellerFilterActive: true,
-      });
-    }
-
-    const renderTeamBranch = (row: ReportMatrixRow) => {
-      const sellerRows = detailRowsByTeam.get(row.key) ?? [];
-
-      if (canExpandTeam(row) && !expandedTeamKeys.has(row.key)) {
-        return [row];
-      }
-
-      if (!canExpandTeam(row)) {
-        return [row];
-      }
-
-      return [row, ...sellerRows];
-    };
-
-    const renderGroup3Branch = (row: ReportMatrixRow) => {
-      const group3TeamRows = teamRowsByGroup3.get(row.key) ?? [];
-      const expandedTeamRows = group3TeamRows.flatMap(renderTeamBranch);
-
-      if (canExpandGroup3(row) && !expandedGroup3Keys.has(row.key)) {
-        return [row];
-      }
-
-      if (!canExpandGroup3(row)) {
-        return [row];
-      }
-
-      return [row, ...expandedTeamRows];
-    };
-
-    const renderCategoryBranch = (row: ReportMatrixRow) => {
-      const group2Label = row.filterValues?.group2 ?? "";
-      const group1Label =
-        row.filterValues?.category || String(row.category ?? "-");
-      const parentGroup2Row = row.parentKey
-        ? group2Rows.find((group2Row) => group2Row.key === row.parentKey)
-        : undefined;
-      const skipCategoryRow =
-        isRedundantGroup1Category(group2Label, group1Label) &&
-        !(parentGroup2Row && canExpandGroup2(parentGroup2Row));
-
-      if (skipCategoryRow) {
-        return [];
-      }
-
-      if (!hasGroup3) {
-        const categoryTeamRows = teamRowsByCategory.get(row.key) ?? [];
-        const expandedTeamRows = categoryTeamRows.flatMap(renderTeamBranch);
-
-        if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
-          return [row];
-        }
-
-        if (!canExpandCategory(row)) {
-          return [row];
-        }
-
-        return [row, ...expandedTeamRows];
-      }
-
-      const groupedGroup3Rows = group3RowsByCategory.get(row.key) ?? [];
-      const directTeamRows = teamRowsByCategory.get(row.key) ?? [];
-      const expandedGroup3Rows = groupedGroup3Rows.flatMap(renderGroup3Branch);
-      const expandedDirectTeamRows = directTeamRows.flatMap(renderTeamBranch);
-      const expandedChildren = [
-        ...expandedGroup3Rows,
-        ...expandedDirectTeamRows,
-      ];
-
-      if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
-        return [row];
-      }
-
-      if (!canExpandCategory(row)) {
-        if (groupedGroup3Rows.length) {
-          return groupedGroup3Rows;
-        }
-
-        if (directTeamRows.length) {
-          return directTeamRows;
-        }
-
-        return [row];
-      }
-
-      return [row, ...expandedChildren];
-    };
-
-    if (hasGroup2) {
-      return group2Rows.flatMap((group2Row) => {
-        const groupedCategoryRows =
-          categoryRowsByGroup2.get(group2Row.key) ?? [];
-        const categoryBranches =
-          groupedCategoryRows.flatMap(renderCategoryBranch);
-
-        if (
-          !canExpandGroup2(group2Row) ||
-          !expandedGroup2Keys.has(group2Row.key)
-        ) {
-          return [group2Row];
-        }
-
-        return categoryBranches.length
-          ? [group2Row, ...categoryBranches]
-          : [group2Row];
-      });
-    }
-
-    return categoryRows.flatMap((row) => {
-      return renderCategoryBranch(row);
-    });
-  }, [
-    categoryRowsByGroup2,
-    categoryRows,
-    detailRowsByTeam,
-    effectiveSellerFilter,
-    expandedGroup2Keys,
-    expandedCategoryKeys,
-    expandedGroup3Keys,
-    expandedTeamKeys,
-    filteredDetailRows,
+    filteredRows,
     group2Rows,
-    group3Rows,
-    group3RowsByCategory,
     hasGroup2,
-    hasGroup3,
-    teamRowsByCategory,
-    teamRowsByGroup3,
-  ]);
-
-  const totalRows = useMemo(
-    () => buildReportMatrixTotalRows(aggregationDetailRows),
-    [aggregationDetailRows],
+    totalRows,
+  } = matrixView;
+  const pdfExportMembers = useMemo(
+    () => collectReportMatrixExportMembers(sellerOptionRows),
+    [sellerOptionRows],
   );
-
-  const filteredRows = useMemo(
-    () => [...bodyRows, ...totalRows],
-    [bodyRows, totalRows],
+  const pdfExportTeamLabel = lockedTeamFilter
+    ? lockedTeamFilter
+    : resolveFilterLabel(effectiveTeamFilter, teamOptions);
+  const requiresMultiPagePdfExport = !effectiveSellerFilter;
+  const expandableGroup2Keys = useMemo(
+    () => bodyRows.filter(canExpandGroup2).map((row) => row.key),
+    [bodyRows],
   );
+  const hasExpandableRows = expandableGroup2Keys.length > 0;
+  const areAllExpandableRowsExpanded =
+    hasExpandableRows &&
+    expandableGroup2Keys.every((key) => expandedGroup2Keys.has(key));
 
   const categoryColumnWidth = useMemo(() => {
     const labels = filteredRows
@@ -847,7 +531,7 @@ export function ReportMatrixTable({
     );
 
     return measureReportMatrixCategoryColumnWidth(labels, includeChevron);
-  }, [categoryLabel, effectiveSellerFilter, filteredRows]);
+  }, [categoryLabel, filteredRows]);
 
   const resolvedLeadingColumns = useMemo(() => {
     const columns = leadingColumns ?? [
@@ -895,6 +579,18 @@ export function ReportMatrixTable({
     setExpandedCategoryKeys(new Set());
     setExpandedGroup3Keys(new Set());
     setExpandedTeamKeys(new Set());
+  }
+
+  function toggleExpandAll() {
+    if (areAllExpandableRowsExpanded) {
+      setExpandedGroup2Keys(new Set());
+      setExpandedCategoryKeys(new Set());
+      setExpandedGroup3Keys(new Set());
+      setExpandedTeamKeys(new Set());
+      return;
+    }
+
+    setExpandedGroup2Keys(new Set(expandableGroup2Keys));
   }
 
   function toggleGroup3(rowKey: string) {
@@ -998,15 +694,12 @@ export function ReportMatrixTable({
     });
   }
 
-  function resolveExportFileName() {
-    return getMatrixExportFileName(exportFileName, brandLabel, {
-      category: categoryFilter
-        ? {
-            value: categoryFilter,
-            label: resolveFilterLabel(categoryFilter, categoryOptions),
-          }
-        : undefined,
-      seller: effectiveSellerFilter
+  function resolveExportFileName(
+    seller?: { label: string; value: string } | null,
+  ) {
+    const resolvedSeller =
+      seller ??
+      (effectiveSellerFilter
         ? {
             value: effectiveSellerFilter,
             label: resolveSellerFilterLabel(
@@ -1014,7 +707,16 @@ export function ReportMatrixTable({
               sellerOptions,
             ),
           }
+        : undefined);
+
+    return getMatrixExportFileName(exportFileName, brandLabel, {
+      category: categoryFilter
+        ? {
+            value: categoryFilter,
+            label: resolveFilterLabel(categoryFilter, categoryOptions),
+          }
         : undefined,
+      seller: resolvedSeller,
     });
   }
 
@@ -1029,33 +731,154 @@ export function ReportMatrixTable({
     });
   }
 
-  async function handlePdfExport() {
-    await exportReportMatrixToPdf({
-      brandLabel,
-      categoryLabel,
-      description,
-      exportFileName: resolveExportFileName(),
+  function buildPdfFilterPage({
+    rows,
+    sellerFilterActive,
+    sellerLabel,
+    sellerRows,
+    teamLabel,
+  }: {
+    rows: ReportMatrixRow[];
+    sellerFilterActive: boolean;
+    sellerLabel: string;
+    sellerRows: ReportMatrixRow[];
+    teamLabel: string;
+  }): ReportMatrixPdfPage {
+    return {
       filters: {
         category: resolveFilterLabel(categoryFilter, categoryOptions),
         group2:
-          effectiveSellerFilter && categoryFilter
-            ? resolveSelectedSellerGroup2(filteredDetailRows, categoryFilter)
+          sellerFilterActive && categoryFilter
+            ? resolveSelectedSellerGroup2(sellerRows, categoryFilter)
             : undefined,
-        team: lockedTeamFilter
-          ? lockedTeamFilter
-          : resolveFilterLabel(effectiveTeamFilter, teamOptions),
-        seller: resolveSellerFilterLabel(effectiveSellerFilter, sellerOptions),
+        team: teamLabel,
+        seller: sellerLabel,
       },
-      headerLabel:
-        typeof (headerLabel ?? brandLabel) === "string"
-          ? String(headerLabel ?? brandLabel)
-          : brandLabel,
-      leadingColumns: resolvedLeadingColumns,
-      periodSummary,
-      rows: filteredRows,
-      sections,
-      sellerFilterActive: Boolean(effectiveSellerFilter),
+      rows,
+      sellerFilterActive,
+    };
+  }
+
+  async function performPdfExport() {
+    if (isPdfExporting) return;
+
+    setIsPdfExporting(true);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 0);
     });
+
+    try {
+      const currentTeamLabel = pdfExportTeamLabel;
+      const sharedOptions = {
+        brandLabel,
+        categoryLabel,
+        description,
+        exportFileName: resolveExportFileName(),
+        headerLabel:
+          typeof (headerLabel ?? brandLabel) === "string"
+            ? String(headerLabel ?? brandLabel)
+            : brandLabel,
+        leadingColumns: resolvedLeadingColumns,
+        periodSummary,
+        sections,
+      };
+
+      if (effectiveSellerFilter) {
+        await exportReportMatrixToPdf({
+          ...sharedOptions,
+          pages: [
+            buildPdfFilterPage({
+              rows: filteredRows,
+              sellerFilterActive: true,
+              sellerLabel: resolveSellerFilterLabel(
+                effectiveSellerFilter,
+                sellerOptions,
+              ),
+              sellerRows: filteredDetailRows,
+              teamLabel: currentTeamLabel,
+            }),
+          ],
+        });
+        return;
+      }
+
+      const overviewView = buildReportMatrixFilteredView({
+        categoryFilter,
+        detailRows,
+        expandAll: true,
+        group2Order,
+        sellerFilter: "",
+        teamFilter: effectiveTeamFilter,
+      });
+
+      await exportReportMatrixToPdf({
+        ...sharedOptions,
+        exportFileName: resolveExportFileName(),
+        pages: [
+          buildPdfFilterPage({
+            rows: overviewView.filteredRows,
+            sellerFilterActive: false,
+            sellerLabel: resolveSellerFilterLabel("", sellerOptions),
+            sellerRows: overviewView.filteredDetailRows,
+            teamLabel: currentTeamLabel,
+          }),
+        ],
+      });
+
+      for (const [memberIndex, member] of pdfExportMembers.entries()) {
+        if (memberIndex > 0) {
+          await new Promise<void>((resolve) => {
+            window.setTimeout(resolve, 150);
+          });
+        }
+
+        const memberView = buildReportMatrixFilteredView({
+          categoryFilter,
+          detailRows,
+          expandAll: true,
+          group2Order,
+          sellerFilter: member.seller,
+          teamFilter: member.team,
+        });
+
+        await exportReportMatrixToPdf({
+          ...sharedOptions,
+          exportFileName: resolveExportFileName({
+            value: member.seller,
+            label: member.sellerLabel,
+          }),
+          pages: [
+            buildPdfFilterPage({
+              rows: memberView.filteredRows,
+              sellerFilterActive: true,
+              sellerLabel: member.sellerLabel,
+              sellerRows: memberView.filteredDetailRows,
+              teamLabel: member.team
+                ? resolveFilterLabel(member.team, teamOptions)
+                : currentTeamLabel,
+            }),
+          ],
+        });
+      }
+    } finally {
+      setIsPdfExporting(false);
+      setIsPdfExportDialogOpen(false);
+    }
+  }
+
+  function handlePdfExportClick() {
+    if (isPdfExporting || !filteredRows.length) return;
+
+    if (requiresMultiPagePdfExport) {
+      setIsPdfExportDialogOpen(true);
+      return;
+    }
+
+    void performPdfExport();
+  }
+
+  function handlePdfExportConfirm() {
+    void performPdfExport();
   }
 
   function renderLeadingCellContent(
@@ -1472,6 +1295,26 @@ export function ReportMatrixTable({
               variant="outline"
               size="lg"
               className="h-10 px-3.5 text-sm"
+              disabled={!hasExpandableRows}
+              aria-expanded={areAllExpandableRowsExpanded}
+              onClick={toggleExpandAll}
+            >
+              <AppIcon
+                name={
+                  areAllExpandableRowsExpanded
+                    ? "bi-fold-vertical"
+                    : "bi-unfold-vertical"
+                }
+                className="size-5"
+                size={20}
+              />
+              {areAllExpandableRowsExpanded ? "Collapse all" : "Expand all"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-10 px-3.5 text-sm"
               disabled={!filteredRows.length}
               onClick={handleExport}
             >
@@ -1483,15 +1326,22 @@ export function ReportMatrixTable({
               variant="outline"
               size="lg"
               className="h-10 px-3.5 text-sm"
-              disabled={!filteredRows.length}
-              onClick={() => void handlePdfExport()}
+              disabled={!filteredRows.length || isPdfExporting}
+              onClick={handlePdfExportClick}
             >
               <PdfFileIcon className="size-5" size={20} />
-              PDF
+              {isPdfExporting ? "PDF…" : "PDF"}
             </Button>
           </div>
         </div>
       </div>
+      <ReportMatrixPdfExportDialog
+        isExporting={isPdfExporting}
+        open={isPdfExportDialogOpen}
+        teamLabel={pdfExportTeamLabel}
+        onConfirm={handlePdfExportConfirm}
+        onOpenChange={setIsPdfExportDialogOpen}
+      />
       <div ref={viewportRef} className="report-matrix__viewport">
         <table className="report-matrix">
           <caption className="sr-only">{brandLabel}</caption>

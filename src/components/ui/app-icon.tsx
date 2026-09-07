@@ -35,6 +35,7 @@ import { Table } from "@/icons/lucide/table";
 import { Target } from "@/icons/lucide/target";
 import { Trash2 } from "@/icons/lucide/trash-2";
 import { TrendingUp } from "@/icons/lucide/trending-up";
+import { FoldVertical } from "@/icons/lucide/fold-vertical";
 import { UnfoldVertical } from "@/icons/lucide/unfold-vertical";
 import { UserPlus } from "@/icons/lucide/user-plus";
 import { Users } from "@/icons/lucide/users";
@@ -62,6 +63,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-droplet-half": Droplet,
   "bi-file-earmark-excel": FileSpreadsheet,
   "bi-file-earmark-pdf": FileText,
+  "bi-fold-vertical": FoldVertical,
   "bi-gear": Settings,
   "bi-graph-up-arrow": TrendingUp,
   "bi-grid-3x3-gap": LayoutGrid,

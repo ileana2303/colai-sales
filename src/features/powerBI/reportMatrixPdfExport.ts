@@ -7,7 +7,11 @@ import {
   getMatrixMetricDisplayValue,
   nodeToExportString,
 } from "@/features/powerBI/reportMatrixExport";
-import type { ReportMatrixPdfExportOptions } from "@/features/powerBI/types/reportMatrixPdfExport.types";
+import type {
+  ReportMatrixPdfExportOptions,
+  ReportMatrixPdfFilters,
+  ReportMatrixPdfPage,
+} from "@/features/powerBI/types/reportMatrixPdfExport.types";
 import type {
   ReportMatrixLeadingColumn,
   ReportMatrixRow,
@@ -445,10 +449,10 @@ function buildPdfTableBody(
   });
 }
 
-function formatPdfCategoryFilterValue({
-  filters,
-  sellerFilterActive = false,
-}: ReportMatrixPdfExportOptions) {
+function formatPdfCategoryFilterValue(
+  filters: ReportMatrixPdfFilters,
+  sellerFilterActive: boolean,
+) {
   if (sellerFilterActive && filters.group2) {
     return `${filters.group2} -> ${filters.category}`;
   }
@@ -459,15 +463,16 @@ function formatPdfCategoryFilterValue({
 function writeMetadataSection(
   doc: jsPDF,
   options: ReportMatrixPdfExportOptions,
+  page: ReportMatrixPdfPage,
   startY: number,
 ) {
   const {
     brandLabel,
     categoryLabel = "Κατηγορία Στόχου",
     description,
-    filters,
     periodSummary = [],
   } = options;
+  const { filters, sellerFilterActive = false } = page;
   let y = startY;
 
   doc.setFont(PDF_FONT_NAME, "bold");
@@ -517,7 +522,10 @@ function writeMetadataSection(
     body: [
       [
         {
-          content: `${categoryLabel}: ${formatPdfCategoryFilterValue(options)}`,
+          content: `${categoryLabel}: ${formatPdfCategoryFilterValue(
+            filters,
+            sellerFilterActive,
+          )}`,
           styles: {
             fillColor: [241, 245, 249],
             textColor: [30, 58, 95],
@@ -560,45 +568,25 @@ function writeMetadataSection(
   return y + 2;
 }
 
-export async function exportReportMatrixToPdf(
+function writePdfMatrixTable(
+  doc: jsPDF,
   options: ReportMatrixPdfExportOptions,
+  page: ReportMatrixPdfPage,
+  startY: number,
 ) {
-  const {
-    brandLabel,
-    exportFileName,
-    leadingColumns,
-    rows,
-    sections,
-    sellerFilterActive = false,
-  } = options;
+  const { leadingColumns, sections } = options;
+  const { rows, sellerFilterActive = false } = page;
   const metricColumns = flattenPdfMetricColumns(sections);
   const group2Keys = new Set(
     rows.filter((row) => row.rowKind === "group2").map((row) => row.key),
   );
-  const metricDisplayOptions = {
-    sellerFilterActive,
-  };
-  const doc = new (await import("jspdf")).jsPDF({
-    orientation: "landscape",
-    unit: "mm",
-    format: "a3",
-  });
-
-  await registerPdfFonts(doc);
-  doc.setFont(PDF_FONT_NAME, "normal");
-
-  const tableStartY = writeMetadataSection(doc, options, 14);
 
   autoTable(doc, {
-    startY: tableStartY,
+    startY,
     head: buildPdfTableHead(leadingColumns, sections),
-    body: buildPdfTableBody(
-      rows,
-      leadingColumns,
-      metricColumns,
-      group2Keys,
-      metricDisplayOptions,
-    ),
+    body: buildPdfTableBody(rows, leadingColumns, metricColumns, group2Keys, {
+      sellerFilterActive,
+    }),
     theme: "plain",
     styles: {
       font: PDF_FONT_NAME,
@@ -621,6 +609,31 @@ export async function exportReportMatrixToPdf(
     },
     margin: { top: 12, left: 10, right: 10, bottom: 12 },
     rowPageBreak: "avoid",
+  });
+}
+
+export async function exportReportMatrixToPdf(
+  options: ReportMatrixPdfExportOptions,
+) {
+  const { brandLabel, exportFileName, pages } = options;
+  if (!pages.length) return;
+
+  const doc = new (await import("jspdf")).jsPDF({
+    orientation: "landscape",
+    unit: "mm",
+    format: "a3",
+  });
+
+  await registerPdfFonts(doc);
+  doc.setFont(PDF_FONT_NAME, "normal");
+
+  pages.forEach((page, pageIndex) => {
+    if (pageIndex > 0) {
+      doc.addPage();
+    }
+
+    const tableStartY = writeMetadataSection(doc, options, page, 14);
+    writePdfMatrixTable(doc, options, page, tableStartY);
   });
 
   doc.save(getPdfExportFileName(brandLabel, exportFileName));

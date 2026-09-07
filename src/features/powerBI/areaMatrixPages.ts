@@ -23,7 +23,7 @@ import type {
 const AREA_MATRIX_PAGE_CONFIG = {
   covidien: {
     brandLabel: "COVIDIEN",
-    emptyMessage: "Δεν βρέθηκαν Covidien στοιχεία για το area του login.",
+    emptyMessage: "Δεν βρέθηκαν Covidien στοιχεία γι' αυτό το area.",
     fallbackError: "Failed to load Covidien matrix",
     reportKey: "covidien",
     snapshotPageCode: REPORT_SNAPSHOT_PAGE_CODES.covidien,
@@ -33,7 +33,7 @@ const AREA_MATRIX_PAGE_CONFIG = {
   },
   porges: {
     brandLabel: "PORGES",
-    emptyMessage: "Δεν βρέθηκαν Porges στοιχεία για το area του login.",
+    emptyMessage: "Δεν βρέθηκαν Porges στοιχεία γι' αυτό το area.",
     fallbackError: "Failed to load Porges matrix",
     reportKey: "porges",
     snapshotPageCode: REPORT_SNAPSHOT_PAGE_CODES.porges,
@@ -43,7 +43,7 @@ const AREA_MATRIX_PAGE_CONFIG = {
   },
   bbm: {
     brandLabel: "BAUSCH & LOMB",
-    emptyMessage: "Δεν βρέθηκαν BAUSCH & LOMB στοιχεία για το area του login.",
+    emptyMessage: "Δεν βρέθηκαν BAUSCH & LOMB στοιχεία γι' αυτό το area.",
     fallbackError: "Failed to load BAUSCH & LOMB matrix",
     reportKey: "bbm",
     snapshotPageCode: REPORT_SNAPSHOT_PAGE_CODES.bbm,
@@ -53,7 +53,7 @@ const AREA_MATRIX_PAGE_CONFIG = {
   },
   coloplast: {
     brandLabel: "COLOPLAST",
-    emptyMessage: "Δεν βρέθηκαν Coloplast στοιχεία για το area του login.",
+    emptyMessage: "Δεν βρέθηκαν Coloplast στοιχεία γι' αυτό το area.",
     fallbackError: "Failed to load Coloplast matrix",
     reportKey: "coloplast",
     snapshotPageCode: REPORT_SNAPSHOT_PAGE_CODES.coloplast,
@@ -65,7 +65,7 @@ const AREA_MATRIX_PAGE_CONFIG = {
   },
   akrateia: {
     brandLabel: "AKRATEIA",
-    emptyMessage: "Δεν βρέθηκαν Akrateia στοιχεία για το area του login.",
+    emptyMessage: "Δεν βρέθηκαν Akrateia στοιχεία γι' αυτό το area.",
     fallbackError: "Failed to load Akrateia matrix",
     reportKey: "akrateia",
     snapshotPageCode: REPORT_SNAPSHOT_PAGE_CODES.akrateia,
@@ -95,7 +95,7 @@ export function getAmoenaTabbedMatrixPageProps(): PowerBiTabbedReportMatrixPageP
   const currentYear = getCurrentReportYear();
   const previousYear = getPreviousReportYear();
   const snapshotPageCode = REPORT_SNAPSHOT_PAGE_CODES.amoena;
-  const emptyMessage = "Δεν βρέθηκαν AMOENA στοιχεία για το area του login.";
+  const emptyMessage = "Δεν βρέθηκαν AMOENA στοιχεία γι' αυτό το area.";
   const fallbackError = "Failed to load AMOENA matrix";
 
   return {
