@@ -1116,12 +1116,10 @@ html.dark .app-header-user__role {
 
 .snapshot-period-summary {
   display: grid;
-  grid-template-columns: repeat(4, auto);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.45rem;
-  width: max-content;
-  max-width: 100%;
+  width: 100%;
   min-width: 0;
-  margin-inline: auto;
   padding: 0.45rem;
   border: 1px solid color-mix(in oklch, #93c5fd 42%, var(--border) 58%);
   border-radius: 0.9rem;
