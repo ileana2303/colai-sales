@@ -1319,21 +1319,6 @@ export function ReportMatrixTable({
               variant="outline"
               size="lg"
               className="h-10 px-3.5 text-sm"
-              disabled={!hasActiveFilters}
-              onClick={resetFilters}
-            >
-              <AppIcon
-                name="bi-arrow-counterclockwise"
-                className="size-5"
-                size={20}
-              />
-              Reset filters
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="h-10 px-3.5 text-sm"
               disabled={!filteredRows.length}
               onClick={handleExport}
             >
