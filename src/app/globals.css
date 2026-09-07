@@ -1381,15 +1381,11 @@ html[data-bs-theme="dark"]
   font-size: 0.78rem;
   line-height: 1.25;
   --report-matrix-group2-category-font-size: 0.84rem;
-  --report-matrix-group2-subcategory-bg: color-mix(
-    in oklch,
-    #dbeafe 22%,
-    var(--background) 78%
-  );
+  --report-matrix-group2-subcategory-bg: var(--background);
   --report-matrix-group2-subcategory-bg-hover: color-mix(
     in oklch,
-    #dbeafe 42%,
-    var(--background) 58%
+    #e0f2fe 52%,
+    var(--background) 48%
   );
   --report-matrix-group2-bg: color-mix(
     in oklch,
@@ -1404,10 +1400,7 @@ html[data-bs-theme="dark"]
   --report-matrix-total-bg: #f1f5f9;
   --report-matrix-team-summary-bg: #dbeafe;
   --report-matrix-seller-indent-group2: 0.35rem;
-  --report-matrix-seller-indent-team: 1.85rem;
-  --report-matrix-seller-indent-seller: 3.35rem;
-  --report-matrix-seller-metric-indent-team: 0.55rem;
-  --report-matrix-seller-metric-indent-seller: 1.1rem;
+  --report-matrix-seller-indent-seller: 1.85rem;
 }
 
 .report-matrix th,
@@ -1946,7 +1939,6 @@ html[data-bs-theme="dark"]
 .report-matrix tbody tr.report-matrix__row--seller-flat .report-matrix__dimension-cell,
 .report-matrix tbody tr.report-matrix__row--seller-flat .report-matrix__cell {
   background: var(--background);
-  font-weight: 700;
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-flat:hover td,
@@ -1954,6 +1946,28 @@ html[data-bs-theme="dark"]
 .report-matrix tbody tr.report-matrix__row--seller-flat:hover .report-matrix__dimension-cell,
 .report-matrix tbody tr.report-matrix__row--seller-flat:hover .report-matrix__cell {
   background: color-mix(in oklch, #e0f2fe 52%, var(--background) 48%);
+}
+
+.report-matrix__row--seller-flat .report-matrix__cell {
+  font-weight: 400;
+}
+
+.report-matrix__row--seller-flat .report-matrix__cell--danger,
+.report-matrix__row--seller-flat .report-matrix__cell--success,
+.report-matrix__row--seller-flat .report-matrix__cell--warning,
+.report-matrix__row--seller-flat .report-matrix__cell--rose {
+  font-weight: 400;
+}
+
+.report-matrix__row--seller-flat
+  .report-matrix__cell:not(
+    .report-matrix__cell--danger,
+    .report-matrix__cell--success,
+    .report-matrix__cell--warning,
+    .report-matrix__cell--rose,
+    .report-matrix__cell--muted
+  ) {
+  color: var(--foreground);
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-team-summary > td,
@@ -2015,43 +2029,34 @@ html[data-bs-theme="dark"]
   font-size: 0.95rem;
 }
 
-.report-matrix__row--seller-team-summary .report-matrix__category-cell,
-.report-matrix__row--seller-team-summary .report-matrix__dimension-cell {
-  border-left: 3px solid color-mix(in oklch, #86efac 58%, #93c5fd 42%);
-  padding-left: var(--report-matrix-seller-indent-team);
-}
-
 .report-matrix__row--seller-team-summary .report-matrix__category-cell.report-matrix__leading-cell--context {
-  padding-left: var(--report-matrix-seller-indent-team);
-}
-
-.report-matrix__row--seller-team-summary .report-matrix__cell {
-  padding-left: var(--report-matrix-seller-metric-indent-team);
-}
-
-.report-matrix__row--seller-flat .report-matrix__category-cell,
-.report-matrix__row--seller-flat .report-matrix__dimension-cell {
-  border-left: 3px solid color-mix(in oklch, #93c5fd 78%, var(--border) 22%);
   padding-left: var(--report-matrix-seller-indent-seller);
 }
 
-.report-matrix__row--seller-flat .report-matrix__cell {
-  padding-left: var(--report-matrix-seller-metric-indent-seller);
+.report-matrix__row--seller-group2-summary.report-matrix__row--group2
+  .report-matrix__cell {
+  font-weight: 700;
+  text-align: center;
 }
 
-.report-matrix__row--seller-team-summary .report-matrix__category-cell {
-  color: #1e3a5f;
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.35;
-  white-space: normal;
+.report-matrix__row--seller-group2-summary.report-matrix__row--group2
+  .report-matrix__cell:not(
+    .report-matrix__cell--danger,
+    .report-matrix__cell--success,
+    .report-matrix__cell--warning,
+    .report-matrix__cell--rose,
+    .report-matrix__cell--muted
+  ) {
+  color: #052e16;
 }
 
 .report-matrix__row--seller-flat .report-matrix__category-cell {
-  color: #1e3a5f;
-  font-size: 0.8rem;
-  font-weight: 650;
+  border-left: 3px solid color-mix(in oklch, #93c5fd 78%, var(--border) 22%);
+  color: #334155;
+  font-size: var(--report-matrix-group2-category-font-size);
+  font-weight: 400;
   line-height: 1.35;
+  padding-left: var(--report-matrix-seller-indent-seller);
   white-space: normal;
 }
 
@@ -2189,15 +2194,11 @@ html[data-bs-theme="dark"]
 
 html.dark .report-matrix,
 html[data-bs-theme="dark"] .report-matrix {
-  --report-matrix-group2-subcategory-bg: color-mix(
-    in oklch,
-    #1e3a8a 22%,
-    var(--background) 78%
-  );
+  --report-matrix-group2-subcategory-bg: var(--background);
   --report-matrix-group2-subcategory-bg-hover: color-mix(
     in oklch,
-    #1e3a8a 36%,
-    var(--background) 64%
+    #e0f2fe 52%,
+    var(--background) 48%
   );
   --report-matrix-group2-bg: color-mix(
     in oklch,

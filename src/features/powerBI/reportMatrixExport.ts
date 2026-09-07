@@ -6,7 +6,6 @@ import {
   getMatrixExportFileName,
 } from "@/features/powerBI/PowerBiTable/utils";
 import {
-  getDetailRowBranchParentKey,
   isRedundantGroup1Category,
 } from "@/features/powerBI/reportMatrixData";
 import type {
@@ -71,8 +70,6 @@ export function buildMatrixHierarchyBreadcrumb(
 export function buildSellerFilteredBodyRows({
   categoryRows,
   categoryRowsByGroup2,
-  comparisonGroup2Rows,
-  comparisonTeamRows,
   expandedGroup2Keys,
   group2Rows,
   group3Rows,
@@ -84,8 +81,6 @@ export function buildSellerFilteredBodyRows({
 }: {
   categoryRows: ReportMatrixRow[];
   categoryRowsByGroup2: Map<string, ReportMatrixRow[]>;
-  comparisonGroup2Rows: ReportMatrixRow[];
-  comparisonTeamRows: ReportMatrixRow[];
   expandedGroup2Keys: ReadonlySet<string>;
   group2Rows: ReportMatrixRow[];
   group3Rows: ReportMatrixRow[];
@@ -97,28 +92,6 @@ export function buildSellerFilteredBodyRows({
 }) {
   if (!sellerFilterActive || !sellerDetailRows.length) {
     return [];
-  }
-
-  const teamRowsByParentKey = new Map<string, ReportMatrixRow[]>();
-
-  for (const teamRow of comparisonTeamRows) {
-    const parentKey = teamRow.parentKey;
-    if (!parentKey) continue;
-
-    const existing = teamRowsByParentKey.get(parentKey) ?? [];
-    existing.push(teamRow);
-    teamRowsByParentKey.set(parentKey, existing);
-  }
-
-  const sellerTeamByParentKey = new Map<string, string>();
-
-  for (const row of sellerDetailRows) {
-    const parentKey = getDetailRowBranchParentKey(row, hasGroup3);
-    const team = row.filterValues?.team ?? "";
-
-    if (team && !sellerTeamByParentKey.has(parentKey)) {
-      sellerTeamByParentKey.set(parentKey, team);
-    }
   }
 
   const withBreadcrumb = (row: ReportMatrixRow): ReportMatrixRow => ({
@@ -148,46 +121,13 @@ export function buildSellerFilteredBodyRows({
     }
   }
 
-  const ungroupedSubcategoryCount = hasGroup3
-    ? group3Rows.length
-    : categoryRows.length;
-
-  const buildSellerBranchContent = (
-    parentKey: string,
-    sellerRow: ReportMatrixRow,
-    subcategoryCount: number,
-  ): ReportMatrixRow[] => {
-    const breadcrumb = nodeToExportString(sellerRow.category);
-    const rows: ReportMatrixRow[] = [];
-    const sellerTeam = sellerTeamByParentKey.get(parentKey) ?? "";
-    const teamRow = (teamRowsByParentKey.get(parentKey) ?? []).find(
-      (row) => nodeToExportString(row.leadingValues?.team) === sellerTeam,
-    );
-
-    if (sellerFilterActive && teamRow && subcategoryCount > 1) {
-      rows.push({
-        ...teamRow,
-        key: `${teamRow.key}|seller-team-summary|${parentKey}`,
-        category: breadcrumb,
-        isSellerTeamSummary: true,
-      });
-    }
-
-    rows.push(sellerRow);
-    return rows;
-  };
-
-  const appendSellerBranches = (
+  const appendSellerBranch = (
     target: Map<string, ReportMatrixRow[]>,
     group2Key: string,
-    parentKey: string,
     sellerRow: ReportMatrixRow,
   ) => {
-    const subcategoryCount = subcategoryCountByGroup2.get(group2Key) ?? 1;
     const existing = target.get(group2Key) ?? [];
-    existing.push(
-      ...buildSellerBranchContent(parentKey, sellerRow, subcategoryCount),
-    );
+    existing.push(withBreadcrumb(sellerRow));
     target.set(group2Key, existing);
   };
 
@@ -202,61 +142,48 @@ export function buildSellerFilteredBodyRows({
         for (const categoryRow of categories) {
           for (const group3Row of group3RowsByCategory.get(categoryRow.key) ??
             []) {
-            appendSellerBranches(
+            appendSellerBranch(
               branchesByGroup2,
               group2Row.key,
-              group3Row.key,
-              withBreadcrumb(group3Row),
+              group3Row,
             );
           }
         }
       }
     } else {
       for (const group3Row of group3Rows) {
-        ungroupedBranches.push(
-          ...buildSellerBranchContent(
-            group3Row.key,
-            withBreadcrumb(group3Row),
-            ungroupedSubcategoryCount,
-          ),
-        );
+        ungroupedBranches.push(withBreadcrumb(group3Row));
       }
     }
   } else if (hasGroup2) {
     for (const group2Row of group2Rows) {
       for (const categoryRow of categoryRowsByGroup2.get(group2Row.key) ?? []) {
-        appendSellerBranches(
-          branchesByGroup2,
-          group2Row.key,
-          categoryRow.key,
-          withBreadcrumb(categoryRow),
-        );
+        appendSellerBranch(branchesByGroup2, group2Row.key, categoryRow);
       }
     }
   } else {
     for (const categoryRow of categoryRows) {
-      ungroupedBranches.push(
-        ...buildSellerBranchContent(
-          categoryRow.key,
-          withBreadcrumb(categoryRow),
-          ungroupedSubcategoryCount,
-        ),
-      );
+      ungroupedBranches.push(withBreadcrumb(categoryRow));
     }
   }
 
   if (hasGroup2) {
-    return comparisonGroup2Rows.flatMap((group2Row) => {
+    return group2Rows.flatMap((group2Row) => {
       const branches = branchesByGroup2.get(group2Row.key) ?? [];
       if (!branches.length) return [];
 
+      const subcategoryCount = subcategoryCountByGroup2.get(group2Row.key) ?? 0;
       const header: ReportMatrixRow = {
         ...group2Row,
         key: group2Row.key,
         category: nodeToExportString(group2Row.category),
         isSellerGroup2Summary: true,
-        childCount: branches.length,
+        childCount: subcategoryCount,
       };
+
+      if (subcategoryCount <= 1) {
+        return [header];
+      }
 
       if (!expandedGroup2Keys.has(group2Row.key)) {
         return [header];

@@ -74,7 +74,7 @@ export function SelectedSellerBar() {
     }
   }
 
-  async function handleAreaSelect(area: string) {
+  function handleAreaSelect(area: string) {
     const nextArea = area.trim();
     setOpen(false);
     setSearchQuery("");
@@ -83,24 +83,23 @@ export function SelectedSellerBar() {
 
     setSelectionError(null);
     setPendingArea(nextArea);
+    router.push("/");
 
-    try {
-      await selectArea(nextArea);
-      await queryClient.invalidateQueries({ queryKey: powerBiKeys.all });
-      if (pathname === "/") {
+    void (async () => {
+      try {
+        await selectArea(nextArea);
+        await queryClient.invalidateQueries({ queryKey: powerBiKeys.all });
         router.refresh();
-      } else {
-        router.push("/");
+      } catch (selection) {
+        setSelectionError(
+          selection instanceof Error
+            ? selection.message
+            : "Αποτυχία επιλογής διεύθυνσης.",
+        );
+      } finally {
+        setPendingArea(null);
       }
-    } catch (selection) {
-      setSelectionError(
-        selection instanceof Error
-          ? selection.message
-          : "Αποτυχία επιλογής διεύθυνσης.",
-      );
-    } finally {
-      setPendingArea(null);
-    }
+    })();
   }
 
   return (

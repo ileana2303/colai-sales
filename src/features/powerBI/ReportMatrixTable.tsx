@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -38,6 +39,7 @@ import type {
   ReportMatrixTableFiltersState,
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 export type {
   ReportMatrixColumn,
@@ -374,6 +376,18 @@ export function ReportMatrixTable({
 
   const { category: categoryFilter, team: teamFilter, seller: sellerFilter } =
     filters;
+  const lockedTeamFilter = useAuthStore(
+    (state) => state.userInfos?.travmaTeam?.trim() ?? "",
+  );
+  const effectiveTeamFilter = lockedTeamFilter || teamFilter;
+
+  useEffect(() => {
+    if (!lockedTeamFilter || teamFilter === lockedTeamFilter) {
+      return;
+    }
+
+    updateFilters({ team: lockedTeamFilter });
+  }, [lockedTeamFilter, teamFilter]);
   const [expandedGroup2Keys, setExpandedGroup2Keys] = useState<Set<string>>(
     () => new Set(),
   );
@@ -423,13 +437,13 @@ export function ReportMatrixTable({
         if (categoryFilter && categoryValue !== categoryFilter) {
           return false;
         }
-        if (teamFilter && teamValue !== teamFilter) {
+        if (effectiveTeamFilter && teamValue !== effectiveTeamFilter) {
           return false;
         }
 
         return true;
       }),
-    [categoryFilter, detailRows, teamFilter],
+    [categoryFilter, detailRows, effectiveTeamFilter],
   );
 
   const sellerOptions = useMemo(
@@ -448,7 +462,9 @@ export function ReportMatrixTable({
       : "";
 
   const hasActiveFilters = Boolean(
-    categoryFilter || teamFilter || effectiveSellerFilter,
+    categoryFilter ||
+      effectiveSellerFilter ||
+      (!lockedTeamFilter && teamFilter),
   );
   const filteredDetailRows = useMemo(
     () =>
@@ -462,7 +478,7 @@ export function ReportMatrixTable({
         if (categoryFilter && categoryValue !== categoryFilter) {
           return false;
         }
-        if (teamFilter && teamValue !== teamFilter) {
+        if (effectiveTeamFilter && teamValue !== effectiveTeamFilter) {
           return false;
         }
         if (effectiveSellerFilter && sellerValue !== effectiveSellerFilter) {
@@ -470,11 +486,11 @@ export function ReportMatrixTable({
         }
         return true;
       }),
-    [categoryFilter, detailRows, effectiveSellerFilter, teamFilter],
+    [categoryFilter, detailRows, effectiveSellerFilter, effectiveTeamFilter],
   );
 
   const selectedSellerTeams = useMemo(() => {
-    if (!effectiveSellerFilter || teamFilter) return new Set<string>();
+    if (!effectiveSellerFilter || effectiveTeamFilter) return new Set<string>();
 
     return new Set(
       detailRows
@@ -482,7 +498,7 @@ export function ReportMatrixTable({
         .map((row) => row.filterValues?.team ?? "")
         .filter(Boolean),
     );
-  }, [detailRows, effectiveSellerFilter, teamFilter]);
+  }, [detailRows, effectiveSellerFilter, effectiveTeamFilter]);
 
   const comparisonDetailRows = useMemo(() => {
     const visibleCategories = effectiveSellerFilter
@@ -502,11 +518,11 @@ export function ReportMatrixTable({
       if (categoryFilter && categoryValue !== categoryFilter) {
         return false;
       }
-      if (teamFilter && teamValue !== teamFilter) {
+      if (effectiveTeamFilter && teamValue !== effectiveTeamFilter) {
         return false;
       }
       if (
-        !teamFilter &&
+        !effectiveTeamFilter &&
         selectedSellerTeams.size > 0 &&
         !selectedSellerTeams.has(teamValue)
       ) {
@@ -524,7 +540,7 @@ export function ReportMatrixTable({
     effectiveSellerFilter,
     filteredDetailRows,
     selectedSellerTeams,
-    teamFilter,
+    effectiveTeamFilter,
   ]);
   const aggregationDetailRows = effectiveSellerFilter
     ? filteredDetailRows
@@ -552,20 +568,6 @@ export function ReportMatrixTable({
   const group3Rows = useMemo(
     () => (hasGroup3 ? buildReportMatrixGroup3Rows(aggregationDetailRows) : []),
     [aggregationDetailRows, hasGroup3],
-  );
-  const comparisonGroup2Rows = useMemo(
-    () =>
-      effectiveSellerFilter && hasGroup2
-        ? buildReportMatrixGroup2Rows(comparisonDetailRows, group2Order)
-        : [],
-    [comparisonDetailRows, effectiveSellerFilter, group2Order, hasGroup2],
-  );
-  const comparisonTeamRows = useMemo(
-    () =>
-      effectiveSellerFilter
-        ? buildReportMatrixTeamRows(comparisonDetailRows)
-        : [],
-    [comparisonDetailRows, effectiveSellerFilter],
   );
   const teamRows = useMemo(
     () => buildReportMatrixTeamRows(aggregationDetailRows),
@@ -667,8 +669,6 @@ export function ReportMatrixTable({
       return buildSellerFilteredBodyRows({
         categoryRows,
         categoryRowsByGroup2,
-        comparisonGroup2Rows,
-        comparisonTeamRows,
         expandedGroup2Keys,
         group2Rows,
         group3Rows,
@@ -793,8 +793,6 @@ export function ReportMatrixTable({
   }, [
     categoryRowsByGroup2,
     categoryRows,
-    comparisonGroup2Rows,
-    comparisonTeamRows,
     detailRowsByTeam,
     effectiveSellerFilter,
     expandedGroup2Keys,
@@ -836,7 +834,7 @@ export function ReportMatrixTable({
     const includeChevron = filteredRows.some(
       (row) =>
         (row.rowKind === "group2" && canExpandGroup2(row)) ||
-        row.isSellerGroup2Summary,
+        (row.isSellerGroup2Summary && (row.childCount ?? 0) > 1),
     );
 
     return measureReportMatrixCategoryColumnWidth(labels, includeChevron);
@@ -881,7 +879,7 @@ export function ReportMatrixTable({
   function resetFilters() {
     updateFilters({
       category: "",
-      team: "",
+      team: lockedTeamFilter,
       seller: "",
     });
     setExpandedGroup2Keys(new Set());
@@ -957,7 +955,7 @@ export function ReportMatrixTable({
         detailRows,
         sellerFilter,
         nextCategory,
-        teamFilter,
+        effectiveTeamFilter,
       )
     ) {
       nextFilters.seller = "";
@@ -967,6 +965,8 @@ export function ReportMatrixTable({
   }
 
   function handleTeamFilterChange(nextTeam: string) {
+    if (lockedTeamFilter) return;
+
     updateFilters({
       team: nextTeam,
       seller: "",
@@ -1032,7 +1032,9 @@ export function ReportMatrixTable({
           effectiveSellerFilter && categoryFilter
             ? resolveSelectedSellerGroup2(filteredDetailRows, categoryFilter)
             : undefined,
-        team: resolveFilterLabel(teamFilter, teamOptions),
+        team: lockedTeamFilter
+          ? lockedTeamFilter
+          : resolveFilterLabel(effectiveTeamFilter, teamOptions),
         seller: resolveSellerFilterLabel(effectiveSellerFilter, sellerOptions),
       },
       headerLabel:
@@ -1062,6 +1064,10 @@ export function ReportMatrixTable({
     }
 
     if (row.isSellerGroup2Summary && columnKey === "category") {
+      if ((row.childCount ?? 0) <= 1) {
+        return content;
+      }
+
       const isExpanded = expandedGroup2Keys.has(row.key);
 
       return (
@@ -1384,7 +1390,8 @@ export function ReportMatrixTable({
           <PowerBiTableHeaderFilter
             label="TEAM"
             options={teamOptions}
-            value={teamFilter}
+            readOnly={Boolean(lockedTeamFilter)}
+            value={effectiveTeamFilter}
             onChange={handleTeamFilterChange}
           />
           <PowerBiTableHeaderFilter
