@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -301,6 +300,15 @@ function resolveSelectedSellerGroup2(
   ].join(", ");
 }
 
+function normalizeLockedTeamValue(value: string | null | undefined) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed.toUpperCase() === "ALL") {
+    return "";
+  }
+
+  return trimmed;
+}
+
 function sellerExistsForFilters(
   rows: ReportMatrixRow[],
   seller: string,
@@ -374,20 +382,21 @@ export function ReportMatrixTable({
     setInternalFilters(nextFilters);
   }
 
-  const { category: categoryFilter, team: teamFilter, seller: sellerFilter } =
-    filters;
-  const lockedTeamFilter = useAuthStore(
-    (state) => state.userInfos?.travmaTeam?.trim() ?? "",
-  );
+  const {
+    category: categoryFilter,
+    team: teamFilter,
+    seller: sellerFilter,
+  } = filters;
+  const lockedTeamFilter = useAuthStore((state) => {
+    const userInfos = state.userInfos;
+    return (
+      normalizeLockedTeamValue(userInfos?.travmaTeam) ||
+      normalizeLockedTeamValue(userInfos?.team) ||
+      ""
+    );
+  });
   const effectiveTeamFilter = lockedTeamFilter || teamFilter;
 
-  useEffect(() => {
-    if (!lockedTeamFilter || teamFilter === lockedTeamFilter) {
-      return;
-    }
-
-    updateFilters({ team: lockedTeamFilter });
-  }, [lockedTeamFilter, teamFilter]);
   const [expandedGroup2Keys, setExpandedGroup2Keys] = useState<Set<string>>(
     () => new Set(),
   );
@@ -463,8 +472,8 @@ export function ReportMatrixTable({
 
   const hasActiveFilters = Boolean(
     categoryFilter ||
-      effectiveSellerFilter ||
-      (!lockedTeamFilter && teamFilter),
+    effectiveSellerFilter ||
+    (!lockedTeamFilter && teamFilter),
   );
   const filteredDetailRows = useMemo(
     () =>
@@ -1083,7 +1092,9 @@ export function ReportMatrixTable({
             className="report-matrix__category-toggle-icon"
             size={16}
           />
-          <span className="report-matrix__category-toggle-label">{content}</span>
+          <span className="report-matrix__category-toggle-label">
+            {content}
+          </span>
         </Button>
       );
     }
@@ -1210,7 +1221,8 @@ export function ReportMatrixTable({
             !row.isSellerFlattened &&
             "report-matrix__row--group3",
           row.isSellerFlattened && "report-matrix__row--seller-flat",
-          row.isSellerGroup2Summary && "report-matrix__row--seller-group2-summary",
+          row.isSellerGroup2Summary &&
+            "report-matrix__row--seller-group2-summary",
           row.isSellerTeamSummary && "report-matrix__row--seller-team-summary",
           row.rowKind === "team" && "report-matrix__row--team",
           row.rowKind === "detail" && "report-matrix__row--detail",
