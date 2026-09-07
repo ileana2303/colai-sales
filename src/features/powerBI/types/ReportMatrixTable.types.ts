@@ -85,6 +85,7 @@ export type ReportMatrixTableFiltersState = {
 };
 
 export type ReportMatrixTableProps = {
+  area?: string;
   brandLabel: string;
   categoryLabel?: string;
   description?: string;

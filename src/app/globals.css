@@ -1250,7 +1250,7 @@ html.dark .app-header-user__role {
   display: flex;
   min-width: 0;
   flex: 0 0 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-start;
   margin-right: 0;

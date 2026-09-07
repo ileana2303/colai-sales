@@ -6,6 +6,7 @@ import type {
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 
 export type ReportMatrixPdfFilters = {
+  area: string;
   category: string;
   group2?: string;
   team: string;

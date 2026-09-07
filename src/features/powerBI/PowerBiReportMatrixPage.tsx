@@ -455,6 +455,7 @@ export function PowerBiReportMatrixView({
     >
       {rows.length ? (
         <ReportMatrixTable
+          area={data?.area}
           brandLabel={brandLabel}
           description={formatSnapshotDescription(data?.snapshotDate)}
           exportFileName={exportFileName}

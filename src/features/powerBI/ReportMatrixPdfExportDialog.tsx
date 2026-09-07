@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,10 +12,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+
+export type ReportMatrixPdfExportMode = "all-sellers" | "current-view";
 
 type ReportMatrixPdfExportDialogProps = {
   isExporting: boolean;
-  onConfirm: () => void;
+  onConfirm: (mode: ReportMatrixPdfExportMode) => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
   teamLabel: string;
@@ -26,27 +32,89 @@ export function ReportMatrixPdfExportDialog({
   open,
   teamLabel,
 }: ReportMatrixPdfExportDialogProps) {
+  const [exportMode, setExportMode] =
+    useState<ReportMatrixPdfExportMode>("current-view");
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (nextOpen) {
+      setExportMode("current-view");
+    }
+
+    onOpenChange(nextOpen);
+  }
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            Εξαγωγή PDF για όλους τους πωλητές;
-          </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-3">
-            <span className="block">
-              Δεν έχει επιλεγεί πωλητής, οπότε θα ληφθούν ξεχωριστά αρχεία PDF.
-            </span>
-            <span className="block">
-              {teamLabel === "Όλα"
-                ? "Θα συμπεριληφθούν μέλη από όλα τα teams."
-                : `Θα συμπεριληφθούν μόνο μέλη της ομάδας ${teamLabel}.`}
-            </span>
+          <AlertDialogTitle>Εξαγωγή PDF</AlertDialogTitle>
+          <AlertDialogDescription>
+            Επιλέξτε τι θέλετε να εξαγάγετε.
           </AlertDialogDescription>
         </AlertDialogHeader>
+        <div className="space-y-3">
+          <Label
+            className={cn(
+              "cursor-pointer items-start rounded-lg border p-3 font-normal",
+              exportMode === "current-view"
+                ? "border-primary bg-primary/5"
+                : "border-border",
+            )}
+          >
+            <input
+              checked={exportMode === "current-view"}
+              className="mt-0.5"
+              disabled={isExporting}
+              name="pdf-export-mode"
+              type="radio"
+              value="current-view"
+              onChange={() => setExportMode("current-view")}
+            />
+            <span className="space-y-1">
+              <span className="block font-medium text-foreground">
+                Τρέχουσα προβολή
+              </span>
+              <span className="block text-sm leading-relaxed text-muted-foreground">
+                Εξαγωγή όπως εμφανίζεται στην οθόνη.
+              </span>
+            </span>
+          </Label>
+          <Label
+            className={cn(
+              "cursor-pointer items-start rounded-lg border p-3 font-normal",
+              exportMode === "all-sellers"
+                ? "border-primary bg-primary/5"
+                : "border-border",
+            )}
+          >
+            <input
+              checked={exportMode === "all-sellers"}
+              className="mt-0.5"
+              disabled={isExporting}
+              name="pdf-export-mode"
+              type="radio"
+              value="all-sellers"
+              onChange={() => setExportMode("all-sellers")}
+            />
+            <span className="space-y-1">
+              <span className="block font-medium text-foreground">
+                Όλοι οι πωλητές
+              </span>
+              <span className="block text-sm leading-relaxed text-muted-foreground">
+                Θα ληφθούν ξεχωριστά αρχεία PDF.{" "}
+                {teamLabel === "Όλα"
+                  ? "Θα συμπεριληφθούν μέλη από όλα τα teams."
+                  : `Θα συμπεριληφθούν μόνο μέλη της ομάδας ${teamLabel}.`}
+              </span>
+            </span>
+          </Label>
+        </div>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isExporting}>Ακύρωση</AlertDialogCancel>
-          <AlertDialogAction disabled={isExporting} onClick={onConfirm}>
+          <AlertDialogAction
+            disabled={isExporting}
+            onClick={() => onConfirm(exportMode)}
+          >
             {isExporting ? "Εξαγωγή…" : "Εξαγωγή PDF"}
           </AlertDialogAction>
         </AlertDialogFooter>

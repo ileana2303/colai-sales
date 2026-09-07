@@ -522,6 +522,14 @@ function writeMetadataSection(
     body: [
       [
         {
+          content: `AREA: ${filters.area}`,
+          styles: {
+            fillColor: [241, 245, 249],
+            textColor: [30, 58, 95],
+            fontStyle: "bold",
+          },
+        },
+        {
           content: `${categoryLabel}: ${formatPdfCategoryFilterValue(
             filters,
             sellerFilterActive,

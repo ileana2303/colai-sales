@@ -20,7 +20,10 @@ import {
   getMatrixMetricDisplayValue,
 } from "@/features/powerBI/reportMatrixExport";
 import { exportReportMatrixToPdf } from "@/features/powerBI/reportMatrixPdfExport";
-import { ReportMatrixPdfExportDialog } from "@/features/powerBI/ReportMatrixPdfExportDialog";
+import {
+  ReportMatrixPdfExportDialog,
+  type ReportMatrixPdfExportMode,
+} from "@/features/powerBI/ReportMatrixPdfExportDialog";
 import type { ReportMatrixPdfPage } from "@/features/powerBI/types/reportMatrixPdfExport.types";
 import {
   buildReportMatrixFilteredView,
@@ -38,6 +41,8 @@ import type {
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/authStore";
+import { useSelectedSellerStore } from "@/stores/selectedSellerStore";
+import { useSellersStore } from "@/stores/sellersStore";
 
 export type {
   ReportMatrixColumn,
@@ -331,6 +336,7 @@ function getSectionGroupCellClassName(column: {
 }
 
 export function ReportMatrixTable({
+  area,
   brandLabel,
   categoryLabel = "Κατηγορία Στόχου",
   description,
@@ -378,6 +384,13 @@ export function ReportMatrixTable({
       ""
     );
   });
+  const userArea = useAuthStore((state) => state.userInfos?.area);
+  const selectedArea = useSelectedSellerStore(
+    (state) => state.selectedSeller?.area,
+  );
+  const matchedArea = useSellersStore((state) => state.matched?.area);
+  const areaLabel =
+    (area || selectedArea || matchedArea || userArea || "").trim() || "—";
   const effectiveTeamFilter = lockedTeamFilter || teamFilter;
 
   const [expandedGroup2Keys, setExpandedGroup2Keys] = useState<Set<string>>(
@@ -746,6 +759,7 @@ export function ReportMatrixTable({
   }): ReportMatrixPdfPage {
     return {
       filters: {
+        area: areaLabel,
         category: resolveFilterLabel(categoryFilter, categoryOptions),
         group2:
           sellerFilterActive && categoryFilter
@@ -759,7 +773,7 @@ export function ReportMatrixTable({
     };
   }
 
-  async function performPdfExport() {
+  async function performPdfExport(mode?: ReportMatrixPdfExportMode) {
     if (isPdfExporting) return;
 
     setIsPdfExporting(true);
@@ -802,28 +816,22 @@ export function ReportMatrixTable({
         return;
       }
 
-      const overviewView = buildReportMatrixFilteredView({
-        categoryFilter,
-        detailRows,
-        expandAll: true,
-        group2Order,
-        sellerFilter: "",
-        teamFilter: effectiveTeamFilter,
-      });
-
-      await exportReportMatrixToPdf({
-        ...sharedOptions,
-        exportFileName: resolveExportFileName(),
-        pages: [
-          buildPdfFilterPage({
-            rows: overviewView.filteredRows,
-            sellerFilterActive: false,
-            sellerLabel: resolveSellerFilterLabel("", sellerOptions),
-            sellerRows: overviewView.filteredDetailRows,
-            teamLabel: currentTeamLabel,
-          }),
-        ],
-      });
+      if (mode === "current-view") {
+        await exportReportMatrixToPdf({
+          ...sharedOptions,
+          exportFileName: resolveExportFileName(),
+          pages: [
+            buildPdfFilterPage({
+              rows: filteredRows,
+              sellerFilterActive: false,
+              sellerLabel: resolveSellerFilterLabel("", sellerOptions),
+              sellerRows: filteredDetailRows,
+              teamLabel: currentTeamLabel,
+            }),
+          ],
+        });
+        return;
+      }
 
       for (const [memberIndex, member] of pdfExportMembers.entries()) {
         if (memberIndex > 0) {
@@ -877,8 +885,8 @@ export function ReportMatrixTable({
     void performPdfExport();
   }
 
-  function handlePdfExportConfirm() {
-    void performPdfExport();
+  function handlePdfExportConfirm(mode: ReportMatrixPdfExportMode) {
+    void performPdfExport(mode);
   }
 
   function renderLeadingCellContent(
@@ -1216,6 +1224,14 @@ export function ReportMatrixTable({
     <section ref={cardRef} className="app-card report-matrix-card">
       <div className="report-matrix-card__header">
         <div className="report-matrix-card__filters">
+          <PowerBiTableHeaderFilter
+            fitContent
+            label="AREA"
+            options={[]}
+            readOnly
+            value={areaLabel}
+            onChange={() => undefined}
+          />
           <PowerBiTableHeaderFilter
             label={categoryLabel}
             options={categoryOptions}
