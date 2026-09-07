@@ -1252,6 +1252,29 @@ export function ReportMatrixTable({
             value={effectiveSellerFilter}
             onChange={handleSellerFilterChange}
           />
+          <span className="group relative inline-flex">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-10"
+              aria-label="Reset filters"
+              disabled={!hasActiveFilters}
+              onClick={resetFilters}
+            >
+              <AppIcon
+                name="bi-arrow-counterclockwise"
+                className="size-5"
+                size={20}
+              />
+            </Button>
+            <span
+              role="tooltip"
+              className="bg-foreground text-background pointer-events-none absolute top-full left-1/2 z-30 mt-2 -translate-x-1/2 rounded-md px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
+              Reset filters
+            </span>
+          </span>
         </div>
         <div className="min-w-0">
           {title ? (
@@ -1305,26 +1328,6 @@ export function ReportMatrixTable({
                 size={20}
               />
               Reset filters
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              className="h-10 px-3.5 text-sm"
-              disabled={!hasExpandableRows}
-              aria-expanded={areAllExpandableRowsExpanded}
-              onClick={toggleExpandAll}
-            >
-              <AppIcon
-                name={
-                  areAllExpandableRowsExpanded
-                    ? "bi-fold-vertical"
-                    : "bi-unfold-vertical"
-                }
-                className="size-5"
-                size={20}
-              />
-              {areAllExpandableRowsExpanded ? "Collapse all" : "Expand all"}
             </Button>
             <Button
               type="button"

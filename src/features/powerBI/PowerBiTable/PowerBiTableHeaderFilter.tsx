@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Check } from "@/icons/lucide/check";
 import { ChevronDown } from "@/icons/lucide/chevron-down";
+import { X } from "@/icons/lucide/x";
 import { cn } from "@/lib/utils";
 import {
   ALL_FILTER_VALUE,
@@ -50,9 +51,9 @@ export function PowerBiTableHeaderFilter({
 
   const selectedOption = options.find((option) => option.value === value);
   const selectedLabel =
-    selectedOption?.label ??
-    (readOnly && value.trim() ? value : "Όλα");
+    selectedOption?.label ?? (readOnly && value.trim() ? value : "Όλα");
   const currentValue = value || ALL_FILTER_VALUE;
+  const isActive = Boolean(value.trim());
 
   const items = useMemo(
     () => [
@@ -89,8 +90,10 @@ export function PowerBiTableHeaderFilter({
   }
 
   const triggerClassName = cn(
-    "power-bi-table-header-filter__trigger border-border bg-background flex h-auto min-h-11 items-center justify-between gap-3 rounded-xl border px-3.5 py-2 text-left shadow-sm",
-    fitContent ? "w-auto max-w-full" : "w-full max-w-56 min-w-36",
+    "power-bi-table-header-filter__trigger border-input bg-background flex h-10 items-center justify-between gap-2 rounded-md border px-3.5 py-0 text-left text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+    isActive && "border-[#D1FADE] bg-[#F1F5F9]",
+    isActive && !readOnly && "pr-10",
+    fitContent || isActive ? "w-auto max-w-full" : "w-full",
     readOnly
       ? "cursor-default"
       : "hover:border-border hover:bg-muted/35 transition-colors",
@@ -101,7 +104,7 @@ export function PowerBiTableHeaderFilter({
       <div
         className={cn(
           "power-bi-table-header-filter",
-          fitContent && "w-fit max-w-full",
+          fitContent || isActive ? "w-fit max-w-full" : "w-56",
         )}
       >
         <div
@@ -109,19 +112,24 @@ export function PowerBiTableHeaderFilter({
           title={`${label}: ${selectedLabel}`}
           className={triggerClassName}
         >
-          <span className={cn(fitContent ? "" : "min-w-0 flex-1")}>
+          <span
+            className={cn(
+              "flex items-center gap-1.5",
+              fitContent ? "" : "min-w-0 flex-1",
+            )}
+          >
             <span
               className={cn(
-                "text-foreground/65 block text-xs font-bold tracking-wider uppercase",
+                "text-foreground/65 shrink-0 text-sm font-medium",
                 !fitContent && "truncate",
               )}
             >
-              {label}
+              {label}:
             </span>
             <span
               className={cn(
-                "text-foreground block text-base leading-tight font-semibold",
-                fitContent ? "whitespace-nowrap" : "truncate",
+                "text-foreground text-sm font-medium",
+                fitContent || isActive ? "whitespace-nowrap" : "truncate",
               )}
             >
               {selectedLabel}
@@ -135,8 +143,8 @@ export function PowerBiTableHeaderFilter({
   return (
     <div
       className={cn(
-        "power-bi-table-header-filter",
-        fitContent && "w-fit max-w-full",
+        "power-bi-table-header-filter relative",
+        fitContent || isActive ? "w-fit max-w-full" : "w-56",
       )}
     >
       <DropdownMenu modal={false} open={open} onOpenChange={handleOpenChange}>
@@ -145,26 +153,55 @@ export function PowerBiTableHeaderFilter({
           title={`${label}: ${selectedLabel}`}
           className={triggerClassName}
         >
-          <span className={cn(fitContent ? "" : "min-w-0 flex-1")}>
+          <span
+            className={cn(
+              "flex items-center gap-1.5",
+              fitContent ? "" : "min-w-0 flex-1",
+            )}
+          >
             <span
               className={cn(
-                "text-foreground/65 block text-xs font-bold tracking-wider uppercase",
+                "text-foreground/65 shrink-0 text-sm font-medium",
                 !fitContent && "truncate",
               )}
             >
-              {label}
+              {label}:
             </span>
             <span
               className={cn(
-                "text-foreground block text-base leading-tight font-semibold",
-                fitContent ? "whitespace-nowrap" : "truncate",
+                "text-foreground text-sm font-medium",
+                fitContent || isActive ? "whitespace-nowrap" : "truncate",
               )}
             >
               {selectedLabel}
             </span>
           </span>
-          <ChevronDown className="text-foreground/60 size-5 shrink-0" />
+          {!isActive ? (
+            <ChevronDown className="text-foreground/60 size-5 shrink-0" />
+          ) : null}
         </DropdownMenuTrigger>
+        {isActive ? (
+          <>
+            <button
+              type="button"
+              aria-label={`Clear ${label} filter`}
+              className="peer text-foreground/60 hover:bg-foreground/10 hover:text-foreground focus-visible:ring-ring/50 absolute top-1/2 right-2 z-10 flex size-5 -translate-y-1/2 items-center justify-center rounded-sm transition-colors outline-none focus-visible:ring-2"
+              onClick={(event) => {
+                event.stopPropagation();
+                onChange("");
+              }}
+              onPointerDown={(event) => event.stopPropagation()}
+            >
+              <X className="size-3.5" />
+            </button>
+            <span
+              role="tooltip"
+              className="bg-foreground text-background pointer-events-none absolute top-full right-0 z-30 mt-2 rounded-md px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity peer-hover:opacity-100 peer-focus-visible:opacity-100"
+            >
+              Clear {label} filter
+            </span>
+          </>
+        ) : null}
         <DropdownMenuContent
           align="start"
           sideOffset={4}

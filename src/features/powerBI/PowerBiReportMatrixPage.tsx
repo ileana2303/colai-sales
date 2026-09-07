@@ -69,7 +69,7 @@ function ReportMatrixPageHeader({
   periodSummary?: ReactNode;
 }) {
   return (
-    <section className="app-card p-4">
+    <section className="p-4">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0 shrink-0">
           <h1 className="app-report-title mb-0">{brandLabel}</h1>

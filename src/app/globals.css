@@ -772,7 +772,6 @@ html[data-bs-theme="dark"] .home-module-card__icon {
   gap: 0.5rem;
 }
 
-
 .app-header-user {
   display: inline-flex;
   max-width: min(420px, 42vw);
@@ -1254,29 +1253,7 @@ html.dark .app-header-user__role {
   align-items: center;
   justify-content: flex-start;
   margin-right: 0;
-  gap: 0.85rem;
-}
-
-.report-matrix-card__filters .power-bi-table-header-filter__trigger {
-  box-shadow:
-    0 1px 2px color-mix(in oklch, var(--foreground) 8%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--border) 88%, transparent);
-}
-
-.report-matrix-card__filters .power-bi-table-header-filter__trigger:hover {
-  box-shadow:
-    0 1px 3px color-mix(in oklch, var(--foreground) 10%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--border) 100%, transparent);
-}
-
-html.dark .report-matrix-card__filters .power-bi-table-header-filter__trigger,
-html[data-bs-theme="dark"]
-  .report-matrix-card__filters
-  .power-bi-table-header-filter__trigger {
-  background: color-mix(in oklch, var(--background) 88%, var(--muted) 12%);
-  box-shadow:
-    0 1px 2px color-mix(in oklch, #000 24%, transparent),
-    0 0 0 1px color-mix(in oklch, var(--border) 92%, transparent);
+  gap: 0.65rem;
 }
 
 .report-matrix-card__expand-toggle {
@@ -1605,13 +1582,11 @@ html[data-bs-theme="dark"]
 }
 
 .report-matrix__section-group-start {
-  border-left: 2px solid
-    color-mix(in oklch, #1f4e80 24%, var(--border) 76%);
+  border-left: 2px solid color-mix(in oklch, #1f4e80 24%, var(--border) 76%);
 }
 
 .report-matrix__section-group-end {
-  border-right: 2px solid
-    color-mix(in oklch, #1f4e80 24%, var(--border) 76%);
+  border-right: 2px solid color-mix(in oklch, #1f4e80 24%, var(--border) 76%);
 }
 
 .report-matrix__section-title {
@@ -1935,16 +1910,31 @@ html[data-bs-theme="dark"]
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-flat td,
-.report-matrix tbody tr.report-matrix__row--seller-flat .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--seller-flat .report-matrix__dimension-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-flat
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-flat
+  .report-matrix__dimension-cell,
 .report-matrix tbody tr.report-matrix__row--seller-flat .report-matrix__cell {
   background: var(--background);
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-flat:hover td,
-.report-matrix tbody tr.report-matrix__row--seller-flat:hover .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--seller-flat:hover .report-matrix__dimension-cell,
-.report-matrix tbody tr.report-matrix__row--seller-flat:hover .report-matrix__cell {
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-flat:hover
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-flat:hover
+  .report-matrix__dimension-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-flat:hover
+  .report-matrix__cell {
   background: color-mix(in oklch, #e0f2fe 52%, var(--background) 48%);
 }
 
@@ -1972,13 +1962,24 @@ html[data-bs-theme="dark"]
 
 .report-matrix tbody tr.report-matrix__row--seller-team-summary > td,
 .report-matrix tbody tr.report-matrix__row--seller-team-summary > th,
-.report-matrix tbody tr.report-matrix__row--seller-team-summary .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--seller-team-summary .report-matrix__dimension-cell,
-.report-matrix tbody tr.report-matrix__row--seller-team-summary .report-matrix__cell,
-.report-matrix tbody
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-team-summary
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-team-summary
+  .report-matrix__dimension-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-team-summary
+  .report-matrix__cell,
+.report-matrix
+  tbody
   tr.report-matrix__row--seller-team-summary
   .report-matrix__category-cell.report-matrix__leading-cell--context,
-.report-matrix tbody
+.report-matrix
+  tbody
   tr.report-matrix__row--seller-team-summary
   .report-matrix__dimension-cell.report-matrix__leading-cell--context {
   background: var(--report-matrix-team-summary-bg) !important;
@@ -1987,30 +1988,59 @@ html[data-bs-theme="dark"]
 
 .report-matrix tbody tr.report-matrix__row--seller-team-summary:hover > td,
 .report-matrix tbody tr.report-matrix__row--seller-team-summary:hover > th,
-.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover .report-matrix__dimension-cell,
-.report-matrix tbody tr.report-matrix__row--seller-team-summary:hover .report-matrix__cell,
-.report-matrix tbody
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-team-summary:hover
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-team-summary:hover
+  .report-matrix__dimension-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-team-summary:hover
+  .report-matrix__cell,
+.report-matrix
+  tbody
   tr.report-matrix__row--seller-team-summary:hover
   .report-matrix__category-cell.report-matrix__leading-cell--context,
-.report-matrix tbody
+.report-matrix
+  tbody
   tr.report-matrix__row--seller-team-summary:hover
   .report-matrix__dimension-cell.report-matrix__leading-cell--context {
   background: var(--report-matrix-team-summary-bg) !important;
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-group2-summary td,
-.report-matrix tbody tr.report-matrix__row--seller-group2-summary .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--seller-group2-summary .report-matrix__dimension-cell,
-.report-matrix tbody tr.report-matrix__row--seller-group2-summary .report-matrix__cell {
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-group2-summary
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-group2-summary
+  .report-matrix__dimension-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-group2-summary
+  .report-matrix__cell {
   background: var(--report-matrix-group2-bg);
   font-weight: 700;
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-group2-summary:hover td,
-.report-matrix tbody tr.report-matrix__row--seller-group2-summary:hover .report-matrix__category-cell,
-.report-matrix tbody tr.report-matrix__row--seller-group2-summary:hover .report-matrix__dimension-cell,
-.report-matrix tbody tr.report-matrix__row--seller-group2-summary:hover .report-matrix__cell {
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-group2-summary:hover
+  .report-matrix__category-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-group2-summary:hover
+  .report-matrix__dimension-cell,
+.report-matrix
+  tbody
+  tr.report-matrix__row--seller-group2-summary:hover
+  .report-matrix__cell {
   background: var(--report-matrix-group2-bg-hover);
 }
 
@@ -2024,12 +2054,14 @@ html[data-bs-theme="dark"]
   white-space: normal;
 }
 
-.report-matrix__row--seller-group2-summary .report-matrix__category-toggle-icon {
+.report-matrix__row--seller-group2-summary
+  .report-matrix__category-toggle-icon {
   color: #166534;
   font-size: 0.95rem;
 }
 
-.report-matrix__row--seller-team-summary .report-matrix__category-cell.report-matrix__leading-cell--context {
+.report-matrix__row--seller-team-summary
+  .report-matrix__category-cell.report-matrix__leading-cell--context {
   padding-left: var(--report-matrix-seller-indent-seller);
 }
 
@@ -2379,7 +2411,9 @@ html.dark
 html[data-bs-theme="dark"]
   .report-matrix__row--group2.report-matrix__row--seller-group2-summary
   .report-matrix__category-cell,
-html.dark .report-matrix__row--group2 .report-matrix__cell:not(
+html.dark
+  .report-matrix__row--group2
+  .report-matrix__cell:not(
     .report-matrix__cell--danger,
     .report-matrix__cell--success,
     .report-matrix__cell--warning,
