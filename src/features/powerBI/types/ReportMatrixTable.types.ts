@@ -67,6 +67,7 @@ export type ReportMatrixRow = {
     team: string;
   };
   isSellerFlattened?: boolean;
+  isSellerGroup2Summary?: boolean;
   isSellerTeamSummary?: boolean;
   leadingValues?: Record<string, ReactNode>;
   metrics?: ReportMatrixRowMetrics;

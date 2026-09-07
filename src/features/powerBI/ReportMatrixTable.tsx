@@ -553,9 +553,19 @@ export function ReportMatrixTable({
     () => (hasGroup3 ? buildReportMatrixGroup3Rows(aggregationDetailRows) : []),
     [aggregationDetailRows, hasGroup3],
   );
+  const comparisonGroup2Rows = useMemo(
+    () =>
+      effectiveSellerFilter && hasGroup2
+        ? buildReportMatrixGroup2Rows(comparisonDetailRows, group2Order)
+        : [],
+    [comparisonDetailRows, effectiveSellerFilter, group2Order, hasGroup2],
+  );
   const comparisonTeamRows = useMemo(
-    () => buildReportMatrixTeamRows(comparisonDetailRows),
-    [comparisonDetailRows],
+    () =>
+      effectiveSellerFilter
+        ? buildReportMatrixTeamRows(comparisonDetailRows)
+        : [],
+    [comparisonDetailRows, effectiveSellerFilter],
   );
   const teamRows = useMemo(
     () => buildReportMatrixTeamRows(aggregationDetailRows),
@@ -657,13 +667,16 @@ export function ReportMatrixTable({
       return buildSellerFilteredBodyRows({
         categoryRows,
         categoryRowsByGroup2,
+        comparisonGroup2Rows,
         comparisonTeamRows,
+        expandedGroup2Keys,
         group2Rows,
         group3Rows,
         group3RowsByCategory,
         hasGroup2,
         hasGroup3,
         sellerDetailRows: filteredDetailRows,
+        sellerFilterActive: true,
       });
     }
 
@@ -780,6 +793,7 @@ export function ReportMatrixTable({
   }, [
     categoryRowsByGroup2,
     categoryRows,
+    comparisonGroup2Rows,
     comparisonTeamRows,
     detailRowsByTeam,
     effectiveSellerFilter,
@@ -821,9 +835,8 @@ export function ReportMatrixTable({
 
     const includeChevron = filteredRows.some(
       (row) =>
-        row.rowKind === "group2" &&
-        canExpandGroup2(row) &&
-        !effectiveSellerFilter,
+        (row.rowKind === "group2" && canExpandGroup2(row)) ||
+        row.isSellerGroup2Summary,
     );
 
     return measureReportMatrixCategoryColumnWidth(labels, includeChevron);
@@ -1048,6 +1061,27 @@ export function ReportMatrixTable({
       return content;
     }
 
+    if (row.isSellerGroup2Summary && columnKey === "category") {
+      const isExpanded = expandedGroup2Keys.has(row.key);
+
+      return (
+        <Button
+          type="button"
+          variant="ghost"
+          className="report-matrix__category-toggle h-auto min-h-0 justify-start p-0 text-left whitespace-normal"
+          aria-expanded={isExpanded}
+          onClick={() => toggleGroup2(row.key)}
+        >
+          <AppIcon
+            name={isExpanded ? "bi-chevron-down" : "bi-chevron-right"}
+            className="report-matrix__category-toggle-icon"
+            size={16}
+          />
+          <span className="report-matrix__category-toggle-label">{content}</span>
+        </Button>
+      );
+    }
+
     if (columnKey === "category" && row.rowKind === "group3") {
       if (effectiveSellerFilter || !canExpandGroup3(row)) {
         return content;
@@ -1149,7 +1183,7 @@ export function ReportMatrixTable({
   }
 
   function renderMatrixRow(row: ReportMatrixRow) {
-    const isGroup2Row = row.rowKind === "group2";
+    const isGroup2Row = row.rowKind === "group2" && !row.isSellerGroup2Summary;
     const isGroup2Subcategory = isGroup2SubcategoryRow(
       row,
       group2Rows,
@@ -1160,7 +1194,8 @@ export function ReportMatrixTable({
       <tr
         key={row.key}
         className={cn(
-          isGroup2Row && "report-matrix__row--group2",
+          (isGroup2Row || row.isSellerGroup2Summary) &&
+            "report-matrix__row--group2",
           row.rowKind === "category" &&
             !isGroup2Subcategory &&
             "report-matrix__row--category",
@@ -1169,6 +1204,7 @@ export function ReportMatrixTable({
             !row.isSellerFlattened &&
             "report-matrix__row--group3",
           row.isSellerFlattened && "report-matrix__row--seller-flat",
+          row.isSellerGroup2Summary && "report-matrix__row--seller-group2-summary",
           row.isSellerTeamSummary && "report-matrix__row--seller-team-summary",
           row.rowKind === "team" && "report-matrix__row--team",
           row.rowKind === "detail" && "report-matrix__row--detail",
@@ -1223,7 +1259,9 @@ export function ReportMatrixTable({
                 ? row.filterValues?.sellerLabel
                 : getTruncationTitle(rawValue);
             const cellContent =
-              (row.isSellerFlattened || row.isSellerTeamSummary) &&
+              (row.isSellerFlattened ||
+                row.isSellerTeamSummary ||
+                row.isSellerGroup2Summary) &&
               column.key === "category"
                 ? renderValue(rawValue)
                 : renderTruncatedCell(rawValue, title);

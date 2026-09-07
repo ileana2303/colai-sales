@@ -32,6 +32,68 @@ const PDF_SELLER_FILTER_ROW_FILL_COLOR = [255, 255, 255] as [
   number,
   number,
 ];
+const PDF_GROUP2_FILL_COLOR = [187, 247, 208] as [number, number, number];
+const PDF_GROUP2_TEXT_COLOR = [5, 46, 22] as [number, number, number];
+const PDF_TEAM_SUMMARY_FILL_COLOR = [219, 234, 254] as [number, number, number];
+const PDF_SELLER_GROUP2_CATEGORY_PADDING_LEFT = 2;
+const PDF_SELLER_TEAM_CATEGORY_PADDING_LEFT = 7;
+const PDF_SELLER_FLAT_CATEGORY_PADDING_LEFT = 12;
+const PDF_SELLER_TEAM_METRIC_PADDING_LEFT = 3;
+const PDF_SELLER_FLAT_METRIC_PADDING_LEFT = 6;
+
+type SellerFilterRowLevel = "group2" | "seller" | "team";
+
+function getSellerFilterRowLevel(
+  row: ReportMatrixRow,
+): SellerFilterRowLevel | null {
+  if (row.isSellerGroup2Summary) return "group2";
+  if (row.isSellerTeamSummary) return "team";
+  if (row.isSellerFlattened) return "seller";
+  return null;
+}
+
+function getPdfSellerCategoryPaddingLeft(level: SellerFilterRowLevel | null) {
+  switch (level) {
+    case "group2":
+      return PDF_SELLER_GROUP2_CATEGORY_PADDING_LEFT;
+    case "team":
+      return PDF_SELLER_TEAM_CATEGORY_PADDING_LEFT;
+    case "seller":
+      return PDF_SELLER_FLAT_CATEGORY_PADDING_LEFT;
+    default:
+      return 0;
+  }
+}
+
+function getPdfSellerMetricPaddingLeft(level: SellerFilterRowLevel | null) {
+  switch (level) {
+    case "team":
+      return PDF_SELLER_TEAM_METRIC_PADDING_LEFT;
+    case "seller":
+      return PDF_SELLER_FLAT_METRIC_PADDING_LEFT;
+    default:
+      return 0;
+  }
+}
+
+function withPdfCellPaddingLeft(
+  styles: Record<string, unknown>,
+  paddingLeft = 0,
+) {
+  if (paddingLeft <= 0) {
+    return styles;
+  }
+
+  return {
+    ...styles,
+    cellPadding: {
+      top: 1.8,
+      right: 1.8,
+      bottom: 1.8,
+      left: paddingLeft,
+    },
+  };
+}
 
 function arrayBufferToBase64(buffer: ArrayBuffer) {
   const bytes = new Uint8Array(buffer);
@@ -110,15 +172,19 @@ function getRowFillColor(
   }
 
   if (sellerFilterActive) {
+    if (row.isSellerGroup2Summary) {
+      return PDF_GROUP2_FILL_COLOR;
+    }
+
     if (row.isSellerTeamSummary) {
-      return [219, 234, 254] as [number, number, number];
+      return PDF_TEAM_SUMMARY_FILL_COLOR;
     }
 
     return PDF_SELLER_FILTER_ROW_FILL_COLOR;
   }
 
   if (row.rowKind === "group2") {
-    return [187, 247, 208] as [number, number, number];
+    return PDF_GROUP2_FILL_COLOR;
   }
 
   if (row.rowKind === "category") {
@@ -133,8 +199,8 @@ function getRowFillColor(
 }
 
 function getRowTextColor(row: ReportMatrixRow) {
-  if (row.rowKind === "group2") {
-    return [5, 46, 22] as [number, number, number];
+  if (row.rowKind === "group2" || row.isSellerGroup2Summary) {
+    return PDF_GROUP2_TEXT_COLOR;
   }
 
   if (row.rowKind === "category") {
@@ -162,7 +228,12 @@ function getPdfRowFontStyle(
   if (row.isTotal) return "bold";
   if (row.rowKind === "group2") return "bold";
   if (isGroup2SubcategoryRow(row, group2Keys)) return "normal";
-  if (row.rowKind === "category" || row.isSellerFlattened || row.isSellerTeamSummary) {
+  if (
+    row.rowKind === "category" ||
+    row.isSellerFlattened ||
+    row.isSellerGroup2Summary ||
+    row.isSellerTeamSummary
+  ) {
     return "bold";
   }
   return "normal";
@@ -304,8 +375,11 @@ function buildPdfTableBody(
     const rowFontStyle = getPdfRowFontStyle(row, group2Keys);
     const rowFontSize = row.isTotal ? PDF_TOTAL_FONT_SIZE : PDF_BODY_FONT_SIZE;
     const defaultTextColor = getRowTextColor(row);
+    const sellerLevel = metricDisplayOptions.sellerFilterActive
+      ? getSellerFilterRowLevel(row)
+      : null;
 
-    if (row.rowKind === "group2") {
+    if (row.rowKind === "group2" && !row.isSellerGroup2Summary) {
       return [
         {
           content: getLeadingExportValue(row, "category"),
@@ -346,12 +420,17 @@ function buildPdfTableBody(
 
     const leadingCells = leadingColumns.map((column) => ({
       content: getLeadingExportValue(row, column.key),
-      styles: withBottomBorder({
-        fillColor: rowFill,
-        fontSize: rowFontSize,
-        fontStyle: rowFontStyle,
-        textColor: defaultTextColor,
-      }),
+      styles: withPdfCellPaddingLeft(
+        withBottomBorder({
+          fillColor: rowFill,
+          fontSize: rowFontSize,
+          fontStyle: rowFontStyle,
+          textColor: defaultTextColor,
+        }),
+        column.key === "category"
+          ? getPdfSellerCategoryPaddingLeft(sellerLevel)
+          : 0,
+      ),
     }));
 
     const metricCells = metricColumns.map((column) => {
@@ -359,21 +438,26 @@ function buildPdfTableBody(
 
       return {
         content: metricValue,
-        styles: applyMatrixCellBorder(
-          {
-            fillColor: rowFill,
-            fontSize: rowFontSize,
-            fontStyle: rowFontStyle,
-            textColor: metricValue
-              ? getToneTextColor(row.cellTones?.[column.key] ?? column.cellTone)
-              : defaultTextColor,
-            halign: getColumnHalign(column.align),
-          },
-          {
-            isSectionStart: column.isSectionStart,
-            isSectionEnd: column.isSectionEnd,
-            isLastSection: column.isLastSection,
-          },
+        styles: withPdfCellPaddingLeft(
+          applyMatrixCellBorder(
+            {
+              fillColor: rowFill,
+              fontSize: rowFontSize,
+              fontStyle: rowFontStyle,
+              textColor: metricValue
+                ? getToneTextColor(row.cellTones?.[column.key] ?? column.cellTone)
+                : defaultTextColor,
+              halign: row.isSellerGroup2Summary
+                ? "center"
+                : getColumnHalign(column.align),
+            },
+            {
+              isSectionStart: column.isSectionStart,
+              isSectionEnd: column.isSectionEnd,
+              isLastSection: column.isLastSection,
+            },
+          ),
+          getPdfSellerMetricPaddingLeft(sellerLevel),
         ),
       };
     });

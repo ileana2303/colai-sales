@@ -71,24 +71,34 @@ export function buildMatrixHierarchyBreadcrumb(
 export function buildSellerFilteredBodyRows({
   categoryRows,
   categoryRowsByGroup2,
+  comparisonGroup2Rows,
   comparisonTeamRows,
+  expandedGroup2Keys,
   group2Rows,
   group3Rows,
   group3RowsByCategory,
   hasGroup2,
   hasGroup3,
   sellerDetailRows,
+  sellerFilterActive,
 }: {
   categoryRows: ReportMatrixRow[];
   categoryRowsByGroup2: Map<string, ReportMatrixRow[]>;
+  comparisonGroup2Rows: ReportMatrixRow[];
   comparisonTeamRows: ReportMatrixRow[];
+  expandedGroup2Keys: ReadonlySet<string>;
   group2Rows: ReportMatrixRow[];
   group3Rows: ReportMatrixRow[];
   group3RowsByCategory: Map<string, ReportMatrixRow[]>;
   hasGroup2: boolean;
   hasGroup3: boolean;
   sellerDetailRows: ReportMatrixRow[];
+  sellerFilterActive: boolean;
 }) {
+  if (!sellerFilterActive || !sellerDetailRows.length) {
+    return [];
+  }
+
   const teamRowsByParentKey = new Map<string, ReportMatrixRow[]>();
 
   for (const teamRow of comparisonTeamRows) {
@@ -117,64 +127,146 @@ export function buildSellerFilteredBodyRows({
     isSellerFlattened: true,
   });
 
-  const toSellerBranchRows = (
+  const subcategoryCountByGroup2 = new Map<string, number>();
+
+  if (hasGroup2) {
+    for (const group2Row of group2Rows) {
+      if (hasGroup3) {
+        let count = 0;
+
+        for (const categoryRow of categoryRowsByGroup2.get(group2Row.key) ?? []) {
+          count += (group3RowsByCategory.get(categoryRow.key) ?? []).length;
+        }
+
+        subcategoryCountByGroup2.set(group2Row.key, count);
+      } else {
+        subcategoryCountByGroup2.set(
+          group2Row.key,
+          (categoryRowsByGroup2.get(group2Row.key) ?? []).length,
+        );
+      }
+    }
+  }
+
+  const ungroupedSubcategoryCount = hasGroup3
+    ? group3Rows.length
+    : categoryRows.length;
+
+  const buildSellerBranchContent = (
     parentKey: string,
     sellerRow: ReportMatrixRow,
+    subcategoryCount: number,
   ): ReportMatrixRow[] => {
     const breadcrumb = nodeToExportString(sellerRow.category);
+    const rows: ReportMatrixRow[] = [];
     const sellerTeam = sellerTeamByParentKey.get(parentKey) ?? "";
     const teamRow = (teamRowsByParentKey.get(parentKey) ?? []).find(
       (row) => nodeToExportString(row.leadingValues?.team) === sellerTeam,
     );
 
-    if (!teamRow) {
-      return [sellerRow];
-    }
-
-    const teamName = nodeToExportString(teamRow.leadingValues?.team);
-
-    return [
-      {
+    if (sellerFilterActive && teamRow && subcategoryCount > 1) {
+      rows.push({
         ...teamRow,
-        category: teamName
-          ? `${breadcrumb} › ${teamName}`
-          : breadcrumb,
+        key: `${teamRow.key}|seller-team-summary|${parentKey}`,
+        category: breadcrumb,
         isSellerTeamSummary: true,
-      },
-      sellerRow,
-    ];
-  };
-
-  if (hasGroup3) {
-    if (hasGroup2) {
-      return group2Rows.flatMap((group2Row) => {
-        const categories = categoryRowsByGroup2.get(group2Row.key) ?? [];
-
-        return categories.flatMap((categoryRow) =>
-          (group3RowsByCategory.get(categoryRow.key) ?? []).flatMap(
-            (group3Row) =>
-              toSellerBranchRows(group3Row.key, withBreadcrumb(group3Row)),
-          ),
-        );
       });
     }
 
-    return group3Rows.flatMap((group3Row) =>
-      toSellerBranchRows(group3Row.key, withBreadcrumb(group3Row)),
+    rows.push(sellerRow);
+    return rows;
+  };
+
+  const appendSellerBranches = (
+    target: Map<string, ReportMatrixRow[]>,
+    group2Key: string,
+    parentKey: string,
+    sellerRow: ReportMatrixRow,
+  ) => {
+    const subcategoryCount = subcategoryCountByGroup2.get(group2Key) ?? 1;
+    const existing = target.get(group2Key) ?? [];
+    existing.push(
+      ...buildSellerBranchContent(parentKey, sellerRow, subcategoryCount),
     );
+    target.set(group2Key, existing);
+  };
+
+  const branchesByGroup2 = new Map<string, ReportMatrixRow[]>();
+  const ungroupedBranches: ReportMatrixRow[] = [];
+
+  if (hasGroup3) {
+    if (hasGroup2) {
+      for (const group2Row of group2Rows) {
+        const categories = categoryRowsByGroup2.get(group2Row.key) ?? [];
+
+        for (const categoryRow of categories) {
+          for (const group3Row of group3RowsByCategory.get(categoryRow.key) ??
+            []) {
+            appendSellerBranches(
+              branchesByGroup2,
+              group2Row.key,
+              group3Row.key,
+              withBreadcrumb(group3Row),
+            );
+          }
+        }
+      }
+    } else {
+      for (const group3Row of group3Rows) {
+        ungroupedBranches.push(
+          ...buildSellerBranchContent(
+            group3Row.key,
+            withBreadcrumb(group3Row),
+            ungroupedSubcategoryCount,
+          ),
+        );
+      }
+    }
+  } else if (hasGroup2) {
+    for (const group2Row of group2Rows) {
+      for (const categoryRow of categoryRowsByGroup2.get(group2Row.key) ?? []) {
+        appendSellerBranches(
+          branchesByGroup2,
+          group2Row.key,
+          categoryRow.key,
+          withBreadcrumb(categoryRow),
+        );
+      }
+    }
+  } else {
+    for (const categoryRow of categoryRows) {
+      ungroupedBranches.push(
+        ...buildSellerBranchContent(
+          categoryRow.key,
+          withBreadcrumb(categoryRow),
+          ungroupedSubcategoryCount,
+        ),
+      );
+    }
   }
 
   if (hasGroup2) {
-    return group2Rows.flatMap((group2Row) =>
-      (categoryRowsByGroup2.get(group2Row.key) ?? []).flatMap((categoryRow) =>
-        toSellerBranchRows(categoryRow.key, withBreadcrumb(categoryRow)),
-      ),
-    );
+    return comparisonGroup2Rows.flatMap((group2Row) => {
+      const branches = branchesByGroup2.get(group2Row.key) ?? [];
+      if (!branches.length) return [];
+
+      const header: ReportMatrixRow = {
+        ...group2Row,
+        key: group2Row.key,
+        category: nodeToExportString(group2Row.category),
+        isSellerGroup2Summary: true,
+        childCount: branches.length,
+      };
+
+      if (!expandedGroup2Keys.has(group2Row.key)) {
+        return [header];
+      }
+
+      return [header, ...branches];
+    });
   }
 
-  return categoryRows.flatMap((categoryRow) =>
-    toSellerBranchRows(categoryRow.key, withBreadcrumb(categoryRow)),
-  );
+  return ungroupedBranches;
 }
 
 export function getLeadingExportValue(row: ReportMatrixRow, key: string) {
@@ -210,7 +302,8 @@ export function getMatrixMetricDisplayValue(
     options.sellerFilterActive &&
     !row.isTotal &&
     !row.isSellerFlattened &&
-    !row.isSellerTeamSummary
+    !row.isSellerTeamSummary &&
+    !row.isSellerGroup2Summary
   ) {
     return "";
   }

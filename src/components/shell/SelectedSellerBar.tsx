@@ -87,7 +87,11 @@ export function SelectedSellerBar() {
     try {
       await selectArea(nextArea);
       await queryClient.invalidateQueries({ queryKey: powerBiKeys.all });
-      router.refresh();
+      if (pathname === "/") {
+        router.refresh();
+      } else {
+        router.push("/");
+      }
     } catch (selection) {
       setSelectionError(
         selection instanceof Error
