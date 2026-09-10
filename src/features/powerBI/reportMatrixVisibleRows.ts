@@ -419,6 +419,22 @@ export function buildReportMatrixFilteredView({
   };
 }
 
+export function collectReportMatrixExportTeams(rows: ReportMatrixRow[]) {
+  const teams = new Set<string>();
+
+  for (const row of rows) {
+    const team = getReportMatrixTeamValue(row).trim();
+    if (team) teams.add(team);
+  }
+
+  return [...teams].sort((left, right) =>
+    left.localeCompare(right, "el", {
+      numeric: true,
+      sensitivity: "base",
+    }),
+  );
+}
+
 export function collectReportMatrixExportMembers(rows: ReportMatrixRow[]) {
   const members = new Map<string, ReportMatrixExportMember>();
 

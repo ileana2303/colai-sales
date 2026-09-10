@@ -16,6 +16,7 @@ export function getMatrixExportFileName(
   parts?: {
     category?: { label: string; value: string };
     seller?: { label: string; value: string };
+    team?: { label: string; value: string };
   },
 ) {
   const base = exportFileName || brandLabel || "powerbi-data";
@@ -25,6 +26,11 @@ export function getMatrixExportFileName(
     ? parts.category.label.trim() || parts.category.value
     : "";
   if (categoryName) segments.push(categoryName);
+
+  if (parts?.team?.value) {
+    const teamName = parts.team.label.trim() || parts.team.value;
+    if (teamName) segments.push(teamName);
+  }
 
   if (parts?.seller?.value) {
     const sellerName =

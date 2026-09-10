@@ -15,13 +15,17 @@ import {
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export type ReportMatrixPdfExportMode = "all-sellers" | "current-view";
+export type ReportMatrixPdfExportMode =
+  | "all-sellers"
+  | "all-teams"
+  | "current-view";
 
 type ReportMatrixPdfExportDialogProps = {
   isExporting: boolean;
   onConfirm: (mode: ReportMatrixPdfExportMode) => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  showTeamTotalsOption?: boolean;
   teamLabel: string;
 };
 
@@ -30,6 +34,7 @@ export function ReportMatrixPdfExportDialog({
   onConfirm,
   onOpenChange,
   open,
+  showTeamTotalsOption = false,
   teamLabel,
 }: ReportMatrixPdfExportDialogProps) {
   const [exportMode, setExportMode] =
@@ -79,6 +84,34 @@ export function ReportMatrixPdfExportDialog({
               </span>
             </span>
           </Label>
+          {showTeamTotalsOption ? (
+            <Label
+              className={cn(
+                "cursor-pointer items-start rounded-lg border p-3 font-normal",
+                exportMode === "all-teams"
+                  ? "border-primary bg-primary/5"
+                  : "border-border",
+              )}
+            >
+              <input
+                checked={exportMode === "all-teams"}
+                className="mt-0.5"
+                disabled={isExporting}
+                name="pdf-export-mode"
+                type="radio"
+                value="all-teams"
+                onChange={() => setExportMode("all-teams")}
+              />
+              <span className="space-y-1">
+                <span className="block font-medium text-foreground">
+                  Σύνολα ομάδων
+                </span>
+                <span className="block text-sm leading-relaxed text-muted-foreground">
+                  Θα ληφθούν ξεχωριστά αρχεία PDF με τα σύνολα κάθε ομάδας.
+                </span>
+              </span>
+            </Label>
+          ) : null}
           <Label
             className={cn(
               "cursor-pointer items-start rounded-lg border p-3 font-normal",

@@ -89,10 +89,12 @@ export function PowerBiTableHeaderFilter({
     setSearchQuery("");
   }
 
+  const isSelectedFilter = isActive && !readOnly;
   const triggerClassName = cn(
     "power-bi-table-header-filter__trigger border-input bg-background flex h-10 items-center justify-between gap-2 rounded-md border px-3.5 py-0 text-left text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-    isActive && "border-[#D1FADE] bg-[#F1F5F9]",
-    isActive && !readOnly && "pr-10",
+    isSelectedFilter &&
+      "border-[#D1FADE] bg-[#F1F5F9] dark:border-emerald-700/50 dark:bg-muted",
+    isSelectedFilter && "pr-10",
     fitContent || isActive ? "w-auto max-w-full" : "w-full",
     readOnly
       ? "cursor-default"

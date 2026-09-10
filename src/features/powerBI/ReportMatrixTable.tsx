@@ -32,6 +32,7 @@ import {
   canExpandGroup3,
   canExpandTeam,
   collectReportMatrixExportMembers,
+  collectReportMatrixExportTeams,
 } from "@/features/powerBI/reportMatrixVisibleRows";
 import type {
   ReportMatrixColumn,
@@ -508,13 +509,36 @@ export function ReportMatrixTable({
     hasGroup2,
     totalRows,
   } = matrixView;
+
+  function buildExpandedExportView(
+    overrides: {
+      sellerFilter?: string;
+      teamFilter?: string;
+    } = {},
+  ) {
+    return buildReportMatrixFilteredView({
+      categoryFilter,
+      detailRows,
+      expandAll: true,
+      group2Order,
+      sellerFilter: overrides.sellerFilter ?? effectiveSellerFilter,
+      teamFilter: overrides.teamFilter ?? effectiveTeamFilter,
+    });
+  }
+
   const pdfExportMembers = useMemo(
     () => collectReportMatrixExportMembers(sellerOptionRows),
+    [sellerOptionRows],
+  );
+  const pdfExportTeams = useMemo(
+    () => collectReportMatrixExportTeams(sellerOptionRows),
     [sellerOptionRows],
   );
   const pdfExportTeamLabel = lockedTeamFilter
     ? lockedTeamFilter
     : resolveFilterLabel(effectiveTeamFilter, teamOptions);
+  const canExportTeamTotals =
+    !effectiveTeamFilter && !effectiveSellerFilter && pdfExportTeams.length > 0;
   const requiresMultiPagePdfExport = !effectiveSellerFilter;
   const expandableGroup2Keys = useMemo(
     () => bodyRows.filter(canExpandGroup2).map((row) => row.key),
@@ -709,6 +733,7 @@ export function ReportMatrixTable({
 
   function resolveExportFileName(
     seller?: { label: string; value: string } | null,
+    team?: { label: string; value: string } | null,
   ) {
     const resolvedSeller =
       seller ??
@@ -730,15 +755,18 @@ export function ReportMatrixTable({
           }
         : undefined,
       seller: resolvedSeller,
+      team: team ?? undefined,
     });
   }
 
   function handleExport() {
+    const exportView = buildExpandedExportView();
+
     exportReportMatrixToExcel({
       brandLabel,
       exportFileName: resolveExportFileName(),
       leadingColumns: resolvedLeadingColumns,
-      rows: filteredRows,
+      rows: exportView.filteredRows,
       sections,
       sellerFilterActive: Boolean(effectiveSellerFilter),
     });
@@ -798,17 +826,19 @@ export function ReportMatrixTable({
       };
 
       if (effectiveSellerFilter) {
+        const exportView = buildExpandedExportView();
+
         await exportReportMatrixToPdf({
           ...sharedOptions,
           pages: [
             buildPdfFilterPage({
-              rows: filteredRows,
+              rows: exportView.filteredRows,
               sellerFilterActive: true,
               sellerLabel: resolveSellerFilterLabel(
                 effectiveSellerFilter,
                 sellerOptions,
               ),
-              sellerRows: filteredDetailRows,
+              sellerRows: exportView.filteredDetailRows,
               teamLabel: currentTeamLabel,
             }),
           ],
@@ -817,19 +847,55 @@ export function ReportMatrixTable({
       }
 
       if (mode === "current-view") {
+        const exportView = buildExpandedExportView();
+
         await exportReportMatrixToPdf({
           ...sharedOptions,
           exportFileName: resolveExportFileName(),
           pages: [
             buildPdfFilterPage({
-              rows: filteredRows,
+              rows: exportView.filteredRows,
               sellerFilterActive: false,
               sellerLabel: resolveSellerFilterLabel("", sellerOptions),
-              sellerRows: filteredDetailRows,
+              sellerRows: exportView.filteredDetailRows,
               teamLabel: currentTeamLabel,
             }),
           ],
         });
+        return;
+      }
+
+      if (mode === "all-teams") {
+        for (const [teamIndex, team] of pdfExportTeams.entries()) {
+          if (teamIndex > 0) {
+            await new Promise<void>((resolve) => {
+              window.setTimeout(resolve, 150);
+            });
+          }
+
+          const teamView = buildExpandedExportView({
+            sellerFilter: "",
+            teamFilter: team,
+          });
+          const teamLabel = resolveFilterLabel(team, teamOptions);
+
+          await exportReportMatrixToPdf({
+            ...sharedOptions,
+            exportFileName: resolveExportFileName(undefined, {
+              value: team,
+              label: teamLabel,
+            }),
+            pages: [
+              buildPdfFilterPage({
+                rows: teamView.filteredRows,
+                sellerFilterActive: false,
+                sellerLabel: resolveSellerFilterLabel("", sellerOptions),
+                sellerRows: teamView.filteredDetailRows,
+                teamLabel,
+              }),
+            ],
+          });
+        }
         return;
       }
 
@@ -840,11 +906,7 @@ export function ReportMatrixTable({
           });
         }
 
-        const memberView = buildReportMatrixFilteredView({
-          categoryFilter,
-          detailRows,
-          expandAll: true,
-          group2Order,
+        const memberView = buildExpandedExportView({
           sellerFilter: member.seller,
           teamFilter: member.team,
         });
@@ -1275,6 +1337,36 @@ export function ReportMatrixTable({
               Reset filters
             </span>
           </span>
+          <span className="group relative inline-flex">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-10"
+              aria-expanded={areAllExpandableRowsExpanded}
+              aria-label={
+                areAllExpandableRowsExpanded ? "Collapse all" : "Expand all"
+              }
+              disabled={!hasExpandableRows}
+              onClick={toggleExpandAll}
+            >
+              <AppIcon
+                name={
+                  areAllExpandableRowsExpanded
+                    ? "bi-fold-vertical"
+                    : "bi-unfold-vertical"
+                }
+                className="size-5"
+                size={20}
+              />
+            </Button>
+            <span
+              role="tooltip"
+              className="bg-foreground text-background pointer-events-none absolute top-full left-1/2 z-30 mt-2 -translate-x-1/2 rounded-md px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
+              {areAllExpandableRowsExpanded ? "Collapse all" : "Expand all"}
+            </span>
+          </span>
         </div>
         <div className="min-w-0">
           {title ? (
@@ -1342,6 +1434,7 @@ export function ReportMatrixTable({
       <ReportMatrixPdfExportDialog
         isExporting={isPdfExporting}
         open={isPdfExportDialogOpen}
+        showTeamTotalsOption={canExportTeamTotals}
         teamLabel={pdfExportTeamLabel}
         onConfirm={handlePdfExportConfirm}
         onOpenChange={setIsPdfExportDialogOpen}
