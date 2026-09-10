@@ -35,6 +35,7 @@ import { RefreshSnapshotButton } from "@/features/powerBI/RefreshSnapshotButton"
 import {
   buildReportMatrixPeriodSummaryItems,
   buildSnapshotPeriodSummaryItems,
+  isLatestClosedPeriodSelected,
 } from "@/features/powerBI/reportMatrixPeriodSummary";
 import { ReportMatrixPeriodSummaryPanel } from "@/features/powerBI/reportMatrixPeriodSummaryPanel";
 import type { ReportMatrixLivePeriodSummary } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
@@ -134,11 +135,13 @@ function formatSnapshotDescription(snapshotDate: string | undefined) {
 }
 
 function SnapshotPicker({
+  disabled = false,
   pageCode,
   year,
   value,
   onChange,
 }: {
+  disabled?: boolean;
   pageCode: string;
   year: number;
   value?: string;
@@ -163,7 +166,12 @@ function SnapshotPicker({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Select a past snapshot"
-        disabled={isLoading}
+        disabled={disabled || isLoading}
+        title={
+          disabled
+            ? "Επιλέξτε την τρέχουσα κλειστή περίοδο για να αλλάξετε στιγμιότυπο"
+            : undefined
+        }
         className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border px-4 text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50"
       >
         {isLoading ? "Loading snapshots…" : selectedLabel}
@@ -637,6 +645,9 @@ export function PowerBiReportMatrixPage({
     currentYear,
     snapshotDate,
   );
+  const snapshotPickerDisabled = !isLatestClosedPeriodSelected(
+    livePeriodSummary?.closedPeriodSelection,
+  );
 
   return (
     <ReportMatrixChatShell
@@ -658,6 +669,7 @@ export function PowerBiReportMatrixPage({
                 compareYear={previousYear}
               />
               <SnapshotPicker
+                disabled={snapshotPickerDisabled}
                 pageCode={snapshotPageCode}
                 year={currentYear}
                 value={snapshotDate}
@@ -709,6 +721,9 @@ export function PowerBiTabbedReportMatrixPage({
     currentYear,
     snapshotDate,
   );
+  const snapshotPickerDisabled = !isLatestClosedPeriodSelected(
+    livePeriodSummary?.closedPeriodSelection,
+  );
 
   return (
     <ReportMatrixChatShell
@@ -734,6 +749,7 @@ export function PowerBiTabbedReportMatrixPage({
                   compareYear={previousYear}
                 />
                 <SnapshotPicker
+                  disabled={snapshotPickerDisabled}
                   pageCode={snapshotPageCode}
                   year={currentYear}
                   value={snapshotDate}

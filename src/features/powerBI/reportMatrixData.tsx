@@ -1326,6 +1326,101 @@ export function buildReportMatrixGroup2TotalRows(
   );
 }
 
+function getDetailRowMatchKey(row: ReportMatrixRow) {
+  const filterValues = row.filterValues;
+  if (!filterValues) return row.key;
+
+  return [
+    filterValues.group2,
+    filterValues.category,
+    filterValues.group3 ?? "",
+    filterValues.team,
+    filterValues.seller,
+  ]
+    .map(normalizeKeyPart)
+    .join("|");
+}
+
+function detailRowToAggregate(row: ReportMatrixRow): MatrixAggregate {
+  if (!row.metrics) {
+    throw new Error("Matrix detail row is missing metrics.");
+  }
+
+  const aggregate = aggregateFromMetrics(row.metrics);
+  const filterValues = row.filterValues;
+  const sellerRaw = filterValues?.seller ?? "|";
+  const pipeIndex = sellerRaw.indexOf("|");
+
+  aggregate.group1 = filterValues?.category ?? "";
+  aggregate.group2 = filterValues?.group2 ?? "";
+  aggregate.group3 = filterValues?.group3 ?? "";
+  aggregate.team = filterValues?.team ?? "";
+  aggregate.sellerCode =
+    pipeIndex >= 0 ? sellerRaw.slice(0, pipeIndex) : sellerRaw;
+  aggregate.sellerName =
+    pipeIndex >= 0 ? sellerRaw.slice(pipeIndex + 1) : "";
+
+  return aggregate;
+}
+
+function zeroClosedPeriodDetailRow(snapshotRow: ReportMatrixRow): ReportMatrixRow {
+  if (!snapshotRow.metrics) return snapshotRow;
+
+  const aggregate = detailRowToAggregate(snapshotRow);
+  aggregate.tcyClosed = 0;
+  aggregate.vcyClosed = 0;
+  aggregate.vlc = 0;
+
+  const recomputed = aggregateToMatrixRow(aggregate, false, {
+    key: snapshotRow.key,
+    parentKey: snapshotRow.parentKey,
+    rowKind: "detail",
+  });
+
+  return {
+    ...snapshotRow,
+    metrics: recomputed.metrics,
+    values: recomputed.values,
+    cellTones: recomputed.cellTones,
+  };
+}
+
+/**
+ * Keeps the snapshot row hierarchy (group2/group1/group3) and overlays
+ * closed-period metrics from a live rebuild for the selected end month.
+ */
+export function applyClosedPeriodToPrecalculatedRows(
+  precalculatedRows: ReportMatrixRow[],
+  liveRows: ReportMatrixRow[],
+): ReportMatrixRow[] {
+  const liveDetailByKey = new Map<string, ReportMatrixRow>();
+  const liveDetailByMatchKey = new Map<string, ReportMatrixRow>();
+
+  for (const row of liveRows) {
+    if (row.isTotal || row.rowKind !== "detail" || !row.metrics) continue;
+
+    liveDetailByKey.set(row.key, row);
+    liveDetailByMatchKey.set(getDetailRowMatchKey(row), row);
+  }
+
+  return precalculatedRows.map((snapshotRow) => {
+    const liveRow =
+      liveDetailByKey.get(snapshotRow.key) ??
+      liveDetailByMatchKey.get(getDetailRowMatchKey(snapshotRow));
+
+    if (liveRow?.metrics) {
+      return {
+        ...snapshotRow,
+        metrics: liveRow.metrics,
+        values: liveRow.values,
+        cellTones: liveRow.cellTones,
+      };
+    }
+
+    return zeroClosedPeriodDetailRow(snapshotRow);
+  });
+}
+
 export function resolveReportMatrixRows({
   precalculatedRows,
   closedPeriodEndMonthIndex,
@@ -1333,12 +1428,15 @@ export function resolveReportMatrixRows({
   ...buildInput
 }: ResolveReportMatrixRowsInput): ReportMatrixRow[] {
   const hasSourceRows = currentRows.length > 0;
+  const lastClosedMonthIndex = hasSourceRows
+    ? resolveClosedPeriodWindowFromRows(currentRows).lastClosedMonthIndex
+    : null;
   const usePrecalculated =
     Boolean(precalculatedRows?.length) &&
     (!hasSourceRows ||
       isDefaultClosedPeriodEndMonth(
         closedPeriodEndMonthIndex,
-        resolveClosedPeriodWindowFromRows(currentRows).lastClosedMonthIndex,
+        lastClosedMonthIndex,
       ));
 
   if (usePrecalculated) {
@@ -1349,11 +1447,17 @@ export function resolveReportMatrixRows({
     return precalculatedRows ?? [];
   }
 
-  return buildReportMatrixRows({
+  const liveRows = buildReportMatrixRows({
     ...buildInput,
     closedPeriodEndMonthIndex,
     currentRows,
   });
+
+  if (precalculatedRows?.length) {
+    return applyClosedPeriodToPrecalculatedRows(precalculatedRows, liveRows);
+  }
+
+  return liveRows;
 }
 
 export function buildReportMatrixRows({

@@ -8,7 +8,6 @@ import {
   reportMatrixDetailRowsHaveGroup2,
   reportMatrixDetailRowsHaveGroup3,
 } from "@/features/powerBI/reportMatrixData";
-import { buildSellerFilteredBodyRows } from "@/features/powerBI/reportMatrixExport";
 import type { ReportMatrixRow } from "@/features/powerBI/types/ReportMatrixTable.types";
 
 const EMPTY_EXPANSION_KEYS: ReadonlySet<string> = new Set();
@@ -36,8 +35,20 @@ export type ReportMatrixFilteredView = {
   totalRows: ReportMatrixRow[];
 };
 
-export function canExpandCategory(_row: ReportMatrixRow) {
-  return false;
+export function shouldShowCategoryTier(
+  row: ReportMatrixRow,
+  hasGroup3: boolean,
+) {
+  if (!hasGroup3 || row.rowKind !== "category") return false;
+  return (row.childCount ?? 0) > 0;
+}
+
+export function canExpandCategory(
+  row: ReportMatrixRow,
+  hasGroup3 = false,
+) {
+  if (!shouldShowCategoryTier(row, hasGroup3)) return false;
+  return (row.childCount ?? 0) > 1;
 }
 
 export function canExpandGroup2(row: ReportMatrixRow) {
@@ -50,6 +61,12 @@ export function canExpandGroup3(_row: ReportMatrixRow) {
 
 export function canExpandTeam(_row: ReportMatrixRow) {
   return false;
+}
+
+export function shouldHideMatrixParentMetrics(row: ReportMatrixRow) {
+  if (row.isTotal) return false;
+
+  return row.rowKind === "category" && (row.childCount ?? 0) === 1;
 }
 
 export function getReportMatrixCategoryValue(row: ReportMatrixRow) {
@@ -176,13 +193,11 @@ function buildReportMatrixBodyRows({
   expandedGroup2Keys,
   expandedGroup3Keys,
   expandedTeamKeys,
-  filteredDetailRows,
   group2Rows,
   group3Rows,
   group3RowsByCategory,
   hasGroup2,
   hasGroup3,
-  sellerFilter,
   teamRowsByParentKey,
 }: {
   categoryRows: ReportMatrixRow[];
@@ -192,30 +207,13 @@ function buildReportMatrixBodyRows({
   expandedGroup2Keys: ReadonlySet<string>;
   expandedGroup3Keys: ReadonlySet<string>;
   expandedTeamKeys: ReadonlySet<string>;
-  filteredDetailRows: ReportMatrixRow[];
   group2Rows: ReportMatrixRow[];
   group3Rows: ReportMatrixRow[];
   group3RowsByCategory: Map<string, ReportMatrixRow[]>;
   hasGroup2: boolean;
   hasGroup3: boolean;
-  sellerFilter: string;
   teamRowsByParentKey: Map<string, ReportMatrixRow[]>;
 }) {
-  if (sellerFilter) {
-    return buildSellerFilteredBodyRows({
-      categoryRows,
-      categoryRowsByGroup2,
-      expandedGroup2Keys,
-      group2Rows,
-      group3Rows,
-      group3RowsByCategory,
-      hasGroup2,
-      hasGroup3,
-      sellerDetailRows: filteredDetailRows,
-      sellerFilterActive: true,
-    });
-  }
-
   const renderTeamBranch = (row: ReportMatrixRow) => {
     const sellerRows = detailRowsByTeam.get(row.key) ?? [];
 
@@ -264,11 +262,11 @@ function buildReportMatrixBodyRows({
       const categoryTeamRows = teamRowsByParentKey.get(row.key) ?? [];
       const expandedTeamRows = categoryTeamRows.flatMap(renderTeamBranch);
 
-      if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
+      if (canExpandCategory(row, hasGroup3) && !expandedCategoryKeys.has(row.key)) {
         return [row];
       }
 
-      if (!canExpandCategory(row)) {
+      if (!canExpandCategory(row, hasGroup3)) {
         return [row];
       }
 
@@ -280,12 +278,21 @@ function buildReportMatrixBodyRows({
     const expandedGroup3Rows = groupedGroup3Rows.flatMap(renderGroup3Branch);
     const expandedDirectTeamRows = directTeamRows.flatMap(renderTeamBranch);
     const expandedChildren = [...expandedGroup3Rows, ...expandedDirectTeamRows];
+    const showCategoryTier = shouldShowCategoryTier(row, hasGroup3) && !skipCategoryRow;
 
-    if (canExpandCategory(row) && !expandedCategoryKeys.has(row.key)) {
+    if (showCategoryTier) {
+      if (canExpandCategory(row, hasGroup3) && !expandedCategoryKeys.has(row.key)) {
+        return [row];
+      }
+
+      return [row, ...expandedChildren];
+    }
+
+    if (canExpandCategory(row, hasGroup3) && !expandedCategoryKeys.has(row.key)) {
       return [row];
     }
 
-    if (!canExpandCategory(row)) {
+    if (!canExpandCategory(row, hasGroup3)) {
       if (groupedGroup3Rows.length) {
         return groupedGroup3Rows;
       }
@@ -397,13 +404,11 @@ export function buildReportMatrixFilteredView({
     expandedGroup2Keys,
     expandedGroup3Keys,
     expandedTeamKeys,
-    filteredDetailRows,
     group2Rows,
     group3Rows,
     group3RowsByCategory,
     hasGroup2,
     hasGroup3,
-    sellerFilter,
     teamRowsByParentKey,
   });
   const totalRows = buildReportMatrixTotalRows(aggregationDetailRows);

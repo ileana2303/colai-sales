@@ -19,35 +19,56 @@ import {
   type PowerBiExecuteQueriesResponse,
 } from "@/lib/bi-reports/powerBi";
 
-export function buildPorgesSalesLastYearQuery(areaName: string): string {
-  const area = escapeDaxString(areaName);
+const PORGES_SUMMARIZE_DIMENSIONS = [
+  "  'U Sales Person'[SellerCode],",
+  "  'U Item Family Code'[Porges Group],",
+  "  'U Item Family Code'[Porges SUB],",
+  "  'U Item Family Code'[ItemFamilyCode (groups)],",
+] as const;
 
+const PORGES_SELECT_GROUP_COLUMNS = [
+  "  \"Group1\", 'U Item Family Code'[Porges SUB],",
+  "  \"Group2\", 'U Item Family Code'[Porges Group],",
+  "  \"Group3\", 'U Item Family Code'[ItemFamilyCode (groups)],",
+] as const;
+
+export function alignPorgesMatrixGroups<
+  T extends { group1: string | null; group2: string | null },
+>(row: T): T {
+  return {
+    ...row,
+    group1: row.group2,
+    group2: row.group1,
+  };
+}
+
+function buildPorgesAreaFilter(areaName: string) {
+  const area = escapeDaxString(areaName);
+  return `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`;
+}
+
+export function buildPorgesSalesLastYearQuery(areaName: string): string {
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
-    "  'U Sales Person'[SellerCode],",
-    "  'U Item Family Code'[Porges Group],",
-    "  'U Item Family Code'[Porges SUB],",
-    "  'U Item Family Code'[ItemFamilyCode (groups)],",
+    ...PORGES_SUMMARIZE_DIMENSIONS,
     "  'U Months'[Month],",
     "  'UBussiness'[BusinessUnit],",
     "  FILTER(ALL('U Sales Person'), [SALES TARGET PORGES] > 0),",
-    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    buildPorgesAreaFilter(areaName),
     `  ${buildCalendarYearFilter(LAST_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P05VALL-VLY",',
     '  "REPORT_DESC", "Porges Sales by Sales Person and Group LY",',
     '  "Currency", 1,',
     '  "VCY", [Sales]',
     ")",
-    'VAR __Filtered = FILTER(__Base, [VCY] > 0 && \'UBussiness\'[BusinessUnit] = "Porges")',
+    `  VAR __Filtered = FILTER(__Base, [VCY] > 0 && 'UBussiness'[BusinessUnit] = "Porges")`,
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "Group1", \'U Item Family Code\'[Porges Group],',
-    '  "Group2", \'U Item Family Code\'[Porges SUB],',
-    '  "Group3", \'U Item Family Code\'[ItemFamilyCode (groups)],',
-    '  "Month", \'U Months\'[Month],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+    ...PORGES_SELECT_GROUP_COLUMNS,
+    "  \"Month\", 'U Months'[Month],",
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
     '  "Currency", [Currency],',
@@ -58,18 +79,13 @@ export function buildPorgesSalesLastYearQuery(areaName: string): string {
 }
 
 function buildPorgesSalesCurrentYearBaseQuery(areaName: string): string {
-  const area = escapeDaxString(areaName);
-
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
-    "  'U Sales Person'[SellerCode],",
-    "  'U Item Family Code'[Porges Group],",
-    "  'U Item Family Code'[Porges SUB],",
-    "  'U Item Family Code'[ItemFamilyCode (groups)],",
+    ...PORGES_SUMMARIZE_DIMENSIONS,
     "  'U Months'[Month],",
     "  'U Months'[Status of Closed Month],",
-    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    buildPorgesAreaFilter(areaName),
     `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P05VALL-VCYTCY",',
     '  "REPORT_DESC", "Porges Sales, Target and Trend by Sales Person and Group",',
@@ -81,12 +97,10 @@ function buildPorgesSalesCurrentYearBaseQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "Group1", \'U Item Family Code\'[Porges Group],',
-    '  "Group2", \'U Item Family Code\'[Porges SUB],',
-    '  "Group3", \'U Item Family Code\'[ItemFamilyCode (groups)],',
-    '  "Month", \'U Months\'[Month],',
-    '  "ClosedMonthStatus", \'U Months\'[Status of Closed Month],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+    ...PORGES_SELECT_GROUP_COLUMNS,
+    "  \"Month\", 'U Months'[Month],",
+    "  \"ClosedMonthStatus\", 'U Months'[Status of Closed Month],",
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
     '  "Currency", [Currency],',
@@ -106,16 +120,11 @@ export function buildPorgesSalesTargetsTrendsQuery(areaName: string): string {
 }
 
 export function buildPorgesTrendQuery(areaName: string): string {
-  const area = escapeDaxString(areaName);
-
   return joinDaxQuery([
     "DEFINE",
     "VAR __Base = SUMMARIZECOLUMNS(",
-    "  'U Sales Person'[SellerCode],",
-    "  'U Item Family Code'[Porges Group],",
-    "  'U Item Family Code'[Porges SUB],",
-    "  'U Item Family Code'[ItemFamilyCode (groups)],",
-    `  FILTER('U Sales Person', 'U Sales Person'[Area] = "${area}"),`,
+    ...PORGES_SUMMARIZE_DIMENSIONS,
+    buildPorgesAreaFilter(areaName),
     `  ${buildCalendarYearFilter(CURRENT_CALENDAR_YEAR_DAX)},`,
     '  "REPORT_CODE", "P05VALL-VTREND",',
     '  "REPORT_DESC", "Porges Sales, Target and Trend by Sales Person and Group",',
@@ -127,10 +136,8 @@ export function buildPorgesTrendQuery(areaName: string): string {
     "EVALUATE",
     "SELECTCOLUMNS(",
     "  __Filtered,",
-    '  "SellerCode", \'U Sales Person\'[SellerCode],',
-    '  "Group1", \'U Item Family Code\'[Porges Group],',
-    '  "Group2", \'U Item Family Code\'[Porges SUB],',
-    '  "Group3", \'U Item Family Code\'[ItemFamilyCode (groups)],',
+    "  \"SellerCode\", 'U Sales Person'[SellerCode],",
+    ...PORGES_SELECT_GROUP_COLUMNS,
     '  "REPORT_CODE", [REPORT_CODE],',
     '  "REPORT_DESC", [REPORT_DESC],',
     '  "Currency", [Currency],',
@@ -143,17 +150,17 @@ export function buildPorgesTrendQuery(areaName: string): string {
 export function normalizePorgesSalesLastYearRows(
   response: PowerBiExecuteQueriesResponse,
 ): LastYearSalesRow[] {
-  return normalizeLastYearSalesRows(response);
+  return normalizeLastYearSalesRows(response).map(alignPorgesMatrixGroups);
 }
 
 export function normalizePorgesSalesRows(
   response: PowerBiExecuteQueriesResponse,
 ): CurrentYearSalesRow[] {
-  return normalizeCurrentYearSalesRows(response);
+  return normalizeCurrentYearSalesRows(response).map(alignPorgesMatrixGroups);
 }
 
 export function normalizePorgesTrendRows(
   response: PowerBiExecuteQueriesResponse,
 ): TrendSalesRow[] {
-  return normalizeTrendSalesRows(response);
+  return normalizeTrendSalesRows(response).map(alignPorgesMatrixGroups);
 }

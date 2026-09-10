@@ -38,9 +38,19 @@ const PDF_SELLER_FILTER_ROW_FILL_COLOR = [255, 255, 255] as [
 ];
 const PDF_GROUP2_FILL_COLOR = [187, 247, 208] as [number, number, number];
 const PDF_GROUP2_TEXT_COLOR = [5, 46, 22] as [number, number, number];
+const PDF_CATEGORY_FILL_COLOR = [219, 234, 254] as [number, number, number];
+const PDF_GROUP3_FILL_COLOR = [239, 248, 254] as [number, number, number];
+const PDF_CATEGORY_TEXT_COLOR = [30, 58, 95] as [number, number, number];
+const PDF_GROUP2_SUBCATEGORY_TEXT_COLOR = [51, 65, 85] as [
+  number,
+  number,
+  number,
+];
+const PDF_MUTED_TEXT_COLOR = [100, 116, 139] as [number, number, number];
 const PDF_TEAM_SUMMARY_FILL_COLOR = [219, 234, 254] as [number, number, number];
 const PDF_SELLER_GROUP2_CATEGORY_PADDING_LEFT = 2;
 const PDF_SELLER_FLAT_CATEGORY_PADDING_LEFT = 7;
+const PDF_GROUP2_SUBCATEGORY_CATEGORY_PADDING_LEFT = 6;
 
 type SellerFilterRowLevel = "group2" | "seller" | "team";
 
@@ -63,6 +73,27 @@ function getPdfSellerCategoryPaddingLeft(level: SellerFilterRowLevel | null) {
     default:
       return 0;
   }
+}
+
+function getPdfCategoryPaddingLeft(
+  row: ReportMatrixRow,
+  group2Keys: Set<string>,
+  sellerLevel: SellerFilterRowLevel | null,
+) {
+  const sellerPadding = getPdfSellerCategoryPaddingLeft(sellerLevel);
+  if (sellerPadding > 0) {
+    return sellerPadding;
+  }
+
+  if (isGroup2SubcategoryRow(row, group2Keys)) {
+    return PDF_GROUP2_SUBCATEGORY_CATEGORY_PADDING_LEFT;
+  }
+
+  if (row.rowKind === "group3") {
+    return 4.5;
+  }
+
+  return 0;
 }
 
 function withPdfCellPaddingLeft(
@@ -177,26 +208,53 @@ function getRowFillColor(
   }
 
   if (row.rowKind === "category") {
-    if (row.parentKey && group2Keys.has(row.parentKey)) {
+    if (isGroup2SubcategoryRow(row, group2Keys)) {
       return PDF_SELLER_FILTER_ROW_FILL_COLOR;
     }
 
-    return [219, 234, 254] as [number, number, number];
+    return PDF_CATEGORY_FILL_COLOR;
+  }
+
+  if (row.rowKind === "group3") {
+    return PDF_GROUP3_FILL_COLOR;
   }
 
   return undefined;
 }
 
-function getRowTextColor(row: ReportMatrixRow) {
+function getRowTextColor(
+  row: ReportMatrixRow,
+  group2Keys: Set<string>,
+) {
   if (row.rowKind === "group2" || row.isSellerGroup2Summary) {
     return PDF_GROUP2_TEXT_COLOR;
   }
 
   if (row.rowKind === "category") {
-    return [30, 58, 95] as [number, number, number];
+    if (isGroup2SubcategoryRow(row, group2Keys)) {
+      return PDF_GROUP2_SUBCATEGORY_TEXT_COLOR;
+    }
+
+    return PDF_CATEGORY_TEXT_COLOR;
   }
 
   return [15, 23, 42] as [number, number, number];
+}
+
+function getPdfLeadingColumnTextColor(
+  row: ReportMatrixRow,
+  columnKey: string,
+  group2Keys: Set<string>,
+  defaultTextColor: [number, number, number],
+) {
+  if (
+    (isGroup2SubcategoryRow(row, group2Keys) || row.rowKind === "group3") &&
+    columnKey !== "category"
+  ) {
+    return PDF_MUTED_TEXT_COLOR;
+  }
+
+  return defaultTextColor;
 }
 
 function isGroup2SubcategoryRow(
@@ -360,7 +418,7 @@ function buildPdfTableBody(
     );
     const rowFontStyle = getPdfRowFontStyle(row, group2Keys);
     const rowFontSize = row.isTotal ? PDF_TOTAL_FONT_SIZE : PDF_BODY_FONT_SIZE;
-    const defaultTextColor = getRowTextColor(row);
+    const defaultTextColor = getRowTextColor(row, group2Keys);
     const sellerLevel = metricDisplayOptions.sellerFilterActive
       ? getSellerFilterRowLevel(row)
       : null;
@@ -411,10 +469,15 @@ function buildPdfTableBody(
           fillColor: rowFill,
           fontSize: rowFontSize,
           fontStyle: rowFontStyle,
-          textColor: defaultTextColor,
+          textColor: getPdfLeadingColumnTextColor(
+            row,
+            column.key,
+            group2Keys,
+            defaultTextColor,
+          ),
         }),
         column.key === "category"
-          ? getPdfSellerCategoryPaddingLeft(sellerLevel)
+          ? getPdfCategoryPaddingLeft(row, group2Keys, sellerLevel)
           : 0,
       ),
     }));

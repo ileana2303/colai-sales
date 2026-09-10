@@ -6,6 +6,7 @@ function getPowerBiRowKey(row: Record<string, unknown>) {
     readString(row, "SellerCode"),
     readString(row, "Group1"),
     readString(row, "Group2"),
+    readString(row, "Group3"),
     readString(row, "Month") ?? "ALL",
   ].join("|");
 }
@@ -18,6 +19,7 @@ function getTrendRowKey(row: Record<string, unknown>) {
     readString(row, "SellerCode"),
     readString(row, "Group1"),
     readString(row, "Group2"),
+    readString(row, "Group3"),
   ].join("|");
 }
 
@@ -26,6 +28,7 @@ function getSnapshotUniqueKey(row: JoinedSnapshotSourceRow) {
     row.sellerCode,
     row.group1,
     row.group2,
+    row.group3 ?? "",
     row.month ?? "ALL",
   ].join("|");
 }

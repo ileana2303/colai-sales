@@ -1,6 +1,9 @@
 import { createReportMatrixSectionSummariesFromPeriodMeta } from "@/features/powerBI/reportMatrixData";
 import type { ReportMatrixSectionSummaries } from "@/features/powerBI/types/reportMatrixData.types";
-import type { ReportMatrixPeriodSummaryItem } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
+import type {
+  ReportMatrixClosedPeriodSelection,
+  ReportMatrixPeriodSummaryItem,
+} from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
 import type { AvailableSnapshot } from "@/lib/snapshots/types";
 
 export type {
@@ -83,4 +86,15 @@ export function buildSnapshotPeriodSummaryItems(
   );
 
   return buildReportMatrixPeriodSummaryItems(summaries);
+}
+
+export function isLatestClosedPeriodSelected(
+  selection?: ReportMatrixClosedPeriodSelection,
+) {
+  if (!selection || selection.readOnly) return true;
+
+  const latestValue = selection.options.at(-1)?.value;
+  if (!latestValue) return true;
+
+  return selection.value === latestValue;
 }

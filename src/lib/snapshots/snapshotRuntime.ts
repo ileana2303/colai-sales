@@ -6,6 +6,7 @@ import {
   normalizeAreaCategoryTargetsRows,
 } from "@/lib/bi-reports/areaCategoryTargets";
 import { resolveBiReportPowerBiTarget } from "@/lib/bi-reports/biReports";
+import { alignPorgesMatrixGroups } from "@/lib/bi-reports/porges";
 import { executePowerBiQuery } from "@/lib/bi-reports/powerBi";
 import { fetchPowerBiSellersCatalog } from "@/lib/bi-reports/sellers";
 import { cookieName, decodeUserInfoCookie, userCookieName } from "@/lib/auth";
@@ -14,7 +15,10 @@ import {
   getReportMatrixFinalValues,
 } from "@/features/powerBI/reportMatrixData";
 import { enrichSnapshotRowsWithSellers } from "@/lib/snapshots/enrichSellers";
-import { isReportPageAvailableForArea } from "@/lib/snapshots/pageAvailability";
+import {
+  isReportPageAvailableForArea,
+  REPORT_SNAPSHOT_PAGE_CODES,
+} from "@/lib/snapshots/pageAvailability";
 import { executeReportQuery } from "@/lib/snapshots/powerBiExecute";
 import {
   describeIncompleteQueryGroups,
@@ -37,6 +41,7 @@ import { joinTriptych } from "@/lib/snapshots/triptych";
 import type {
   EnsureSnapshotRequest,
   EnsureSnapshotResult,
+  JoinedSnapshotSourceRow,
   RefreshSnapshotRequest,
   RefreshSnapshotResult,
 } from "@/lib/snapshots/types";
@@ -79,6 +84,17 @@ function getRefreshKey(input: RefreshSnapshotRequest) {
     input.compareYear,
     [...(input.queryIds ?? [])].sort().join(","),
   ].join("::");
+}
+
+function alignJoinedRowGroupsForPage(
+  row: JoinedSnapshotSourceRow,
+  pageCode: string,
+): JoinedSnapshotSourceRow {
+  if (pageCode !== REPORT_SNAPSHOT_PAGE_CODES.porges) {
+    return row;
+  }
+
+  return alignPorgesMatrixGroups(row);
 }
 
 function serializeDisplayValues(values: Record<string, unknown>) {
@@ -140,7 +156,9 @@ async function performRefreshSnapshot(
         executeReportQuery(token, triple.VTREND, input),
       ]);
       const joined = enrichSnapshotRowsWithSellers(
-        joinTriptych(currentRows, previousRows, trendRows),
+        joinTriptych(currentRows, previousRows, trendRows).map((row) =>
+          alignJoinedRowGroupsForPage(row, input.pageCode),
+        ),
         sellersCatalog,
       ).map((row) => ({ ...row, currency: triple.VCYTCY.currency }));
 

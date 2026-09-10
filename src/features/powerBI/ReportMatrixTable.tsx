@@ -507,6 +507,7 @@ export function ReportMatrixTable({
     filteredRows,
     group2Rows,
     hasGroup2,
+    hasGroup3,
     totalRows,
   } = matrixView;
 
@@ -833,7 +834,7 @@ export function ReportMatrixTable({
           pages: [
             buildPdfFilterPage({
               rows: exportView.filteredRows,
-              sellerFilterActive: true,
+              sellerFilterActive: false,
               sellerLabel: resolveSellerFilterLabel(
                 effectiveSellerFilter,
                 sellerOptions,
@@ -920,7 +921,7 @@ export function ReportMatrixTable({
           pages: [
             buildPdfFilterPage({
               rows: memberView.filteredRows,
-              sellerFilterActive: true,
+              sellerFilterActive: false,
               sellerLabel: member.sellerLabel,
               sellerRows: memberView.filteredDetailRows,
               teamLabel: member.team
@@ -993,7 +994,7 @@ export function ReportMatrixTable({
     }
 
     if (columnKey === "category" && row.rowKind === "group3") {
-      if (effectiveSellerFilter || !canExpandGroup3(row)) {
+      if (!canExpandGroup3(row)) {
         return content;
       }
 
@@ -1020,7 +1021,7 @@ export function ReportMatrixTable({
     }
 
     if (columnKey === "category" && row.rowKind === "category") {
-      if (effectiveSellerFilter || !canExpandCategory(row)) {
+      if (!canExpandCategory(row, hasGroup3)) {
         return isContextLabel ? (
           <span className="report-matrix__context-label">{content}</span>
         ) : (
@@ -1051,7 +1052,7 @@ export function ReportMatrixTable({
     }
 
     if (columnKey === "team" && row.rowKind === "team") {
-      if (effectiveSellerFilter || !canExpandTeam(row)) {
+      if (!canExpandTeam(row)) {
         return isContextLabel ? (
           <span className="report-matrix__context-label">{content}</span>
         ) : (
@@ -1130,7 +1131,7 @@ export function ReportMatrixTable({
             style={{ left: 0, minWidth: leadingWidth, width: leadingWidth }}
             title={getTruncationTitle(row.category)}
           >
-            {!effectiveSellerFilter && canExpandGroup2(row) ? (
+            {canExpandGroup2(row) ? (
               <Button
                 type="button"
                 variant="ghost"

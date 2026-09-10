@@ -1964,15 +1964,28 @@ html.dark .app-header-user__role {
 .report-matrix__row--group3 .report-matrix__category-cell,
 .report-matrix__row--group3 .report-matrix__dimension-cell {
   background: color-mix(in oklch, #e0f2fe 52%, var(--background) 48%);
-  font-weight: 820;
+  font-weight: 400;
 }
 
 .report-matrix__row--group3 .report-matrix__category-cell {
   padding-left: 1.25rem;
+  font-weight: 400;
 }
 
 .report-matrix__row--group3 .report-matrix__dimension-cell {
   color: var(--muted-foreground);
+  font-weight: 400;
+}
+
+.report-matrix__row--group3 .report-matrix__cell {
+  font-weight: 400;
+}
+
+.report-matrix__row--group3 .report-matrix__cell--danger,
+.report-matrix__row--group3 .report-matrix__cell--success,
+.report-matrix__row--group3 .report-matrix__cell--warning,
+.report-matrix__row--group3 .report-matrix__cell--rose {
+  font-weight: 400;
 }
 
 .report-matrix tbody tr.report-matrix__row--seller-flat td,

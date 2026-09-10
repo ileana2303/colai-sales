@@ -8,6 +8,7 @@ import {
 import {
   isRedundantGroup1Category,
 } from "@/features/powerBI/reportMatrixData";
+import { shouldHideMatrixParentMetrics } from "@/features/powerBI/reportMatrixVisibleRows";
 import type {
   ReportMatrixLeadingColumn,
   ReportMatrixRow,
@@ -42,6 +43,10 @@ export function nodeToExportString(value: ReactNode): string {
 export function buildMatrixHierarchyBreadcrumb(
   row: ReportMatrixRow,
   hasGroup2: boolean,
+  options?: {
+    /** Seller-filter rows already sit under a Group2 header row. */
+    omitGroup2?: boolean;
+  },
 ) {
   const group2 = row.filterValues?.group2 ?? "";
   const category =
@@ -49,7 +54,7 @@ export function buildMatrixHierarchyBreadcrumb(
   const group3 = row.filterValues?.group3 ?? "";
   const parts: string[] = [];
 
-  if (hasGroup2 && group2) {
+  if (hasGroup2 && group2 && !options?.omitGroup2) {
     parts.push(group2);
   }
 
@@ -96,7 +101,9 @@ export function buildSellerFilteredBodyRows({
 
   const withBreadcrumb = (row: ReportMatrixRow): ReportMatrixRow => ({
     ...row,
-    category: buildMatrixHierarchyBreadcrumb(row, hasGroup2),
+    category: buildMatrixHierarchyBreadcrumb(row, hasGroup2, {
+      omitGroup2: true,
+    }),
     isSellerFlattened: true,
   });
 
@@ -105,11 +112,14 @@ export function buildSellerFilteredBodyRows({
   if (hasGroup2) {
     for (const group2Row of group2Rows) {
       if (hasGroup3) {
-        let count = 0;
-
-        for (const categoryRow of categoryRowsByGroup2.get(group2Row.key) ?? []) {
-          count += (group3RowsByCategory.get(categoryRow.key) ?? []).length;
-        }
+        const group2 =
+          group2Row.filterValues?.group2 ??
+          nodeToExportString(group2Row.category);
+        const count = sellerDetailRows.filter(
+          (row) =>
+            row.filterValues?.group2 === group2 &&
+            Boolean(row.filterValues?.group3?.trim()),
+        ).length;
 
         subcategoryCountByGroup2.set(group2Row.key, count);
       } else {
@@ -135,25 +145,26 @@ export function buildSellerFilteredBodyRows({
   const ungroupedBranches: ReportMatrixRow[] = [];
 
   if (hasGroup3) {
-    if (hasGroup2) {
-      for (const group2Row of group2Rows) {
-        const categories = categoryRowsByGroup2.get(group2Row.key) ?? [];
+    const group2KeyByLabel = new Map(
+      group2Rows.map((row) => [
+        row.filterValues?.group2 ?? nodeToExportString(row.category),
+        row.key,
+      ]),
+    );
 
-        for (const categoryRow of categories) {
-          for (const group3Row of group3RowsByCategory.get(categoryRow.key) ??
-            []) {
-            appendSellerBranch(
-              branchesByGroup2,
-              group2Row.key,
-              group3Row,
-            );
-          }
-        }
+    for (const sellerRow of sellerDetailRows) {
+      const group3 = sellerRow.filterValues?.group3?.trim() ?? "";
+      if (!group3) continue;
+
+      if (hasGroup2) {
+        const group2 = sellerRow.filterValues?.group2 ?? "";
+        const group2Key = group2KeyByLabel.get(group2);
+        if (!group2Key) continue;
+        appendSellerBranch(branchesByGroup2, group2Key, sellerRow);
+        continue;
       }
-    } else {
-      for (const group3Row of group3Rows) {
-        ungroupedBranches.push(withBreadcrumb(group3Row));
-      }
+
+      ungroupedBranches.push(withBreadcrumb(sellerRow));
     }
   } else if (hasGroup2) {
     for (const group2Row of group2Rows) {
@@ -221,17 +232,11 @@ export function getLeadingExportValue(row: ReportMatrixRow, key: string) {
 export function getMatrixMetricDisplayValue(
   row: ReportMatrixRow,
   columnKey: string,
-  options: {
+  _options: {
     sellerFilterActive: boolean;
   },
 ) {
-  if (
-    options.sellerFilterActive &&
-    !row.isTotal &&
-    !row.isSellerFlattened &&
-    !row.isSellerTeamSummary &&
-    !row.isSellerGroup2Summary
-  ) {
+  if (shouldHideMatrixParentMetrics(row)) {
     return "";
   }
 
