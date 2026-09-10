@@ -1132,6 +1132,7 @@ html.dark .app-header-user__role {
 }
 
 .snapshot-period-summary__item {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -1140,6 +1141,52 @@ html.dark .app-header-user__role {
   border: 1px solid color-mix(in oklch, #93c5fd 28%, var(--border) 72%);
   border-radius: 0.7rem;
   background: color-mix(in oklch, var(--background) 82%, #eff6ff 18%);
+}
+
+.snapshot-period-summary__item--interactive {
+  width: 100%;
+  cursor: pointer;
+  padding-right: 1.65rem;
+  border: 1px solid color-mix(in oklch, #60a5fa 45%, var(--border) 55%);
+  background: color-mix(in oklch, var(--background) 74%, #dbeafe 26%);
+  text-align: left;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.snapshot-period-summary__item--interactive:hover,
+.snapshot-period-summary__item--interactive:focus-visible {
+  border-color: color-mix(in oklch, #3b82f6 55%, var(--border) 45%);
+  background: color-mix(in oklch, var(--background) 68%, #bfdbfe 32%);
+  box-shadow: 0 0 0 1px color-mix(in oklch, #93c5fd 35%, transparent 65%);
+  outline: none;
+}
+
+.snapshot-period-summary__item-chevron {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  bottom: 0.45rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: color-mix(in oklch, #1d4ed8 55%, #93c5fd 45%);
+  pointer-events: none;
+}
+
+.snapshot-period-summary__item-chevron svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  stroke-width: 2.5;
+}
+
+.snapshot-period-summary__item--interactive:hover
+  .snapshot-period-summary__item-chevron,
+.snapshot-period-summary__item--interactive:focus-visible
+  .snapshot-period-summary__item-chevron {
+  color: color-mix(in oklch, #1d4ed8 72%, #2563eb 28%);
 }
 
 .snapshot-period-summary__heading {
@@ -1164,6 +1211,17 @@ html.dark .app-header-user__role {
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.01em;
+}
+
+.snapshot-period-summary__item--interactive .snapshot-period-summary__value {
+  position: relative;
+  z-index: 1;
+  padding-right: 0.15rem;
+}
+
+.snapshot-period-summary__item--interactive .snapshot-period-summary__heading {
+  position: relative;
+  z-index: 1;
 }
 
 .snapshot-period-summary__hint {
@@ -2329,6 +2387,29 @@ html.dark .snapshot-period-summary__item,
 html[data-bs-theme="dark"] .snapshot-period-summary__item {
   border-color: color-mix(in oklch, #60a5fa 24%, var(--border) 76%);
   background: color-mix(in oklch, #0f172a 55%, #1e3a8a 45%);
+}
+
+html.dark .snapshot-period-summary__item--interactive,
+html[data-bs-theme="dark"] .snapshot-period-summary__item--interactive {
+  border-color: color-mix(in oklch, #60a5fa 42%, var(--border) 58%);
+  background: color-mix(in oklch, #0f172a 48%, #1e40af 52%);
+}
+
+html.dark
+  .snapshot-period-summary__item--interactive:hover,
+html.dark
+  .snapshot-period-summary__item--interactive:focus-visible,
+html[data-bs-theme="dark"]
+  .snapshot-period-summary__item--interactive:hover,
+html[data-bs-theme="dark"]
+  .snapshot-period-summary__item--interactive:focus-visible {
+  border-color: color-mix(in oklch, #93c5fd 48%, var(--border) 52%);
+  background: color-mix(in oklch, #0f172a 42%, #2563eb 58%);
+}
+
+html.dark .snapshot-period-summary__item-chevron,
+html[data-bs-theme="dark"] .snapshot-period-summary__item-chevron {
+  color: color-mix(in oklch, #93c5fd 55%, #1e3a8a 45%);
 }
 
 html.dark .snapshot-period-summary__label,

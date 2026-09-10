@@ -20,11 +20,13 @@ import {
 } from "@/features/powerBI/types/PowerBiTable.types";
 
 type PowerBiTableHeaderFilterProps = {
+  clearable?: boolean;
   fitContent?: boolean;
   label: string;
   onChange: (value: string) => void;
   options: FilterOption[];
   readOnly?: boolean;
+  showAllOption?: boolean;
   value: string;
 };
 
@@ -38,11 +40,13 @@ function matchesSearch(label: string, query: string) {
 }
 
 export function PowerBiTableHeaderFilter({
+  clearable = true,
   fitContent = false,
   label,
   onChange,
   options,
   readOnly = false,
+  showAllOption = true,
   value,
 }: PowerBiTableHeaderFilterProps) {
   const [open, setOpen] = useState(false);
@@ -57,13 +61,15 @@ export function PowerBiTableHeaderFilter({
 
   const items = useMemo(
     () => [
-      { value: ALL_FILTER_VALUE, label: "Όλα" },
+      ...(showAllOption
+        ? [{ value: ALL_FILTER_VALUE, label: "Όλα" }]
+        : []),
       ...options.map((option) => ({
         value: option.value,
         label: option.label,
       })),
     ],
-    [options],
+    [options, showAllOption],
   );
 
   const filteredItems = useMemo(
@@ -182,7 +188,7 @@ export function PowerBiTableHeaderFilter({
             <ChevronDown className="text-foreground/60 size-5 shrink-0" />
           ) : null}
         </DropdownMenuTrigger>
-        {isActive ? (
+        {isActive && clearable ? (
           <>
             <button
               type="button"

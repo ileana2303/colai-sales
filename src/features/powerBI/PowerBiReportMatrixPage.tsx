@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
@@ -20,16 +20,25 @@ import {
   ReportMatrixTable,
 } from "@/features/powerBI/ReportMatrixTable";
 import {
-  buildReportMatrixRows,
+  buildClosedPeriodEndMonthOptions,
   createReportMatrixSections,
   createReportMatrixSectionSummaries,
   createReportMatrixSectionSummariesFromPeriodMeta,
   reportMatrixLeadingColumns,
+  resolveClosedPeriodWindowFromMeta,
+  resolveClosedPeriodWindowFromRows,
+  resolveReportMatrixRows,
   type PowerBiMatrixSourceRow,
 } from "@/features/powerBI/reportMatrixData";
 import { powerBiKeys } from "@/features/powerBI/queryKeys";
 import { RefreshSnapshotButton } from "@/features/powerBI/RefreshSnapshotButton";
-import { buildSnapshotPeriodSummaryItems } from "@/features/powerBI/reportMatrixPeriodSummary";
+import {
+  buildReportMatrixPeriodSummaryItems,
+  buildSnapshotPeriodSummaryItems,
+} from "@/features/powerBI/reportMatrixPeriodSummary";
+import { ReportMatrixPeriodSummaryPanel } from "@/features/powerBI/reportMatrixPeriodSummaryPanel";
+import type { ReportMatrixLivePeriodSummary } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
+import type { AvailableSnapshot } from "@/lib/snapshots/types";
 import type {
   MatrixReportPayload,
   PowerBiReportMatrixPageProps,
@@ -47,7 +56,6 @@ import {
   fetchAvailableReportSnapshots,
   fetchReportSnapshot,
 } from "@/lib/api/snapshots";
-import type { AvailableSnapshot } from "@/lib/snapshots/types";
 import { useSellersStore } from "@/stores/sellersStore";
 import { cn } from "@/lib/utils";
 
@@ -82,39 +90,6 @@ function ReportMatrixPageHeader({
         {actions}
       </div>
     </section>
-  );
-}
-
-function SnapshotPeriodSummaryPill({
-  snapshot,
-}: {
-  snapshot: AvailableSnapshot | null | undefined;
-}) {
-  const items = useMemo(
-    () => buildSnapshotPeriodSummaryItems(snapshot),
-    [snapshot],
-  );
-
-  if (!items.length) return null;
-
-  return (
-    <div className="snapshot-period-summary" aria-label="Περίοδος στιγμιοτύπου">
-      {items.map((item) => (
-        <div key={item.key} className="snapshot-period-summary__item">
-          <div className="snapshot-period-summary__heading">
-            <span className="snapshot-period-summary__label">{item.label}</span>
-            {item.hint ? (
-              <span className="snapshot-period-summary__hint">
-                {item.hint}
-              </span>
-            ) : null}
-          </div>
-          <strong className="snapshot-period-summary__value">
-            {item.value}
-          </strong>
-        </div>
-      ))}
-    </div>
   );
 }
 
@@ -271,6 +246,8 @@ async function fetchMatrixPayloadFromSnapshot({
     rows.map((row) => row.group2?.trim() ?? "").filter(Boolean),
   );
 
+  const isHistoricalSnapshot = Boolean(snapshotDate?.trim());
+
   return {
     area: response.snapshot?.area ?? "",
     headerLabel: group2Labels.size === 1 ? [...group2Labels][0]! : "",
@@ -287,6 +264,7 @@ async function fetchMatrixPayloadFromSnapshot({
           openMonthsCount: response.snapshot.open_months_count,
         }
       : undefined,
+    allowsClosedPeriodSelection: !isHistoricalSnapshot,
   };
 }
 
@@ -351,9 +329,37 @@ async function fetchMatrixPayload(
   const snapshotPayload = await fetchMatrixPayloadFromSnapshot(props).catch(
     () => null,
   );
-  if (snapshotPayload) return snapshotPayload;
+  if (snapshotPayload) {
+    if (!snapshotPayload.allowsClosedPeriodSelection) {
+      return snapshotPayload;
+    }
 
-  return fetchMatrixPayloadFromPowerBi(props);
+    const livePayload = await fetchMatrixPayloadFromPowerBi(props).catch(
+      () => null,
+    );
+    if (!livePayload) {
+      return {
+        ...snapshotPayload,
+        allowsClosedPeriodSelection: false,
+      };
+    }
+
+    return {
+      ...snapshotPayload,
+      area: livePayload.area || snapshotPayload.area,
+      headerLabel: livePayload.headerLabel || snapshotPayload.headerLabel,
+      currentRows: livePayload.currentRows,
+      previousRows: livePayload.previousRows,
+      trendRows: livePayload.trendRows,
+      allowsClosedPeriodSelection: livePayload.currentRows.length > 0,
+    };
+  }
+
+  const livePayload = await fetchMatrixPayloadFromPowerBi(props);
+  return {
+    ...livePayload,
+    allowsClosedPeriodSelection: livePayload.currentRows.length > 0,
+  };
 }
 
 export function PowerBiReportMatrixView({
@@ -374,7 +380,7 @@ export function PowerBiReportMatrixView({
   snapshotDate,
   snapshotPageCode,
   trendPath,
-  periodSummary,
+  onPeriodSummaryChange,
 }: PowerBiReportMatrixViewProps) {
   const sellersCatalog = useSellersStore((state) => state.records);
   const [matrixFilters, setMatrixFilters] = useState<ReportMatrixTableFiltersState>(
@@ -384,6 +390,10 @@ export function PowerBiReportMatrixView({
       seller: "",
     },
   );
+  const [closedPeriodEndMonthIndex, setClosedPeriodEndMonthIndex] = useState<
+    number | null
+  >(null);
+
   const { data, error, isError, isLoading, refetch } = useQuery({
     queryKey: powerBiKeys.reportMatrix(
       reportKey,
@@ -410,15 +420,60 @@ export function PowerBiReportMatrixView({
   });
 
   const headerLabel = headerLabelOverride ?? data?.headerLabel ?? brandLabel;
+  const closedPeriodWindow = useMemo(() => {
+    if (!data) {
+      return {
+        closedMonthIndexes: [],
+        lastClosedMonthIndex: null,
+        selectedEndMonthIndex: null,
+      };
+    }
+
+    if (data.currentRows.length) {
+      return resolveClosedPeriodWindowFromRows(data.currentRows);
+    }
+
+    return resolveClosedPeriodWindowFromMeta(data.snapshotPeriod);
+  }, [data]);
+  const lastClosedMonthIndex = closedPeriodWindow.lastClosedMonthIndex;
+  const allowsClosedPeriodSelection = Boolean(
+    data?.allowsClosedPeriodSelection && lastClosedMonthIndex != null,
+  );
+
+  useEffect(() => {
+    if (!allowsClosedPeriodSelection) {
+      setClosedPeriodEndMonthIndex(null);
+      return;
+    }
+
+    if (
+      lastClosedMonthIndex != null &&
+      (closedPeriodEndMonthIndex == null ||
+        closedPeriodEndMonthIndex > lastClosedMonthIndex)
+    ) {
+      setClosedPeriodEndMonthIndex(lastClosedMonthIndex);
+    }
+  }, [
+    allowsClosedPeriodSelection,
+    closedPeriodEndMonthIndex,
+    lastClosedMonthIndex,
+    snapshotDate,
+  ]);
+
+  const effectiveClosedPeriodEndMonthIndex = allowsClosedPeriodSelection
+    ? closedPeriodEndMonthIndex
+    : null;
   const sectionSummaries = useMemo(() => {
     if (!data) return {};
     if (data.currentRows.length) {
-      return createReportMatrixSectionSummaries(data.currentRows);
+      return createReportMatrixSectionSummaries(data.currentRows, {
+        closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
+      });
     }
-    return createReportMatrixSectionSummariesFromPeriodMeta(
-      data.snapshotPeriod,
-    );
-  }, [data]);
+    return createReportMatrixSectionSummariesFromPeriodMeta(data.snapshotPeriod, {
+      closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
+    });
+  }, [data, effectiveClosedPeriodEndMonthIndex]);
 
   const sections = useMemo(
     () =>
@@ -429,20 +484,79 @@ export function PowerBiReportMatrixView({
       }),
     [currentYear, previousYear, sectionSummaries],
   );
+  const closedPeriodOptions = useMemo(
+    () => buildClosedPeriodEndMonthOptions(lastClosedMonthIndex),
+    [lastClosedMonthIndex],
+  );
+  const closedPeriodSelection = useMemo(() => {
+    if (!closedPeriodOptions.length) return undefined;
+
+    const selectedValue =
+      effectiveClosedPeriodEndMonthIndex != null
+        ? String(effectiveClosedPeriodEndMonthIndex)
+        : closedPeriodOptions.at(-1)?.value ?? "";
+
+    return {
+      options: closedPeriodOptions,
+      value: selectedValue,
+      readOnly: !allowsClosedPeriodSelection,
+      onChange: (value: string) => {
+        const parsed = Number(value);
+        if (!Number.isInteger(parsed) || parsed < 0 || parsed > 11) return;
+        setClosedPeriodEndMonthIndex(parsed);
+      },
+    };
+  }, [
+    allowsClosedPeriodSelection,
+    closedPeriodOptions,
+    effectiveClosedPeriodEndMonthIndex,
+  ]);
+  const periodSummaryItems = useMemo(
+    () => buildReportMatrixPeriodSummaryItems(sectionSummaries),
+    [sectionSummaries],
+  );
+  useEffect(() => {
+    if (!snapshotPageCode) {
+      onPeriodSummaryChange?.(null);
+      return;
+    }
+
+    if (!periodSummaryItems.length) {
+      onPeriodSummaryChange?.(null);
+      return;
+    }
+
+    onPeriodSummaryChange?.({
+      closedPeriodSelection,
+      items: periodSummaryItems,
+    });
+  }, [
+    closedPeriodSelection,
+    onPeriodSummaryChange,
+    periodSummaryItems,
+    snapshotPageCode,
+  ]);
   const rows = useMemo(
     () =>
       data
-        ? (data.precalculatedRows ??
-          buildReportMatrixRows({
+        ? resolveReportMatrixRows({
             categoryOrder,
+            closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
             currentRows: data.currentRows,
             group2Order,
+            precalculatedRows: data.precalculatedRows,
             previousRows: data.previousRows,
             trendRows: data.trendRows,
             sellersCatalog,
-          }))
+          })
         : [],
-    [categoryOrder, data, group2Order, sellersCatalog],
+    [
+      categoryOrder,
+      data,
+      effectiveClosedPeriodEndMonthIndex,
+      group2Order,
+      sellersCatalog,
+    ],
   );
 
   if (hidden) {
@@ -469,7 +583,7 @@ export function PowerBiReportMatrixView({
           hideSummaryPill={Boolean(snapshotPageCode)}
           leadingColumns={reportMatrixLeadingColumns}
           onFiltersChange={setMatrixFilters}
-          periodSummary={periodSummary}
+          periodSummary={periodSummaryItems}
           rows={rows}
           sections={sections}
         />
@@ -482,6 +596,31 @@ export function PowerBiReportMatrixView({
   );
 }
 
+function ReportMatrixHeaderPeriodSummary({
+  activeSnapshot,
+  livePeriodSummary,
+}: {
+  activeSnapshot: AvailableSnapshot | null | undefined;
+  livePeriodSummary: ReportMatrixLivePeriodSummary | null;
+}) {
+  const fallbackItems = useMemo(
+    () => buildSnapshotPeriodSummaryItems(activeSnapshot),
+    [activeSnapshot],
+  );
+  const items = livePeriodSummary?.items.length
+    ? livePeriodSummary.items
+    : fallbackItems;
+
+  if (!items.length) return null;
+
+  return (
+    <ReportMatrixPeriodSummaryPanel
+      closedPeriodSelection={livePeriodSummary?.closedPeriodSelection}
+      items={items}
+    />
+  );
+}
+
 export function PowerBiReportMatrixPage({
   brandLabel,
   reportKey,
@@ -491,17 +630,12 @@ export function PowerBiReportMatrixPage({
   ...props
 }: PowerBiReportMatrixPageProps) {
   const [snapshotDate, setSnapshotDate] = useState<string>();
+  const [livePeriodSummary, setLivePeriodSummary] =
+    useState<ReportMatrixLivePeriodSummary | null>(null);
   const activeSnapshot = useActiveAvailableSnapshot(
     snapshotPageCode,
     currentYear,
     snapshotDate,
-  );
-  const periodSummary = useMemo(
-    () =>
-      snapshotPageCode
-        ? buildSnapshotPeriodSummaryItems(activeSnapshot)
-        : undefined,
-    [activeSnapshot, snapshotPageCode],
   );
 
   return (
@@ -535,7 +669,10 @@ export function PowerBiReportMatrixPage({
         brandLabel={brandLabel}
         periodSummary={
           snapshotPageCode ? (
-            <SnapshotPeriodSummaryPill snapshot={activeSnapshot} />
+            <ReportMatrixHeaderPeriodSummary
+              activeSnapshot={activeSnapshot}
+              livePeriodSummary={livePeriodSummary}
+            />
           ) : null
         }
       />
@@ -546,7 +683,7 @@ export function PowerBiReportMatrixPage({
         snapshotPageCode={snapshotPageCode}
         currentYear={currentYear}
         previousYear={previousYear}
-        periodSummary={periodSummary}
+        onPeriodSummaryChange={setLivePeriodSummary}
         {...props}
         snapshotDate={snapshotDate}
       />
@@ -565,17 +702,12 @@ export function PowerBiTabbedReportMatrixPage({
   const currentYear = activeTab?.view.currentYear;
   const previousYear = activeTab?.view.previousYear;
   const snapshotDate = activeTab ? snapshotDates?.[activeTab.key] : undefined;
+  const [livePeriodSummary, setLivePeriodSummary] =
+    useState<ReportMatrixLivePeriodSummary | null>(null);
   const activeSnapshot = useActiveAvailableSnapshot(
     snapshotPageCode,
     currentYear,
     snapshotDate,
-  );
-  const periodSummary = useMemo(
-    () =>
-      snapshotPageCode
-        ? buildSnapshotPeriodSummaryItems(activeSnapshot)
-        : undefined,
-    [activeSnapshot, snapshotPageCode],
   );
 
   return (
@@ -648,7 +780,10 @@ export function PowerBiTabbedReportMatrixPage({
         brandLabel={brandLabel}
         periodSummary={
           snapshotPageCode ? (
-            <SnapshotPeriodSummaryPill snapshot={activeSnapshot} />
+            <ReportMatrixHeaderPeriodSummary
+              activeSnapshot={activeSnapshot}
+              livePeriodSummary={livePeriodSummary}
+            />
           ) : null
         }
       />
@@ -658,7 +793,9 @@ export function PowerBiTabbedReportMatrixPage({
           key={tab.key}
           hidden={tab.key !== activeTabKey}
           {...tab.view}
-          periodSummary={periodSummary}
+          onPeriodSummaryChange={
+            tab.key === activeTabKey ? setLivePeriodSummary : undefined
+          }
           snapshotDate={snapshotDates?.[tab.key] || undefined}
         />
       ))}

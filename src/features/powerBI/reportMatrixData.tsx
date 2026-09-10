@@ -8,6 +8,17 @@ import {
   type ReportMatrixTone,
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 import {
+  applyClosedPeriodEndMonthIndex,
+  formatMonthRange,
+  getShortMonthLabel,
+  isClosedMonthStatus,
+  isDefaultClosedPeriodEndMonth,
+  parseMonthNumber,
+  resolveClosedPeriodWindowFromMeta,
+  resolveClosedPeriodWindowFromRows,
+  shouldIncludeClosedMonthForPeriod,
+} from "@/features/powerBI/reportMatrixClosedPeriod";
+import {
   type BuildReportMatrixRowsInput,
   type MatrixAggregate,
   type MatrixLySales,
@@ -17,9 +28,9 @@ import {
   type ReportMatrixFinalValues,
   type ReportMatrixPeriodMeta,
   type ReportMatrixSectionSummaries,
+  type ResolveReportMatrixRowsInput,
 } from "@/features/powerBI/types/reportMatrixData.types";
 import {
-  getMonthLabel,
   getMonthIndex,
   getYearComparisonTone,
 } from "@/lib/bi-reports/reportUtils";
@@ -39,7 +50,17 @@ export type {
   PowerBiMatrixSourceRow,
   ReportMatrixFinalValues,
   ReportMatrixPeriodMeta,
+  ResolveReportMatrixRowsInput,
 } from "@/features/powerBI/types/reportMatrixData.types";
+
+export {
+  buildClosedPeriodEndMonthOptions,
+  formatMonthRange,
+  getShortMonthLabel,
+  isDefaultClosedPeriodEndMonth,
+  resolveClosedPeriodWindowFromMeta,
+  resolveClosedPeriodWindowFromRows,
+} from "@/features/powerBI/reportMatrixClosedPeriod";
 
 export function enrichMatrixRowsWithSellers(
   rows: PowerBiMatrixSourceRow[],
@@ -82,20 +103,6 @@ function filterMatrixRowsBySellersCatalog(
 
 const EMPTY_VALUE = "-";
 const TOTAL_CURRENCY_BUCKETS = [0, 1] as const;
-const greekShortMonthLabels = [
-  "Ιαν",
-  "Φεβ",
-  "Μαρ",
-  "Απρ",
-  "Μάιος",
-  "Ιουν",
-  "Ιουλ",
-  "Αυγ",
-  "Σεπ",
-  "Οκτ",
-  "Νοε",
-  "Δεκ",
-] as const;
 
 type TotalCurrencyBucket = (typeof TOTAL_CURRENCY_BUCKETS)[number];
 
@@ -346,16 +353,8 @@ function formatOptionalMatrixValue(
   return formatMatrixValue(value, aggregate, isTotal);
 }
 
-function isClosedMonth(status?: string | null) {
-  return status?.trim().toLowerCase() === "completed";
-}
-
 function getMonthSortIndex(month: string) {
   return getMonthIndex(month) ?? Number.MAX_SAFE_INTEGER;
-}
-
-function getShortMonthLabel(index: number) {
-  return greekShortMonthLabels[index] ?? getMonthLabel(String(index + 1));
 }
 
 function toText(value: string | null | undefined) {
@@ -1327,8 +1326,39 @@ export function buildReportMatrixGroup2TotalRows(
   );
 }
 
+export function resolveReportMatrixRows({
+  precalculatedRows,
+  closedPeriodEndMonthIndex,
+  currentRows,
+  ...buildInput
+}: ResolveReportMatrixRowsInput): ReportMatrixRow[] {
+  const hasSourceRows = currentRows.length > 0;
+  const usePrecalculated =
+    Boolean(precalculatedRows?.length) &&
+    (!hasSourceRows ||
+      isDefaultClosedPeriodEndMonth(
+        closedPeriodEndMonthIndex,
+        resolveClosedPeriodWindowFromRows(currentRows).lastClosedMonthIndex,
+      ));
+
+  if (usePrecalculated) {
+    return precalculatedRows!;
+  }
+
+  if (!hasSourceRows) {
+    return precalculatedRows ?? [];
+  }
+
+  return buildReportMatrixRows({
+    ...buildInput,
+    closedPeriodEndMonthIndex,
+    currentRows,
+  });
+}
+
 export function buildReportMatrixRows({
   categoryOrder,
+  closedPeriodEndMonthIndex,
   currentRows,
   group2Order,
   previousRows,
@@ -1372,7 +1402,13 @@ export function buildReportMatrixRows({
     if (status) {
       aggregate.hasClosedMonthStatus = true;
 
-      if (isClosedMonth(status)) {
+      if (
+        shouldIncludeClosedMonthForPeriod(
+          month,
+          status,
+          closedPeriodEndMonthIndex,
+        )
+      ) {
         aggregate.tcyClosed = addNumber(aggregate.tcyClosed, row.tcy);
         aggregate.vcyClosed = addNumber(aggregate.vcyClosed, row.vcy);
         if (month) {
@@ -1599,51 +1635,36 @@ function getUniqueMonthIndexes(
   return [...monthIndexes].sort((left, right) => left - right);
 }
 
-function formatMonthRange(startIndex: number, endIndex: number) {
-  if (startIndex === endIndex) {
-    return getShortMonthLabel(startIndex);
-  }
-
-  return `${getShortMonthLabel(startIndex)} - ${getShortMonthLabel(endIndex)}`;
-}
-
-function parseMonthNumber(value: string | number | null | undefined) {
-  if (value == null || value === "") return null;
-  const parsed =
-    typeof value === "number" ? value : Number(String(value).trim());
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 12) return null;
-  return parsed;
-}
-
 /**
  * Builds the same section/header period summaries used by live Power BI rows,
  * from sales_snapshots / v_available_snapshots period columns.
  */
 export function createReportMatrixSectionSummariesFromPeriodMeta(
   period: ReportMatrixPeriodMeta | null | undefined,
+  options?: { closedPeriodEndMonthIndex?: number | null },
 ): ReportMatrixSectionSummaries {
   if (!period) return {};
 
-  const closedMonthsCount = period.closedMonthsCount ?? 0;
-  const lastClosedMonthNumber = parseMonthNumber(period.lastClosedMonth);
-  const lastClosedMonthIndex =
-    lastClosedMonthNumber != null ? lastClosedMonthNumber - 1 : null;
-  const closedMonthIndexes =
-    closedMonthsCount > 0 && lastClosedMonthIndex != null
-      ? Array.from({ length: closedMonthsCount }, (_, offset) => {
-          const index = lastClosedMonthIndex - (closedMonthsCount - 1 - offset);
-          return index;
-        }).filter((index) => index >= 0 && index <= 11)
-      : [];
+  const fullLastClosedMonthNumber = parseMonthNumber(period.lastClosedMonth);
+  const fullLastClosedMonthIndex =
+    fullLastClosedMonthNumber != null ? fullLastClosedMonthNumber - 1 : null;
+  const closedPeriodWindow = resolveClosedPeriodWindowFromMeta(
+    period,
+    options?.closedPeriodEndMonthIndex,
+  );
+  const { closedMonthIndexes, selectedEndMonthIndex } = closedPeriodWindow;
+  const selectedRangeEndMonthIndex =
+    selectedEndMonthIndex ?? fullLastClosedMonthIndex;
+  const totalClosedMonthsCount = period.closedMonthsCount ?? 0;
 
   const openMonthsCount = Math.max(
     period.openMonthsCount ??
-      (closedMonthsCount > 0 ? 12 - closedMonthsCount : 0),
+      (totalClosedMonthsCount > 0 ? 12 - totalClosedMonthsCount : 0),
     0,
   );
   const currentMonthIndex =
-    lastClosedMonthIndex != null && lastClosedMonthIndex < 11
-      ? lastClosedMonthIndex + 1
+    fullLastClosedMonthIndex != null && fullLastClosedMonthIndex < 11
+      ? fullLastClosedMonthIndex + 1
       : openMonthsCount > 0
         ? 0
         : null;
@@ -1653,14 +1674,16 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
       : null;
 
   const previousPeriodSummary =
-    closedMonthIndexes.length && lastClosedMonthIndex != null
+    closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: [
-            `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
-          ],
+          details: fullLastClosedMonthIndex != null
+            ? [
+                `Τελευταίος κλειστός: ${getShortMonthLabel(fullLastClosedMonthIndex)}`,
+              ]
+            : undefined,
           label: "Κλειστη περιοδος",
           tone: "primary",
-          value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+          value: formatMonthRange(0, selectedRangeEndMonthIndex),
         } satisfies ReportMatrixSectionSummary)
       : period.closedPeriodLabel?.trim()
         ? ({
@@ -1671,14 +1694,12 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
         : undefined;
 
   const closedMonthsSummary =
-    closedMonthIndexes.length && lastClosedMonthIndex != null
+    closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: [
-            formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
-          ],
+          details: [formatMonthRange(0, selectedRangeEndMonthIndex)],
           label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
           tone: "primary",
-          value: String(closedMonthsCount || closedMonthIndexes.length),
+          value: String(closedMonthIndexes.length),
         } satisfies ReportMatrixSectionSummary)
       : undefined;
 
@@ -1719,22 +1740,31 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
 
 export function createReportMatrixSectionSummaries(
   rows: PowerBiMatrixSourceRow[],
+  options?: { closedPeriodEndMonthIndex?: number | null },
 ): ReportMatrixSectionSummaries {
   if (!rows.length) return {};
 
-  const closedMonthIndexes = getUniqueMonthIndexes(rows, (row) =>
-    isClosedMonth(row.closedMonthStatus),
+  const fullClosedMonthIndexes = getUniqueMonthIndexes(rows, (row) =>
+    isClosedMonthStatus(row.closedMonthStatus),
   );
   const openMonthIndexes = getUniqueMonthIndexes(rows, (row) => {
     const status = toText(row.closedMonthStatus);
-    return Boolean(status) && !isClosedMonth(status);
+    return Boolean(status) && !isClosedMonthStatus(status);
   });
 
-  const lastClosedMonthIndex = closedMonthIndexes.at(-1) ?? null;
+  const fullLastClosedMonthIndex = fullClosedMonthIndexes.at(-1) ?? null;
+  const closedPeriodWindow = applyClosedPeriodEndMonthIndex(
+    fullClosedMonthIndexes,
+    fullLastClosedMonthIndex,
+    options?.closedPeriodEndMonthIndex,
+  );
+  const closedMonthIndexes = closedPeriodWindow.closedMonthIndexes;
+  const selectedRangeEndMonthIndex =
+    closedPeriodWindow.selectedEndMonthIndex ?? fullLastClosedMonthIndex;
   const currentMonthIndex =
     openMonthIndexes[0] ??
-    (lastClosedMonthIndex != null && lastClosedMonthIndex < 11
-      ? lastClosedMonthIndex + 1
+    (fullLastClosedMonthIndex != null && fullLastClosedMonthIndex < 11
+      ? fullLastClosedMonthIndex + 1
       : null);
   const remainingMonths = openMonthIndexes.length;
   const currentMonthStatus =
@@ -1746,23 +1776,23 @@ export function createReportMatrixSectionSummaries(
         : "-";
 
   const previousPeriodSummary =
-    closedMonthIndexes.length && lastClosedMonthIndex != null
+    closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: [
-            `Τελευταίος κλειστός: ${getShortMonthLabel(lastClosedMonthIndex)}`,
-          ],
+          details: fullLastClosedMonthIndex != null
+            ? [
+                `Τελευταίος κλειστός: ${getShortMonthLabel(fullLastClosedMonthIndex)}`,
+              ]
+            : undefined,
           label: "Κλειστη περιοδος",
           tone: "primary",
-          value: formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
+          value: formatMonthRange(0, selectedRangeEndMonthIndex),
         } satisfies ReportMatrixSectionSummary)
       : undefined;
 
   const closedMonthsSummary =
-    closedMonthIndexes.length && lastClosedMonthIndex != null
+    closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: [
-            formatMonthRange(closedMonthIndexes[0]!, lastClosedMonthIndex),
-          ],
+          details: [formatMonthRange(0, selectedRangeEndMonthIndex)],
           label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
           tone: "primary",
           value: String(closedMonthIndexes.length),

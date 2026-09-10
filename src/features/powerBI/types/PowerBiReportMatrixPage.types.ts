@@ -1,5 +1,7 @@
-import type { ReportMatrixPeriodSummaryItem } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
+import type { ReactNode } from "react";
+
 import type { PowerBiMatrixSourceRow } from "@/features/powerBI/types/reportMatrixData.types";
+import type { ReportMatrixLivePeriodSummary } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
 import type { ReportMatrixRow } from "@/features/powerBI/types/ReportMatrixTable.types";
 
 export type MatrixReportPayload = {
@@ -17,6 +19,8 @@ export type MatrixReportPayload = {
     lastClosedMonth: string | null;
     openMonthsCount: number | null;
   };
+  /** Live monthly source rows are available for closed-period recalculation. */
+  allowsClosedPeriodSelection?: boolean;
 };
 
 export type PowerBiReportMatrixViewProps = {
@@ -50,7 +54,7 @@ export type PowerBiReportMatrixViewProps = {
   /** ISO date of a user-selected historical snapshot. */
   snapshotDate?: string;
   trendPath: string;
-  periodSummary?: ReportMatrixPeriodSummaryItem[];
+  onPeriodSummaryChange?: (summary: ReportMatrixLivePeriodSummary | null) => void;
 };
 
 export type PowerBiReportMatrixPageProps = Omit<

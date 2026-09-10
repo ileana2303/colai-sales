@@ -6,6 +6,8 @@ import type {
   ReportMatrixSectionSummary,
   ReportMatrixTone,
 } from "@/features/powerBI/types/ReportMatrixTable.types";
+
+export type { ReportMatrixRow };
 import type { PowerBiSellerRow } from "@/lib/bi-reports/sellers.types";
 
 export type PowerBiMatrixSourceRow = {
@@ -27,11 +29,17 @@ export type PowerBiMatrixSourceRow = {
 
 export type BuildReportMatrixRowsInput = {
   categoryOrder?: string[];
+  /** 0-based inclusive end month for closed-period / YoY columns. */
+  closedPeriodEndMonthIndex?: number | null;
   currentRows: PowerBiMatrixSourceRow[];
   group2Order?: string[];
   previousRows: PowerBiMatrixSourceRow[];
   trendRows: PowerBiMatrixSourceRow[];
   sellersCatalog?: PowerBiSellerRow[];
+};
+
+export type ResolveReportMatrixRowsInput = BuildReportMatrixRowsInput & {
+  precalculatedRows?: ReportMatrixRow[];
 };
 
 export type MatrixAggregate = {

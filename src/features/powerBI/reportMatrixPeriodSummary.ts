@@ -1,27 +1,21 @@
 import { createReportMatrixSectionSummariesFromPeriodMeta } from "@/features/powerBI/reportMatrixData";
+import type { ReportMatrixSectionSummaries } from "@/features/powerBI/types/reportMatrixData.types";
 import type { ReportMatrixPeriodSummaryItem } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
 import type { AvailableSnapshot } from "@/lib/snapshots/types";
 
-export type { ReportMatrixPeriodSummaryItem };
+export type {
+  ReportMatrixClosedPeriodSelection,
+  ReportMatrixLivePeriodSummary,
+  ReportMatrixPeriodSummaryItem,
+} from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
 
 function formatPeriodSummaryLabel(label: string) {
   return label.toLocaleUpperCase("el-GR");
 }
 
-export function buildSnapshotPeriodSummaryItems(
-  snapshot: AvailableSnapshot | null | undefined,
+export function buildReportMatrixPeriodSummaryItems(
+  summaries: ReportMatrixSectionSummaries,
 ): ReportMatrixPeriodSummaryItem[] {
-  const summaries = createReportMatrixSectionSummariesFromPeriodMeta(
-    snapshot
-      ? {
-          closedPeriodLabel: snapshot.closed_period_label,
-          closedMonthsCount: snapshot.closed_months_count,
-          lastClosedMonth: snapshot.last_closed_month,
-          openMonthsCount: snapshot.open_months_count,
-        }
-      : null,
-  );
-
   const previousPeriodSummary = summaries["previous-period"];
   const closedMonthsSummary = summaries["closed-months"];
   const openMonthsSummary = summaries["current-year"];
@@ -72,4 +66,21 @@ export function buildSnapshotPeriodSummaryItems(
         }
       : null,
   ].filter(Boolean) as ReportMatrixPeriodSummaryItem[];
+}
+
+export function buildSnapshotPeriodSummaryItems(
+  snapshot: AvailableSnapshot | null | undefined,
+): ReportMatrixPeriodSummaryItem[] {
+  const summaries = createReportMatrixSectionSummariesFromPeriodMeta(
+    snapshot
+      ? {
+          closedPeriodLabel: snapshot.closed_period_label,
+          closedMonthsCount: snapshot.closed_months_count,
+          lastClosedMonth: snapshot.last_closed_month,
+          openMonthsCount: snapshot.open_months_count,
+        }
+      : null,
+  );
+
+  return buildReportMatrixPeriodSummaryItems(summaries);
 }
