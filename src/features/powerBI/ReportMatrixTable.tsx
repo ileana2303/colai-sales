@@ -41,6 +41,7 @@ import type {
   ReportMatrixTableFiltersState,
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 import { cn } from "@/lib/utils";
+import { resolveUserArea } from "@/lib/userArea";
 import { useAuthStore } from "@/stores/authStore";
 import { useSelectedSellerStore } from "@/stores/selectedSellerStore";
 import { useSellersStore } from "@/stores/sellersStore";
@@ -108,6 +109,13 @@ function getAlignClass(align: ReportMatrixColumn["align"]) {
 
 function renderValue(value: ReactNode) {
   return value == null || value === "" ? "" : value;
+}
+
+function getExportRows(
+  rows: ReportMatrixRow[],
+  showTotalRows: boolean,
+): ReportMatrixRow[] {
+  return showTotalRows ? rows : rows.filter((row) => !row.isTotal);
 }
 
 function getTruncationTitle(value: ReactNode, fallback = "") {
@@ -385,7 +393,7 @@ export function ReportMatrixTable({
       ""
     );
   });
-  const userArea = useAuthStore((state) => state.userInfos?.area);
+  const userArea = useAuthStore((state) => resolveUserArea(state.userInfos));
   const selectedArea = useSelectedSellerStore(
     (state) => state.selectedSeller?.area,
   );
@@ -408,6 +416,7 @@ export function ReportMatrixTable({
   );
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [isPdfExportDialogOpen, setIsPdfExportDialogOpen] = useState(false);
+  const [showTotalRows, setShowTotalRows] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -766,8 +775,9 @@ export function ReportMatrixTable({
     exportReportMatrixToExcel({
       brandLabel,
       exportFileName: resolveExportFileName(),
+      hasGroup3,
       leadingColumns: resolvedLeadingColumns,
-      rows: exportView.filteredRows,
+      rows: getExportRows(exportView.filteredRows, showTotalRows),
       sections,
       sellerFilterActive: Boolean(effectiveSellerFilter),
     });
@@ -797,6 +807,7 @@ export function ReportMatrixTable({
         team: teamLabel,
         seller: sellerLabel,
       },
+      hasGroup3,
       rows,
       sellerFilterActive,
     };
@@ -828,12 +839,16 @@ export function ReportMatrixTable({
 
       if (effectiveSellerFilter) {
         const exportView = buildExpandedExportView();
+        const exportRows = getExportRows(
+          exportView.filteredRows,
+          showTotalRows,
+        );
 
         await exportReportMatrixToPdf({
           ...sharedOptions,
           pages: [
             buildPdfFilterPage({
-              rows: exportView.filteredRows,
+              rows: exportRows,
               sellerFilterActive: false,
               sellerLabel: resolveSellerFilterLabel(
                 effectiveSellerFilter,
@@ -849,13 +864,17 @@ export function ReportMatrixTable({
 
       if (mode === "current-view") {
         const exportView = buildExpandedExportView();
+        const exportRows = getExportRows(
+          exportView.filteredRows,
+          showTotalRows,
+        );
 
         await exportReportMatrixToPdf({
           ...sharedOptions,
           exportFileName: resolveExportFileName(),
           pages: [
             buildPdfFilterPage({
-              rows: exportView.filteredRows,
+              rows: exportRows,
               sellerFilterActive: false,
               sellerLabel: resolveSellerFilterLabel("", sellerOptions),
               sellerRows: exportView.filteredDetailRows,
@@ -879,6 +898,7 @@ export function ReportMatrixTable({
             teamFilter: team,
           });
           const teamLabel = resolveFilterLabel(team, teamOptions);
+          const exportRows = getExportRows(teamView.filteredRows, showTotalRows);
 
           await exportReportMatrixToPdf({
             ...sharedOptions,
@@ -888,7 +908,7 @@ export function ReportMatrixTable({
             }),
             pages: [
               buildPdfFilterPage({
-                rows: teamView.filteredRows,
+                rows: exportRows,
                 sellerFilterActive: false,
                 sellerLabel: resolveSellerFilterLabel("", sellerOptions),
                 sellerRows: teamView.filteredDetailRows,
@@ -911,6 +931,10 @@ export function ReportMatrixTable({
           sellerFilter: member.seller,
           teamFilter: member.team,
         });
+        const exportRows = getExportRows(
+          memberView.filteredRows,
+          showTotalRows,
+        );
 
         await exportReportMatrixToPdf({
           ...sharedOptions,
@@ -920,7 +944,7 @@ export function ReportMatrixTable({
           }),
           pages: [
             buildPdfFilterPage({
-              rows: memberView.filteredRows,
+              rows: exportRows,
               sellerFilterActive: false,
               sellerLabel: member.sellerLabel,
               sellerRows: memberView.filteredDetailRows,
@@ -1221,6 +1245,7 @@ export function ReportMatrixTable({
           const tone =
             row.cellTones?.[column.key] ?? column.cellTone ?? "default";
           const metricValue = getMatrixMetricDisplayValue(row, column.key, {
+            hasGroup3,
             sellerFilterActive: Boolean(effectiveSellerFilter),
           });
           const displayTone =
@@ -1289,7 +1314,7 @@ export function ReportMatrixTable({
         <div className="report-matrix-card__filters">
           <PowerBiTableHeaderFilter
             fitContent
-            label="AREA"
+            label="ΠΕΡΙΟΧΗ"
             options={[]}
             readOnly
             value={areaLabel}
@@ -1302,7 +1327,7 @@ export function ReportMatrixTable({
             onChange={handleCategoryFilterChange}
           />
           <PowerBiTableHeaderFilter
-            label="TEAM"
+            label="ΟΜΑΔΑ"
             options={teamOptions}
             readOnly={Boolean(lockedTeamFilter)}
             value={effectiveTeamFilter}
@@ -1310,7 +1335,7 @@ export function ReportMatrixTable({
           />
           <PowerBiTableHeaderFilter
             fitContent
-            label="Seller name"
+            label="Πωλητής"
             options={sellerOptions}
             value={effectiveSellerFilter}
             onChange={handleSellerFilterChange}
@@ -1321,7 +1346,7 @@ export function ReportMatrixTable({
               variant="outline"
               size="icon"
               className="size-10"
-              aria-label="Reset filters"
+              aria-label="Επαναφορά φίλτρων"
               disabled={!hasActiveFilters}
               onClick={resetFilters}
             >
@@ -1335,7 +1360,7 @@ export function ReportMatrixTable({
               role="tooltip"
               className="bg-foreground text-background pointer-events-none absolute top-full left-1/2 z-30 mt-2 -translate-x-1/2 rounded-md px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
             >
-              Reset filters
+              Επαναφορά φίλτρων
             </span>
           </span>
           <span className="group relative inline-flex">
@@ -1346,7 +1371,7 @@ export function ReportMatrixTable({
               className="size-10"
               aria-expanded={areAllExpandableRowsExpanded}
               aria-label={
-                areAllExpandableRowsExpanded ? "Collapse all" : "Expand all"
+                areAllExpandableRowsExpanded ? "Σύμπτυξη όλων" : "Ανάπτυξη όλων"
               }
               disabled={!hasExpandableRows}
               onClick={toggleExpandAll}
@@ -1365,7 +1390,33 @@ export function ReportMatrixTable({
               role="tooltip"
               className="bg-foreground text-background pointer-events-none absolute top-full left-1/2 z-30 mt-2 -translate-x-1/2 rounded-md px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
             >
-              {areAllExpandableRowsExpanded ? "Collapse all" : "Expand all"}
+              {areAllExpandableRowsExpanded ? "Σύμπτυξη όλων" : "Ανάπτυξη όλων"}
+            </span>
+          </span>
+          <span className="group relative inline-flex">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="size-10"
+              aria-pressed={showTotalRows}
+              aria-label={
+                showTotalRows ? "Απόκρυψη συνόλων" : "Εμφάνιση συνόλων"
+              }
+              disabled={!totalRows.length}
+              onClick={() => setShowTotalRows((current) => !current)}
+            >
+              <AppIcon
+                name={showTotalRows ? "bi-eye" : "bi-eye-off"}
+                className="size-5"
+                size={20}
+              />
+            </Button>
+            <span
+              role="tooltip"
+              className="bg-foreground text-background pointer-events-none absolute top-full left-1/2 z-30 mt-2 -translate-x-1/2 rounded-md px-2 py-1 text-xs whitespace-nowrap opacity-0 shadow-md transition-opacity group-focus-within:opacity-100 group-hover:opacity-100"
+            >
+              {showTotalRows ? "Απόκρυψη συνόλων" : "Εμφάνιση συνόλων"}
             </span>
           </span>
         </div>
@@ -1511,7 +1562,7 @@ export function ReportMatrixTable({
             </tr>
           </thead>
           <tbody>{bodyRows.map(renderMatrixRow)}</tbody>
-          {totalRows.length ? (
+          {showTotalRows && totalRows.length ? (
             <tfoot className="report-matrix__footer">
               {totalRows.map(renderMatrixRow)}
             </tfoot>

@@ -7,7 +7,7 @@ export function createChatMessageId(): string {
 
 export function formatConversationTitle(
   conversation: { title: string | null },
-  fallback = "New conversation",
+  fallback = "Νέα συνομιλία",
 ): string {
   const title = conversation.title?.trim();
   return title || fallback;

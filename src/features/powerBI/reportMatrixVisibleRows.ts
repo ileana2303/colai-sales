@@ -63,10 +63,15 @@ export function canExpandTeam(_row: ReportMatrixRow) {
   return false;
 }
 
-export function shouldHideMatrixParentMetrics(row: ReportMatrixRow) {
+export function shouldHideMatrixParentMetrics(
+  row: ReportMatrixRow,
+  hasGroup3: boolean,
+) {
   if (row.isTotal) return false;
 
-  return row.rowKind === "category" && (row.childCount ?? 0) === 1;
+  return (
+    shouldShowCategoryTier(row, hasGroup3) && (row.childCount ?? 0) === 1
+  );
 }
 
 export function getReportMatrixCategoryValue(row: ReportMatrixRow) {

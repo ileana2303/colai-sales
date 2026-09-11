@@ -63,7 +63,7 @@ export function useReportChat(context: ReportChatContext): UseReportChatResult {
       setConversations(result.data);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to list conversations.",
+        err instanceof Error ? err.message : "Αποτυχία φόρτωσης συνομιλιών.",
       );
     } finally {
       setIsLoadingConversations(false);
@@ -88,7 +88,7 @@ export function useReportChat(context: ReportChatContext): UseReportChatResult {
   const selectConversation = useCallback(async (nextId: string) => {
     const area = contextRef.current.area?.trim();
     if (!area) {
-      setError("Area is required for chat.");
+      setError("Απαιτείται περιοχή για τη συνομιλία.");
       return;
     }
 
@@ -116,7 +116,7 @@ export function useReportChat(context: ReportChatContext): UseReportChatResult {
     } catch (err) {
       setMessages([]);
       setError(
-        err instanceof Error ? err.message : "Failed to load conversation.",
+        err instanceof Error ? err.message : "Αποτυχία φόρτωσης συνομιλίας.",
       );
     } finally {
       setIsLoadingMessages(false);
@@ -127,7 +127,7 @@ export function useReportChat(context: ReportChatContext): UseReportChatResult {
     async (targetId: string) => {
       const area = contextRef.current.area?.trim();
       if (!area) {
-        setError("Area is required for chat.");
+        setError("Απαιτείται περιοχή για τη συνομιλία.");
         return;
       }
 
@@ -154,7 +154,7 @@ export function useReportChat(context: ReportChatContext): UseReportChatResult {
 
       const area = contextRef.current.area?.trim();
       if (!area) {
-        setError("Area is required for chat.");
+        setError("Απαιτείται περιοχή για τη συνομιλία.");
         return;
       }
 
@@ -235,7 +235,7 @@ export function useReportChat(context: ReportChatContext): UseReportChatResult {
         }
 
         const message =
-          err instanceof Error ? err.message : "Chat request failed.";
+          err instanceof Error ? err.message : "Η αίτηση συνομιλίας απέτυχε.";
         setError(message);
         setMessages((current) =>
           current.filter((item) => item.id !== assistantId),

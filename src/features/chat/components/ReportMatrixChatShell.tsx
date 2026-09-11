@@ -7,7 +7,9 @@ import { ReportChatFab } from "@/features/chat/components/ReportChatFab";
 import { ReportChatPanel } from "@/features/chat/components/ReportChatPanel";
 import type { ReportMatrixChatShellProps } from "@/features/chat/components/ReportMatrixChatShell.types";
 import { useReportChatContext } from "@/features/chat/hooks/useReportChatContext";
+import { isAiChatUser } from "@/lib/aiChatAccess";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/authStore";
 
 export function ReportMatrixChatShell({
   children,
@@ -20,6 +22,7 @@ export function ReportMatrixChatShell({
   viewLabel,
 }: ReportMatrixChatShellProps) {
   const [open, setOpen] = useState(false);
+  const canUseAiChat = useAuthStore((state) => isAiChatUser(state.userInfos));
   const isClient = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -49,14 +52,15 @@ export function ReportMatrixChatShell({
         <div className="app-page">{children}</div>
       </div>
 
-      {open ? (
+      {canUseAiChat && open ? (
         <ReportChatPanel context={context} onClose={() => setOpen(false)} />
-      ) : headerActions ? (
-        createPortal(
-          <ReportChatFab onClick={() => setOpen(true)} />,
-          headerActions,
-        )
       ) : null}
+      {canUseAiChat && !open && headerActions
+        ? createPortal(
+            <ReportChatFab onClick={() => setOpen(true)} />,
+            headerActions,
+          )
+        : null}
     </div>
   );
 }

@@ -22,7 +22,7 @@ export function ReportChatBubble({
       )}
     >
       <div className="report-chat-bubble__role">
-        {isAssistant ? "Assistant" : "You"}
+        {isAssistant ? "Βοηθός" : "Εσείς"}
       </div>
       <div className="report-chat-bubble__content">
         {isAssistant ? (

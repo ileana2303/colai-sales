@@ -17,6 +17,8 @@ import { ClipboardList } from "@/icons/lucide/clipboard-list";
 import { Coins } from "@/icons/lucide/coins";
 import { Database } from "@/icons/lucide/database";
 import { Droplet } from "@/icons/lucide/droplet";
+import { Eye } from "@/icons/lucide/eye";
+import { EyeOff } from "@/icons/lucide/eye-off";
 import { FileSpreadsheet } from "@/icons/lucide/file-spreadsheet";
 import { FileText } from "@/icons/lucide/file-text";
 import { HeartPulse } from "@/icons/lucide/heart-pulse";
@@ -61,6 +63,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   "bi-clipboard2-pulse": HeartPulse,
   "bi-database": Database,
   "bi-droplet-half": Droplet,
+  "bi-eye": Eye,
+  "bi-eye-off": EyeOff,
   "bi-file-earmark-excel": FileSpreadsheet,
   "bi-file-earmark-pdf": FileText,
   "bi-fold-vertical": FoldVertical,

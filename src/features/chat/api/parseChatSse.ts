@@ -82,7 +82,7 @@ function parseEventBlock(block: string): ChatSseEvent | null {
       detail:
         typeof detail === "string" && detail.trim()
           ? detail.trim()
-          : "The assistant failed to answer. Please try again.",
+          : "Ο βοηθός απέτυχε να απαντήσει. Δοκιμάστε ξανά.",
     };
   }
 
@@ -95,7 +95,7 @@ export async function readChatSseStream(
   signal?: AbortSignal,
 ): Promise<string> {
   if (!response.body) {
-    throw new Error("Chat stream is empty.");
+    throw new Error("Η ροή συνομιλίας είναι κενή.");
   }
 
   const reader = response.body.getReader();
@@ -159,7 +159,7 @@ export async function readChatSseStream(
     throw new Error(streamError);
   }
   if (!sawDone) {
-    throw new Error("The assistant failed to answer. Please try again.");
+    throw new Error("Ο βοηθός απέτυχε να απαντήσει. Δοκιμάστε ξανά.");
   }
 
   return fullText;

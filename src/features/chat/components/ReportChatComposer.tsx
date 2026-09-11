@@ -31,7 +31,7 @@ export function ReportChatComposer({
         className="report-chat-panel__input"
         rows={2}
         value={value}
-        placeholder="Ask about this report…"
+        placeholder="Ρωτήστε για αυτή την αναφορά…"
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
@@ -44,7 +44,7 @@ export function ReportChatComposer({
       <Button
         type="submit"
         size="icon"
-        aria-label="Send message"
+        aria-label="Αποστολή μηνύματος"
         disabled={disabled || !value.trim()}
       >
         <AppIcon name="bi-send" size={16} />

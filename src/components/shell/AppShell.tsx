@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { isAreaPickerUser } from "@/lib/managerPickerAccess";
+import { resolveUserArea } from "@/lib/userArea";
 import { useAuthStore } from "@/stores/authStore";
 import { useNavigationHistoryStore } from "@/stores/navigationHistoryStore";
 import { useSellersStore } from "@/stores/sellersStore";
@@ -56,9 +57,12 @@ function getUserMeta(
     userInfos.username?.trim(),
     userInfos.sellerCode?.trim() ? `Κωδ. ${userInfos.sellerCode.trim()}` : null,
     areaTeam ||
-      (userInfos.area?.trim() || userInfos.team?.trim()
-        ? [userInfos.area, userInfos.team].filter(Boolean).join(" · ")
-        : null),
+      (() => {
+        const area = resolveUserArea(userInfos);
+        return area || userInfos.team?.trim()
+          ? [area, userInfos.team].filter(Boolean).join(" · ")
+          : null;
+      })(),
     matchedSeller?.salesPerson?.trim() || null,
   ].filter(Boolean);
 

@@ -412,7 +412,7 @@ function getTotalRowLabel(
   showCurrencyLabel: boolean,
 ) {
   if (!showCurrencyLabel) return "Σύνολα";
-  return currency === 0 ? "Αριθμός παραγγελιών" : "Σύνολα (€)";
+  return currency === 0 ? "Αριθμός περιστατικών" : "Σύνολα (€)";
 }
 
 function applyAggregateCurrency(
@@ -1357,13 +1357,14 @@ function detailRowToAggregate(row: ReportMatrixRow): MatrixAggregate {
   aggregate.team = filterValues?.team ?? "";
   aggregate.sellerCode =
     pipeIndex >= 0 ? sellerRaw.slice(0, pipeIndex) : sellerRaw;
-  aggregate.sellerName =
-    pipeIndex >= 0 ? sellerRaw.slice(pipeIndex + 1) : "";
+  aggregate.sellerName = pipeIndex >= 0 ? sellerRaw.slice(pipeIndex + 1) : "";
 
   return aggregate;
 }
 
-function zeroClosedPeriodDetailRow(snapshotRow: ReportMatrixRow): ReportMatrixRow {
+function zeroClosedPeriodDetailRow(
+  snapshotRow: ReportMatrixRow,
+): ReportMatrixRow {
   if (!snapshotRow.metrics) return snapshotRow;
 
   const aggregate = detailRowToAggregate(snapshotRow);
@@ -1641,7 +1642,7 @@ export function createReportMatrixSections({
     {
       key: "year-comparison",
       summary: summaries?.["closed-months"],
-      title: "Σύγκριση με Ίδιο Διάστημα Προηγούμενου Έτους",
+      title: "Σύγκριση με Ίδιο Διάστημα Προηγ. Έτους",
       columns: [
         {
           key: "yearResult",
@@ -1780,11 +1781,12 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
   const previousPeriodSummary =
     closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: fullLastClosedMonthIndex != null
-            ? [
-                `Τελευταίος κλειστός: ${getShortMonthLabel(fullLastClosedMonthIndex)}`,
-              ]
-            : undefined,
+          details:
+            fullLastClosedMonthIndex != null
+              ? [
+                  `Τελευταίος κλειστός: ${getShortMonthLabel(fullLastClosedMonthIndex)}`,
+                ]
+              : undefined,
           label: "Κλειστη περιοδος",
           tone: "primary",
           value: formatMonthRange(0, selectedRangeEndMonthIndex),
@@ -1882,11 +1884,12 @@ export function createReportMatrixSectionSummaries(
   const previousPeriodSummary =
     closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: fullLastClosedMonthIndex != null
-            ? [
-                `Τελευταίος κλειστός: ${getShortMonthLabel(fullLastClosedMonthIndex)}`,
-              ]
-            : undefined,
+          details:
+            fullLastClosedMonthIndex != null
+              ? [
+                  `Τελευταίος κλειστός: ${getShortMonthLabel(fullLastClosedMonthIndex)}`,
+                ]
+              : undefined,
           label: "Κλειστη περιοδος",
           tone: "primary",
           value: formatMonthRange(0, selectedRangeEndMonthIndex),

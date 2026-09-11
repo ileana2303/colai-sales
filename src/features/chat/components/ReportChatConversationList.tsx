@@ -29,8 +29,8 @@ export function ReportChatConversationList({
     <DropdownMenu>
       <DropdownMenuTrigger
         disabled={disabled}
-        aria-label="Conversation history"
-        title="Conversation history"
+        aria-label="Ιστορικό συνομιλιών"
+        title="Ιστορικό συνομιλιών"
         className={cn(
           "inline-flex size-7 items-center justify-center rounded-[min(var(--radius-md),12px)] outline-none transition-colors",
           "hover:bg-muted hover:text-foreground",
@@ -42,17 +42,17 @@ export function ReportChatConversationList({
       <DropdownMenuContent align="end" className="w-80 p-1.5">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            Conversations
+            Συνομιλίες
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {isLoading ? (
           <div className="px-2 py-3 text-sm text-muted-foreground">
-            Loading…
+            Φόρτωση…
           </div>
         ) : conversations.length === 0 ? (
           <div className="px-2 py-3 text-sm text-muted-foreground">
-            No conversations yet.
+            Δεν υπάρχουν συνομιλίες ακόμα.
           </div>
         ) : (
           conversations.map((conversation) => {
@@ -82,8 +82,8 @@ export function ReportChatConversationList({
                   variant="ghost"
                   size="icon-xs"
                   className="mt-1 text-destructive opacity-70 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                  aria-label="Delete conversation"
-                  title="Delete conversation"
+                  aria-label="Διαγραφή συνομιλίας"
+                  title="Διαγραφή συνομιλίας"
                   onClick={() => onDeleteRequest(conversation)}
                 >
                   <AppIcon name="bi-trash" size={12} />

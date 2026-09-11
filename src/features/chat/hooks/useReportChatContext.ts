@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import type { UseReportChatContextInput } from "@/features/chat/hooks/useReportChatContext.types";
 import type { ReportChatContext } from "@/features/chat/types";
+import { resolveUserArea } from "@/lib/userArea";
 import { useAuthStore } from "@/stores/authStore";
 import { useSelectedSellerStore } from "@/stores/selectedSellerStore";
 import { useSellersStore } from "@/stores/sellersStore";
@@ -21,7 +22,7 @@ export function useReportChatContext(
     viewLabel,
   } = input;
 
-  const userArea = useAuthStore((state) => state.userInfos?.area);
+  const userArea = useAuthStore((state) => resolveUserArea(state.userInfos));
   const selectedArea = useSelectedSellerStore(
     (state) => state.selectedSeller?.area,
   );

@@ -19,6 +19,7 @@ import type {
   SellersByAreaPayload,
 } from "@/lib/bi-reports/sellers.types";
 import { normalizeSellerCode } from "@/lib/sellerAccess";
+import { resolveUserArea } from "@/lib/userArea";
 import type { ApiUserInfo } from "@/types/api/schemas";
 import type { SessionUserInfo } from "@/lib/sessionUser";
 
@@ -186,7 +187,7 @@ export async function resolveReportSellerContext(
     };
   }
 
-  const area = userInfo?.area?.trim();
+  const area = resolveUserArea(userInfo);
   if (!area) return null;
 
   const areaSellers = findPowerBiSellersByArea(records, area);

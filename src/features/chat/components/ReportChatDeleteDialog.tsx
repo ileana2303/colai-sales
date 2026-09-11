@@ -24,23 +24,23 @@ export function ReportChatDeleteDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+          <AlertDialogTitle>Διαγραφή συνομιλίας;</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently deletes
+            Η ενέργεια διαγράφει οριστικά
             {conversation
-              ? ` “${formatConversationTitle(conversation)}”`
-              : " this conversation"}{" "}
-            and its history.
+              ? ` τη συνομιλία «${formatConversationTitle(conversation)}»`
+              : " αυτή τη συνομιλία"}{" "}
+            και το ιστορικό της.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Ακύρωση</AlertDialogCancel>
           <AlertDialogAction
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             disabled={isDeleting}
             onClick={onConfirm}
           >
-            {isDeleting ? "Deleting…" : "Delete"}
+            {isDeleting ? "Διαγραφή…" : "Διαγραφή"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

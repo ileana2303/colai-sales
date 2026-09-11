@@ -23,7 +23,7 @@ export function ReportChatHeader({
       <div className="report-chat-panel__title-wrap">
         <AppIcon name="bi-stars" size={16} className="text-primary" />
         <div className="min-w-0">
-          <h2 className="report-chat-panel__title">Sales assistant</h2>
+          <h2 className="report-chat-panel__title">Βοηθός πωλήσεων</h2>
           <p className="report-chat-panel__subtitle truncate">
             {brandLabel}
             {viewLabel ? ` · ${viewLabel}` : ""}
@@ -43,8 +43,8 @@ export function ReportChatHeader({
           type="button"
           variant="ghost"
           size="icon-sm"
-          aria-label="New conversation"
-          title="New conversation"
+          aria-label="Νέα συνομιλία"
+          title="Νέα συνομιλία"
           onClick={onNewConversation}
           disabled={isStreaming || !canStartNew}
         >
@@ -54,7 +54,7 @@ export function ReportChatHeader({
           type="button"
           variant="ghost"
           size="icon-sm"
-          aria-label="Close chat"
+          aria-label="Κλείσιμο συνομιλίας"
           onClick={onClose}
         >
           <AppIcon name="bi-x" size={16} />

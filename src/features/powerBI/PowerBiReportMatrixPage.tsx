@@ -160,12 +160,12 @@ function SnapshotPicker({
   const selectedValue = value && value !== latestDate ? value : "";
   const selectedLabel = selectedValue
     ? new Date(`${selectedValue}T00:00:00`).toLocaleDateString("el-GR")
-    : "Latest snapshot";
+    : "Τελευταίο στιγμιότυπο";
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Select a past snapshot"
+        aria-label="Επιλογή προηγούμενου στιγμιότυπου"
         disabled={disabled || isLoading}
         title={
           disabled
@@ -174,12 +174,12 @@ function SnapshotPicker({
         }
         className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-10 items-center justify-center gap-1.5 rounded-md border px-4 text-sm font-medium whitespace-nowrap shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50"
       >
-        {isLoading ? "Loading snapshots…" : selectedLabel}
+        {isLoading ? "Φόρτωση στιγμιοτύπων…" : selectedLabel}
         <AppIcon name="bi-chevron-down" size={14} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Available snapshots</DropdownMenuLabel>
+          <DropdownMenuLabel>Διαθέσιμα στιγμιότυπα</DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuRadioGroup
           value={selectedValue}
@@ -188,7 +188,7 @@ function SnapshotPicker({
           }
         >
           <DropdownMenuRadioItem value="">
-            Latest snapshot
+            Τελευταίο στιγμιότυπο
           </DropdownMenuRadioItem>
           {historicalSnapshots.map((snapshot) => (
             <DropdownMenuRadioItem

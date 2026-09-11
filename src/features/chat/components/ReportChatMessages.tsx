@@ -22,8 +22,8 @@ export function ReportChatMessages({
       {messages.length === 0 ? (
         <div className="report-chat-panel__empty">
           <p>
-            Ask about targets, cover, YoY trends, or projections for this
-            category table.
+            Ρωτήστε για στόχους, κάλυψη, τάσεις YoY ή προβλέψεις για αυτόν τον
+            πίνακα κατηγοριών.
           </p>
         </div>
       ) : (

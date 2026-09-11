@@ -37,16 +37,16 @@ export function ReportChatPanel({ context, onClose }: ReportChatPanelProps) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const emptyHint = !context.area
-    ? "Select an area before chatting about this report."
+    ? "Επιλέξτε περιοχή πριν συζητήσετε για αυτή την αναφορά."
     : isLoadingMessages
-      ? "Loading conversation…"
+      ? "Φόρτωση συνομιλίας…"
       : null;
 
   return (
     <aside
       ref={panelRef}
       className="report-chat-panel"
-      aria-label="Report assistant chat"
+      aria-label="Συνομιλία βοηθού αναφοράς"
     >
       <ReportChatHeader
         brandLabel={context.brandLabel}

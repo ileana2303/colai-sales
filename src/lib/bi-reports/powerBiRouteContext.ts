@@ -15,6 +15,7 @@ import {
 import { POWERBI_NO_CACHE_HEADERS } from "@/lib/bi-reports/powerBi";
 import type { ApiUserInfo } from "@/types/api/schemas";
 import type { SessionUserInfo } from "@/lib/sessionUser";
+import { resolveUserArea } from "@/lib/userArea";
 import type {
   PowerBiRouteAuthFailure,
   PowerBiRouteAuthResult,
@@ -149,7 +150,7 @@ export async function getPowerBiSellersRouteContext(options?: {
     };
   }
 
-  const area = userInfo?.area?.trim() ?? "";
+  const area = resolveUserArea(userInfo);
   const records = area
     ? findPowerBiSellersByArea(allRecords, area)
     : allRecords;

@@ -15,6 +15,7 @@ export type ReportMatrixPdfFilters = {
 
 export type ReportMatrixPdfPage = {
   filters: ReportMatrixPdfFilters;
+  hasGroup3?: boolean;
   rows: ReportMatrixRow[];
   sellerFilterActive?: boolean;
 };

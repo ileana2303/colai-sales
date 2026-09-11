@@ -402,6 +402,7 @@ function buildPdfTableBody(
   metricColumns: PdfMetricColumn[],
   group2Keys: Set<string>,
   metricDisplayOptions: {
+    hasGroup3: boolean;
     sellerFilterActive: boolean;
   },
 ) {
@@ -585,7 +586,7 @@ function writeMetadataSection(
     body: [
       [
         {
-          content: `AREA: ${filters.area}`,
+          content: `ΠΕΡΙΟΧΗ: ${filters.area}`,
           styles: {
             fillColor: [241, 245, 249],
             textColor: [30, 58, 95],
@@ -604,7 +605,7 @@ function writeMetadataSection(
           },
         },
         {
-          content: `TEAM: ${filters.team}`,
+          content: `ΟΜΑΔΑ: ${filters.team}`,
           styles: {
             fillColor: [241, 245, 249],
             textColor: [30, 58, 95],
@@ -612,7 +613,7 @@ function writeMetadataSection(
           },
         },
         {
-          content: `Seller name: ${filters.seller}`,
+          content: `Πωλητής: ${filters.seller}`,
           styles: {
             fillColor: [241, 245, 249],
             textColor: [30, 58, 95],
@@ -646,7 +647,7 @@ function writePdfMatrixTable(
   startY: number,
 ) {
   const { leadingColumns, sections } = options;
-  const { rows, sellerFilterActive = false } = page;
+  const { hasGroup3 = false, rows, sellerFilterActive = false } = page;
   const metricColumns = flattenPdfMetricColumns(sections);
   const group2Keys = new Set(
     rows.filter((row) => row.rowKind === "group2").map((row) => row.key),
@@ -656,6 +657,7 @@ function writePdfMatrixTable(
     startY,
     head: buildPdfTableHead(leadingColumns, sections),
     body: buildPdfTableBody(rows, leadingColumns, metricColumns, group2Keys, {
+      hasGroup3,
       sellerFilterActive,
     }),
     theme: "plain",

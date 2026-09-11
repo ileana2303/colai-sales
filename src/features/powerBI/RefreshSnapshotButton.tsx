@@ -51,14 +51,14 @@ export function RefreshSnapshotButton({
       void queryClient.invalidateQueries({
         queryKey: powerBiKeys.reportMatrices(),
       });
-      toast.success(`${brandLabel} snapshot uploaded`);
+      toast.success(`Το στιγμιότυπο ${brandLabel} ανέβηκε επιτυχώς`);
     },
     onError: (error) => {
-      toast.error(`${brandLabel} snapshot failed`, {
+      toast.error(`Αποτυχία στιγμιότυπου ${brandLabel}`, {
         description:
           error instanceof Error
             ? error.message
-            : "Failed to refresh snapshot.",
+            : "Αποτυχία ανανέωσης στιγμιότυπου.",
       });
     },
   });
@@ -77,7 +77,7 @@ export function RefreshSnapshotButton({
         size={14}
         className={cn(mutation.isPending && "animate-spin")}
       />
-      {mutation.isPending ? "Uploading…" : "Re-upload snapshot"}
+      {mutation.isPending ? "Ανέβασμα…" : "Επανεκφόρτωση"}
     </Button>
   );
 }
