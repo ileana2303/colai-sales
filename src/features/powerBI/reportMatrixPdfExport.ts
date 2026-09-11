@@ -402,6 +402,7 @@ function buildPdfTableBody(
   metricColumns: PdfMetricColumn[],
   group2Keys: Set<string>,
   metricDisplayOptions: {
+    hasGroup3: boolean;
     sellerFilterActive: boolean;
   },
 ) {
@@ -646,7 +647,7 @@ function writePdfMatrixTable(
   startY: number,
 ) {
   const { leadingColumns, sections } = options;
-  const { rows, sellerFilterActive = false } = page;
+  const { hasGroup3 = false, rows, sellerFilterActive = false } = page;
   const metricColumns = flattenPdfMetricColumns(sections);
   const group2Keys = new Set(
     rows.filter((row) => row.rowKind === "group2").map((row) => row.key),
@@ -656,6 +657,7 @@ function writePdfMatrixTable(
     startY,
     head: buildPdfTableHead(leadingColumns, sections),
     body: buildPdfTableBody(rows, leadingColumns, metricColumns, group2Keys, {
+      hasGroup3,
       sellerFilterActive,
     }),
     theme: "plain",

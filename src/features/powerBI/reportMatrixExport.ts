@@ -232,11 +232,12 @@ export function getLeadingExportValue(row: ReportMatrixRow, key: string) {
 export function getMatrixMetricDisplayValue(
   row: ReportMatrixRow,
   columnKey: string,
-  _options: {
+  options: {
+    hasGroup3?: boolean;
     sellerFilterActive: boolean;
   },
 ) {
-  if (shouldHideMatrixParentMetrics(row)) {
+  if (shouldHideMatrixParentMetrics(row, Boolean(options.hasGroup3))) {
     return "";
   }
 
@@ -244,11 +245,13 @@ export function getMatrixMetricDisplayValue(
 }
 
 export function buildReportMatrixWorkbook({
+  hasGroup3 = false,
   leadingColumns,
   rows,
   sections,
   sellerFilterActive = false,
 }: {
+  hasGroup3?: boolean;
   leadingColumns: ReportMatrixLeadingColumn[];
   rows: ReportMatrixRow[];
   sections: ReportMatrixSection[];
@@ -269,6 +272,7 @@ export function buildReportMatrixWorkbook({
     ...metricColumns.map((column) =>
       nodeToExportString(
         getMatrixMetricDisplayValue(row, column.key, {
+          hasGroup3,
           sellerFilterActive,
         }),
       ),
@@ -286,6 +290,7 @@ export function buildReportMatrixWorkbook({
 export function exportReportMatrixToExcel({
   brandLabel,
   exportFileName,
+  hasGroup3 = false,
   leadingColumns,
   rows,
   sections,
@@ -293,6 +298,7 @@ export function exportReportMatrixToExcel({
 }: {
   brandLabel: string;
   exportFileName?: string;
+  hasGroup3?: boolean;
   leadingColumns: ReportMatrixLeadingColumn[];
   rows: ReportMatrixRow[];
   sections: ReportMatrixSection[];
@@ -300,6 +306,7 @@ export function exportReportMatrixToExcel({
 }) {
   downloadXlsxWorkbook(
     buildReportMatrixWorkbook({
+      hasGroup3,
       leadingColumns,
       rows,
       sections,

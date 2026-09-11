@@ -766,6 +766,7 @@ export function ReportMatrixTable({
     exportReportMatrixToExcel({
       brandLabel,
       exportFileName: resolveExportFileName(),
+      hasGroup3,
       leadingColumns: resolvedLeadingColumns,
       rows: exportView.filteredRows,
       sections,
@@ -797,6 +798,7 @@ export function ReportMatrixTable({
         team: teamLabel,
         seller: sellerLabel,
       },
+      hasGroup3,
       rows,
       sellerFilterActive,
     };
@@ -1221,6 +1223,7 @@ export function ReportMatrixTable({
           const tone =
             row.cellTones?.[column.key] ?? column.cellTone ?? "default";
           const metricValue = getMatrixMetricDisplayValue(row, column.key, {
+            hasGroup3,
             sellerFilterActive: Boolean(effectiveSellerFilter),
           });
           const displayTone =
