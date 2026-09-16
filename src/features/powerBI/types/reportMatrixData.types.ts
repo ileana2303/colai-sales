@@ -29,7 +29,7 @@ export type PowerBiMatrixSourceRow = {
 
 export type BuildReportMatrixRowsInput = {
   categoryOrder?: string[];
-  /** 0-based inclusive end month for closed-period / YoY columns. */
+  closedPeriodStartMonthIndex?: number | null;
   closedPeriodEndMonthIndex?: number | null;
   currentRows: PowerBiMatrixSourceRow[];
   group2Order?: string[];

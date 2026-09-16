@@ -8,15 +8,16 @@ import {
   type ReportMatrixTone,
 } from "@/features/powerBI/types/ReportMatrixTable.types";
 import {
-  applyClosedPeriodEndMonthIndex,
+  applyClosedPeriodMonthRange,
   formatMonthRange,
   getShortMonthLabel,
   isClosedMonthStatus,
-  isDefaultClosedPeriodEndMonth,
+  isDefaultClosedPeriodWindow,
   parseMonthNumber,
   resolveClosedPeriodWindowFromMeta,
   resolveClosedPeriodWindowFromRows,
   shouldIncludeClosedMonthForPeriod,
+  shouldTreatMonthAsOpenForPeriod,
 } from "@/features/powerBI/reportMatrixClosedPeriod";
 import {
   type BuildReportMatrixRowsInput,
@@ -58,6 +59,7 @@ export {
   formatMonthRange,
   getShortMonthLabel,
   isDefaultClosedPeriodEndMonth,
+  isDefaultClosedPeriodWindow,
   resolveClosedPeriodWindowFromMeta,
   resolveClosedPeriodWindowFromRows,
 } from "@/features/powerBI/reportMatrixClosedPeriod";
@@ -1424,6 +1426,7 @@ export function applyClosedPeriodToPrecalculatedRows(
 
 export function resolveReportMatrixRows({
   precalculatedRows,
+  closedPeriodStartMonthIndex,
   closedPeriodEndMonthIndex,
   currentRows,
   ...buildInput
@@ -1435,8 +1438,11 @@ export function resolveReportMatrixRows({
   const usePrecalculated =
     Boolean(precalculatedRows?.length) &&
     (!hasSourceRows ||
-      isDefaultClosedPeriodEndMonth(
-        closedPeriodEndMonthIndex,
+      isDefaultClosedPeriodWindow(
+        {
+          closedPeriodStartMonthIndex,
+          closedPeriodEndMonthIndex,
+        },
         lastClosedMonthIndex,
       ));
 
@@ -1450,6 +1456,7 @@ export function resolveReportMatrixRows({
 
   const liveRows = buildReportMatrixRows({
     ...buildInput,
+    closedPeriodStartMonthIndex,
     closedPeriodEndMonthIndex,
     currentRows,
   });
@@ -1463,6 +1470,7 @@ export function resolveReportMatrixRows({
 
 export function buildReportMatrixRows({
   categoryOrder,
+  closedPeriodStartMonthIndex,
   closedPeriodEndMonthIndex,
   currentRows,
   group2Order,
@@ -1512,6 +1520,7 @@ export function buildReportMatrixRows({
           month,
           status,
           closedPeriodEndMonthIndex,
+          closedPeriodStartMonthIndex,
         )
       ) {
         aggregate.tcyClosed = addNumber(aggregate.tcyClosed, row.tcy);
@@ -1519,7 +1528,13 @@ export function buildReportMatrixRows({
         if (month) {
           aggregate.closedMonthKeys.add(monthLookupKey(month));
         }
-      } else if (month) {
+      } else if (
+        shouldTreatMonthAsOpenForPeriod(
+          month,
+          status,
+          closedPeriodEndMonthIndex,
+        )
+      ) {
         aggregate.openMonthTcyByMonth.set(
           month,
           (aggregate.openMonthTcyByMonth.get(month) ?? 0) + (row.tcy ?? 0),
@@ -1746,18 +1761,20 @@ function getUniqueMonthIndexes(
  */
 export function createReportMatrixSectionSummariesFromPeriodMeta(
   period: ReportMatrixPeriodMeta | null | undefined,
-  options?: { closedPeriodEndMonthIndex?: number | null },
+  options?: {
+    closedPeriodStartMonthIndex?: number | null;
+    closedPeriodEndMonthIndex?: number | null;
+  },
 ): ReportMatrixSectionSummaries {
   if (!period) return {};
 
   const fullLastClosedMonthNumber = parseMonthNumber(period.lastClosedMonth);
   const fullLastClosedMonthIndex =
     fullLastClosedMonthNumber != null ? fullLastClosedMonthNumber - 1 : null;
-  const closedPeriodWindow = resolveClosedPeriodWindowFromMeta(
-    period,
-    options?.closedPeriodEndMonthIndex,
-  );
+  const closedPeriodWindow = resolveClosedPeriodWindowFromMeta(period, options);
   const { closedMonthIndexes, selectedEndMonthIndex } = closedPeriodWindow;
+  const selectedRangeStartMonthIndex =
+    closedPeriodWindow.selectedStartMonthIndex ?? 0;
   const selectedRangeEndMonthIndex =
     selectedEndMonthIndex ?? fullLastClosedMonthIndex;
   const totalClosedMonthsCount = period.closedMonthsCount ?? 0;
@@ -1789,7 +1806,10 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
               : undefined,
           label: "Κλειστη περιοδος",
           tone: "primary",
-          value: formatMonthRange(0, selectedRangeEndMonthIndex),
+          value: formatMonthRange(
+            selectedRangeStartMonthIndex,
+            selectedRangeEndMonthIndex,
+          ),
         } satisfies ReportMatrixSectionSummary)
       : period.closedPeriodLabel?.trim()
         ? ({
@@ -1802,7 +1822,12 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
   const closedMonthsSummary =
     closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: [formatMonthRange(0, selectedRangeEndMonthIndex)],
+          details: [
+            formatMonthRange(
+              selectedRangeStartMonthIndex,
+              selectedRangeEndMonthIndex,
+            ),
+          ],
           label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
           tone: "primary",
           value: String(closedMonthIndexes.length),
@@ -1846,7 +1871,10 @@ export function createReportMatrixSectionSummariesFromPeriodMeta(
 
 export function createReportMatrixSectionSummaries(
   rows: PowerBiMatrixSourceRow[],
-  options?: { closedPeriodEndMonthIndex?: number | null },
+  options?: {
+    closedPeriodStartMonthIndex?: number | null;
+    closedPeriodEndMonthIndex?: number | null;
+  },
 ): ReportMatrixSectionSummaries {
   if (!rows.length) return {};
 
@@ -1859,12 +1887,14 @@ export function createReportMatrixSectionSummaries(
   });
 
   const fullLastClosedMonthIndex = fullClosedMonthIndexes.at(-1) ?? null;
-  const closedPeriodWindow = applyClosedPeriodEndMonthIndex(
+  const closedPeriodWindow = applyClosedPeriodMonthRange(
     fullClosedMonthIndexes,
     fullLastClosedMonthIndex,
-    options?.closedPeriodEndMonthIndex,
+    options,
   );
   const closedMonthIndexes = closedPeriodWindow.closedMonthIndexes;
+  const selectedRangeStartMonthIndex =
+    closedPeriodWindow.selectedStartMonthIndex ?? 0;
   const selectedRangeEndMonthIndex =
     closedPeriodWindow.selectedEndMonthIndex ?? fullLastClosedMonthIndex;
   const currentMonthIndex =
@@ -1892,14 +1922,22 @@ export function createReportMatrixSectionSummaries(
               : undefined,
           label: "Κλειστη περιοδος",
           tone: "primary",
-          value: formatMonthRange(0, selectedRangeEndMonthIndex),
+          value: formatMonthRange(
+            selectedRangeStartMonthIndex,
+            selectedRangeEndMonthIndex,
+          ),
         } satisfies ReportMatrixSectionSummary)
       : undefined;
 
   const closedMonthsSummary =
     closedMonthIndexes.length && selectedRangeEndMonthIndex != null
       ? ({
-          details: [formatMonthRange(0, selectedRangeEndMonthIndex)],
+          details: [
+            formatMonthRange(
+              selectedRangeStartMonthIndex,
+              selectedRangeEndMonthIndex,
+            ),
+          ],
           label: "ΚΛΕΙΣΤΟΙ ΜΗΝΕΣ",
           tone: "primary",
           value: String(closedMonthIndexes.length),

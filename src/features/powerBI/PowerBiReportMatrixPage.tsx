@@ -20,7 +20,6 @@ import {
   ReportMatrixTable,
 } from "@/features/powerBI/ReportMatrixTable";
 import {
-  buildClosedPeriodEndMonthOptions,
   createReportMatrixSections,
   createReportMatrixSectionSummaries,
   createReportMatrixSectionSummariesFromPeriodMeta,
@@ -38,7 +37,10 @@ import {
   isLatestClosedPeriodSelected,
 } from "@/features/powerBI/reportMatrixPeriodSummary";
 import { ReportMatrixPeriodSummaryPanel } from "@/features/powerBI/reportMatrixPeriodSummaryPanel";
-import type { ReportMatrixLivePeriodSummary } from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
+import type {
+  ReportMatrixClosedPeriodRange,
+  ReportMatrixLivePeriodSummary,
+} from "@/features/powerBI/types/reportMatrixPeriodSummary.types";
 import type { AvailableSnapshot } from "@/lib/snapshots/types";
 import type {
   MatrixReportPayload,
@@ -398,6 +400,8 @@ export function PowerBiReportMatrixView({
       seller: "",
     },
   );
+  const [closedPeriodStartMonthIndex, setClosedPeriodStartMonthIndex] =
+    useState<number | null>(null);
   const [closedPeriodEndMonthIndex, setClosedPeriodEndMonthIndex] = useState<
     number | null
   >(null);
@@ -433,6 +437,7 @@ export function PowerBiReportMatrixView({
       return {
         closedMonthIndexes: [],
         lastClosedMonthIndex: null,
+        selectedStartMonthIndex: null,
         selectedEndMonthIndex: null,
       };
     }
@@ -448,40 +453,56 @@ export function PowerBiReportMatrixView({
     data?.allowsClosedPeriodSelection && lastClosedMonthIndex != null,
   );
 
-  useEffect(() => {
-    if (!allowsClosedPeriodSelection) {
-      setClosedPeriodEndMonthIndex(null);
-      return;
+  const {
+    effectiveClosedPeriodStartMonthIndex,
+    effectiveClosedPeriodEndMonthIndex,
+  } = useMemo(() => {
+    if (!allowsClosedPeriodSelection || lastClosedMonthIndex == null) {
+      return {
+        effectiveClosedPeriodStartMonthIndex: null,
+        effectiveClosedPeriodEndMonthIndex: null,
+      };
     }
 
-    if (
-      lastClosedMonthIndex != null &&
-      (closedPeriodEndMonthIndex == null ||
-        closedPeriodEndMonthIndex > lastClosedMonthIndex)
-    ) {
-      setClosedPeriodEndMonthIndex(lastClosedMonthIndex);
+    let start = closedPeriodStartMonthIndex ?? 0;
+    let end = closedPeriodEndMonthIndex ?? lastClosedMonthIndex;
+
+    start = Math.min(Math.max(start, 0), lastClosedMonthIndex);
+    end = Math.min(Math.max(end, 0), lastClosedMonthIndex);
+    if (start > end) {
+      start = 0;
     }
+
+    return {
+      effectiveClosedPeriodStartMonthIndex: start,
+      effectiveClosedPeriodEndMonthIndex: end,
+    };
   }, [
     allowsClosedPeriodSelection,
     closedPeriodEndMonthIndex,
+    closedPeriodStartMonthIndex,
     lastClosedMonthIndex,
-    snapshotDate,
   ]);
-
-  const effectiveClosedPeriodEndMonthIndex = allowsClosedPeriodSelection
-    ? closedPeriodEndMonthIndex
-    : null;
+  const closedPeriodRange = useMemo(
+    () => ({
+      closedPeriodStartMonthIndex: effectiveClosedPeriodStartMonthIndex,
+      closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
+    }),
+    [
+      effectiveClosedPeriodEndMonthIndex,
+      effectiveClosedPeriodStartMonthIndex,
+    ],
+  );
   const sectionSummaries = useMemo(() => {
     if (!data) return {};
     if (data.currentRows.length) {
-      return createReportMatrixSectionSummaries(data.currentRows, {
-        closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
-      });
+      return createReportMatrixSectionSummaries(data.currentRows, closedPeriodRange);
     }
-    return createReportMatrixSectionSummariesFromPeriodMeta(data.snapshotPeriod, {
-      closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
-    });
-  }, [data, effectiveClosedPeriodEndMonthIndex]);
+    return createReportMatrixSectionSummariesFromPeriodMeta(
+      data.snapshotPeriod,
+      closedPeriodRange,
+    );
+  }, [closedPeriodRange, data]);
 
   const sections = useMemo(
     () =>
@@ -492,32 +513,36 @@ export function PowerBiReportMatrixView({
       }),
     [currentYear, previousYear, sectionSummaries],
   );
-  const closedPeriodOptions = useMemo(
-    () => buildClosedPeriodEndMonthOptions(lastClosedMonthIndex),
-    [lastClosedMonthIndex],
-  );
   const closedPeriodSelection = useMemo(() => {
-    if (!closedPeriodOptions.length) return undefined;
-
-    const selectedValue =
-      effectiveClosedPeriodEndMonthIndex != null
-        ? String(effectiveClosedPeriodEndMonthIndex)
-        : closedPeriodOptions.at(-1)?.value ?? "";
+    if (lastClosedMonthIndex == null) return undefined;
 
     return {
-      options: closedPeriodOptions,
-      value: selectedValue,
+      year: currentYear,
+      lastClosedMonthIndex,
+      startMonthIndex: effectiveClosedPeriodStartMonthIndex ?? 0,
+      endMonthIndex:
+        effectiveClosedPeriodEndMonthIndex ?? lastClosedMonthIndex,
       readOnly: !allowsClosedPeriodSelection,
-      onChange: (value: string) => {
-        const parsed = Number(value);
-        if (!Number.isInteger(parsed) || parsed < 0 || parsed > 11) return;
-        setClosedPeriodEndMonthIndex(parsed);
+      onChange: ({ startMonthIndex, endMonthIndex }: ReportMatrixClosedPeriodRange) => {
+        if (
+          !Number.isInteger(startMonthIndex) ||
+          !Number.isInteger(endMonthIndex) ||
+          startMonthIndex < 0 ||
+          endMonthIndex > lastClosedMonthIndex ||
+          startMonthIndex > endMonthIndex
+        ) {
+          return;
+        }
+        setClosedPeriodStartMonthIndex(startMonthIndex);
+        setClosedPeriodEndMonthIndex(endMonthIndex);
       },
     };
   }, [
     allowsClosedPeriodSelection,
-    closedPeriodOptions,
+    currentYear,
     effectiveClosedPeriodEndMonthIndex,
+    effectiveClosedPeriodStartMonthIndex,
+    lastClosedMonthIndex,
   ]);
   const periodSummaryItems = useMemo(
     () => buildReportMatrixPeriodSummaryItems(sectionSummaries),
@@ -549,6 +574,7 @@ export function PowerBiReportMatrixView({
       data
         ? resolveReportMatrixRows({
             categoryOrder,
+            closedPeriodStartMonthIndex: effectiveClosedPeriodStartMonthIndex,
             closedPeriodEndMonthIndex: effectiveClosedPeriodEndMonthIndex,
             currentRows: data.currentRows,
             group2Order,
@@ -562,6 +588,7 @@ export function PowerBiReportMatrixView({
       categoryOrder,
       data,
       effectiveClosedPeriodEndMonthIndex,
+      effectiveClosedPeriodStartMonthIndex,
       group2Order,
       sellersCatalog,
     ],

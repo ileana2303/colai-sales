@@ -51,11 +51,29 @@ export function monthIndexFromLookupKey(monthKey: string) {
   return Number.isInteger(index) && index >= 0 && index <= 11 ? index : null;
 }
 
+export type ClosedPeriodRangeOptions = {
+  closedPeriodStartMonthIndex?: number | null;
+  closedPeriodEndMonthIndex?: number | null;
+};
+
 export type ClosedPeriodWindow = {
   closedMonthIndexes: number[];
   lastClosedMonthIndex: number | null;
+  selectedStartMonthIndex: number | null;
   selectedEndMonthIndex: number | null;
 };
+
+function emptyClosedPeriodWindow(
+  closedMonthIndexes: number[] = [],
+  lastClosedMonthIndex: number | null = null,
+): ClosedPeriodWindow {
+  return {
+    closedMonthIndexes,
+    lastClosedMonthIndex,
+    selectedStartMonthIndex: null,
+    selectedEndMonthIndex: null,
+  };
+}
 
 function buildContiguousClosedMonthIndexes(
   closedMonthsCount: number,
@@ -67,16 +85,16 @@ function buildContiguousClosedMonthIndexes(
   }).filter((index) => index >= 0 && index <= 11);
 }
 
+function clampMonthIndex(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export function resolveClosedPeriodWindowFromMeta(
   period: ReportMatrixPeriodMeta | null | undefined,
-  closedPeriodEndMonthIndex?: number | null,
+  range?: ClosedPeriodRangeOptions | null,
 ): ClosedPeriodWindow {
   if (!period) {
-    return {
-      closedMonthIndexes: [],
-      lastClosedMonthIndex: null,
-      selectedEndMonthIndex: null,
-    };
+    return emptyClosedPeriodWindow();
   }
 
   const closedMonthsCount = period.closedMonthsCount ?? 0;
@@ -91,38 +109,59 @@ export function resolveClosedPeriodWindowFromMeta(
         )
       : [];
 
-  return applyClosedPeriodEndMonthIndex(
+  return applyClosedPeriodMonthRange(
     closedMonthIndexes,
     lastClosedMonthIndex,
-    closedPeriodEndMonthIndex,
+    range,
   );
 }
 
+export function applyClosedPeriodMonthRange(
+  closedMonthIndexes: number[],
+  lastClosedMonthIndex: number | null,
+  range?: ClosedPeriodRangeOptions | null,
+): ClosedPeriodWindow {
+  if (lastClosedMonthIndex == null || !closedMonthIndexes.length) {
+    return emptyClosedPeriodWindow(closedMonthIndexes, lastClosedMonthIndex);
+  }
+
+  const selectedEndMonthIndex =
+    range?.closedPeriodEndMonthIndex != null
+      ? clampMonthIndex(
+          range.closedPeriodEndMonthIndex,
+          0,
+          lastClosedMonthIndex,
+        )
+      : lastClosedMonthIndex;
+  const selectedStartMonthIndex =
+    range?.closedPeriodStartMonthIndex != null
+      ? clampMonthIndex(
+          range.closedPeriodStartMonthIndex,
+          0,
+          selectedEndMonthIndex,
+        )
+      : 0;
+
+  return {
+    closedMonthIndexes: closedMonthIndexes.filter(
+      (index) =>
+        index >= selectedStartMonthIndex && index <= selectedEndMonthIndex,
+    ),
+    lastClosedMonthIndex,
+    selectedStartMonthIndex,
+    selectedEndMonthIndex,
+  };
+}
+
+/** @deprecated Prefer applyClosedPeriodMonthRange. */
 export function applyClosedPeriodEndMonthIndex(
   closedMonthIndexes: number[],
   lastClosedMonthIndex: number | null,
   closedPeriodEndMonthIndex?: number | null,
 ): ClosedPeriodWindow {
-  if (lastClosedMonthIndex == null || !closedMonthIndexes.length) {
-    return {
-      closedMonthIndexes,
-      lastClosedMonthIndex,
-      selectedEndMonthIndex: null,
-    };
-  }
-
-  const selectedEndMonthIndex =
-    closedPeriodEndMonthIndex != null
-      ? Math.min(closedPeriodEndMonthIndex, lastClosedMonthIndex)
-      : lastClosedMonthIndex;
-
-  return {
-    closedMonthIndexes: closedMonthIndexes.filter(
-      (index) => index <= selectedEndMonthIndex,
-    ),
-    lastClosedMonthIndex,
-    selectedEndMonthIndex,
-  };
+  return applyClosedPeriodMonthRange(closedMonthIndexes, lastClosedMonthIndex, {
+    closedPeriodEndMonthIndex,
+  });
 }
 
 export function getUniqueClosedMonthIndexes(
@@ -145,15 +184,15 @@ export function getUniqueClosedMonthIndexes(
 
 export function resolveClosedPeriodWindowFromRows(
   rows: PowerBiMatrixSourceRow[],
-  closedPeriodEndMonthIndex?: number | null,
+  range?: ClosedPeriodRangeOptions | null,
 ): ClosedPeriodWindow {
   const closedMonthIndexes = getUniqueClosedMonthIndexes(rows);
   const lastClosedMonthIndex = closedMonthIndexes.at(-1) ?? null;
 
-  return applyClosedPeriodEndMonthIndex(
+  return applyClosedPeriodMonthRange(
     closedMonthIndexes,
     lastClosedMonthIndex,
-    closedPeriodEndMonthIndex,
+    range,
   );
 }
 
@@ -179,14 +218,61 @@ export function isDefaultClosedPeriodEndMonth(
   );
 }
 
+export function isDefaultClosedPeriodWindow(
+  range: ClosedPeriodRangeOptions | null | undefined,
+  lastClosedMonthIndex: number | null | undefined,
+) {
+  const isDefaultStart =
+    range?.closedPeriodStartMonthIndex == null ||
+    range.closedPeriodStartMonthIndex === 0;
+
+  return (
+    isDefaultStart &&
+    isDefaultClosedPeriodEndMonth(
+      range?.closedPeriodEndMonthIndex,
+      lastClosedMonthIndex,
+    )
+  );
+}
+
 export function shouldIncludeClosedMonthForPeriod(
   month: string | null | undefined,
   status: string | null | undefined,
   closedPeriodEndMonthIndex?: number | null,
+  closedPeriodStartMonthIndex?: number | null,
 ) {
   if (!isClosedMonthStatus(status)) return false;
-  if (closedPeriodEndMonthIndex == null) return true;
 
   const monthIndex = month ? getMonthIndex(month) : null;
-  return monthIndex != null && monthIndex <= closedPeriodEndMonthIndex;
+  if (monthIndex == null) return false;
+
+  if (
+    closedPeriodStartMonthIndex != null &&
+    monthIndex < closedPeriodStartMonthIndex
+  ) {
+    return false;
+  }
+
+  if (
+    closedPeriodEndMonthIndex != null &&
+    monthIndex > closedPeriodEndMonthIndex
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+export function shouldTreatMonthAsOpenForPeriod(
+  month: string | null | undefined,
+  status: string | null | undefined,
+  closedPeriodEndMonthIndex?: number | null,
+) {
+  if (!month) return false;
+  if (!isClosedMonthStatus(status)) return true;
+
+  if (closedPeriodEndMonthIndex == null) return false;
+
+  const monthIndex = getMonthIndex(month);
+  return monthIndex != null && monthIndex > closedPeriodEndMonthIndex;
 }

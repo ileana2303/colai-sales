@@ -1,5 +1,3 @@
-import type { FilterOption } from "@/features/powerBI/types/PowerBiTable.types";
-
 export type ReportMatrixPeriodSummaryItem = {
   key: string;
   label: string;
@@ -7,11 +5,18 @@ export type ReportMatrixPeriodSummaryItem = {
   hint: string | null;
 };
 
+export type ReportMatrixClosedPeriodRange = {
+  startMonthIndex: number;
+  endMonthIndex: number;
+};
+
 export type ReportMatrixClosedPeriodSelection = {
-  onChange: (value: string) => void;
-  options: FilterOption[];
+  endMonthIndex: number;
+  lastClosedMonthIndex: number;
+  onChange: (range: ReportMatrixClosedPeriodRange) => void;
   readOnly?: boolean;
-  value: string;
+  startMonthIndex: number;
+  year: number;
 };
 
 export type ReportMatrixLivePeriodSummary = {

@@ -7,6 +7,7 @@ import type {
 import type { AvailableSnapshot } from "@/lib/snapshots/types";
 
 export type {
+  ReportMatrixClosedPeriodRange,
   ReportMatrixClosedPeriodSelection,
   ReportMatrixLivePeriodSummary,
   ReportMatrixPeriodSummaryItem,
@@ -93,8 +94,8 @@ export function isLatestClosedPeriodSelected(
 ) {
   if (!selection || selection.readOnly) return true;
 
-  const latestValue = selection.options.at(-1)?.value;
-  if (!latestValue) return true;
-
-  return selection.value === latestValue;
+  return (
+    selection.startMonthIndex === 0 &&
+    selection.endMonthIndex === selection.lastClosedMonthIndex
+  );
 }
