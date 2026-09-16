@@ -7,18 +7,23 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
 
 import { AppIcon } from "@/components/ui/app-icon";
 import { Button } from "@/components/ui/button";
 import { PowerBiTableHeaderFilter } from "@/features/powerBI/PowerBiTable/PowerBiTableHeaderFilter";
 import { ExcelFileIcon } from "@/icons/excel-file";
 import { PdfFileIcon } from "@/icons/pdf-file";
+import { PptFileIcon } from "@/icons/ppt-file";
 import type { FilterOption } from "@/features/powerBI/types/PowerBiTable.types";
 import { getMatrixExportFileName } from "@/features/powerBI/PowerBiTable/utils";
 import {
   exportReportMatrixToExcel,
   getMatrixMetricDisplayValue,
 } from "@/features/powerBI/reportMatrixExport";
+import { captureReportMatrixTable } from "@/features/powerBI/reportMatrixPptxCapture";
+import { exportReportMatrixToPptx } from "@/features/powerBI/reportMatrixPptxExport";
+import { buildPptxSlidePlan } from "@/features/powerBI/reportMatrixPptxSlidePlan";
 import { exportReportMatrixToPdf } from "@/features/powerBI/reportMatrixPdfExport";
 import {
   ReportMatrixPdfExportDialog,
@@ -416,9 +421,19 @@ export function ReportMatrixTable({
   );
   const [isPdfExporting, setIsPdfExporting] = useState(false);
   const [isPdfExportDialogOpen, setIsPdfExportDialogOpen] = useState(false);
+  const [isPptxExporting, setIsPptxExporting] = useState(false);
+  const [pptxCaptureFilters, setPptxCaptureFilters] = useState<{
+    seller: string;
+    team: string;
+  } | null>(null);
+  const [pptxExportProgress, setPptxExportProgress] = useState<{
+    current: number;
+    total: number;
+  } | null>(null);
   const [showTotalRows, setShowTotalRows] = useState(false);
   const cardRef = useRef<HTMLElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   const detailRows = useMemo(
     () => rows.filter((row) => !row.isTotal && row.rowKind === "detail"),
@@ -483,33 +498,48 @@ export function ReportMatrixTable({
     effectiveSellerFilter ||
     (!lockedTeamFilter && teamFilter),
   );
-  const matrixView = useMemo(
-    () =>
-      buildReportMatrixFilteredView({
+  const renderTeamFilter = pptxCaptureFilters?.team ?? effectiveTeamFilter;
+  const renderSellerFilter =
+    pptxCaptureFilters?.seller ?? effectiveSellerFilter;
+  const matrixView = useMemo(() => {
+    if (pptxCaptureFilters) {
+      return buildReportMatrixFilteredView({
         categoryFilter,
         detailRows,
-        expansion: {
-          categoryKeys: expandedCategoryKeys,
-          group2Keys: expandedGroup2Keys,
-          group3Keys: expandedGroup3Keys,
-          teamKeys: expandedTeamKeys,
-        },
+        expandAll: true,
         group2Order,
-        sellerFilter: effectiveSellerFilter,
-        teamFilter: effectiveTeamFilter,
-      }),
-    [
+        sellerFilter: renderSellerFilter,
+        teamFilter: renderTeamFilter,
+      });
+    }
+
+    return buildReportMatrixFilteredView({
       categoryFilter,
       detailRows,
-      effectiveSellerFilter,
-      effectiveTeamFilter,
-      expandedCategoryKeys,
-      expandedGroup2Keys,
-      expandedGroup3Keys,
-      expandedTeamKeys,
+      expansion: {
+        categoryKeys: expandedCategoryKeys,
+        group2Keys: expandedGroup2Keys,
+        group3Keys: expandedGroup3Keys,
+        teamKeys: expandedTeamKeys,
+      },
       group2Order,
-    ],
-  );
+      sellerFilter: effectiveSellerFilter,
+      teamFilter: effectiveTeamFilter,
+    });
+  }, [
+    categoryFilter,
+    detailRows,
+    effectiveSellerFilter,
+    effectiveTeamFilter,
+    expandedCategoryKeys,
+    expandedGroup2Keys,
+    expandedGroup3Keys,
+    expandedTeamKeys,
+    group2Order,
+    pptxCaptureFilters,
+    renderSellerFilter,
+    renderTeamFilter,
+  ]);
   const {
     bodyRows,
     filteredDetailRows,
@@ -550,6 +580,8 @@ export function ReportMatrixTable({
   const canExportTeamTotals =
     !effectiveTeamFilter && !effectiveSellerFilter && pdfExportTeams.length > 0;
   const requiresMultiPagePdfExport = !effectiveSellerFilter;
+  const displayShowTotalRows = pptxCaptureFilters ? true : showTotalRows;
+  const isExporting = isPdfExporting || isPptxExporting;
   const expandableGroup2Keys = useMemo(
     () => bodyRows.filter(canExpandGroup2).map((row) => row.key),
     [bodyRows],
@@ -898,7 +930,10 @@ export function ReportMatrixTable({
             teamFilter: team,
           });
           const teamLabel = resolveFilterLabel(team, teamOptions);
-          const exportRows = getExportRows(teamView.filteredRows, showTotalRows);
+          const exportRows = getExportRows(
+            teamView.filteredRows,
+            showTotalRows,
+          );
 
           await exportReportMatrixToPdf({
             ...sharedOptions,
@@ -974,6 +1009,78 @@ export function ReportMatrixTable({
 
   function handlePdfExportConfirm(mode: ReportMatrixPdfExportMode) {
     void performPdfExport(mode);
+  }
+
+  async function performPptxExport() {
+    if (isPptxExporting || !filteredRows.length) return;
+
+    const slidePlan = buildPptxSlidePlan({
+      effectiveSellerFilter,
+      effectiveTeamFilter,
+      members: pdfExportMembers,
+      resolveSellerLabel: (seller) =>
+        resolveSellerFilterLabel(seller, sellerOptions),
+      resolveTeamLabel: (team) => resolveFilterLabel(team, teamOptions),
+      teams: pdfExportTeams,
+    });
+
+    if (!slidePlan.length) return;
+
+    setIsPptxExporting(true);
+    setPptxExportProgress({ current: 0, total: slidePlan.length });
+
+    const capturedSlides = [];
+
+    try {
+      for (const [index, slide] of slidePlan.entries()) {
+        setPptxExportProgress({ current: index + 1, total: slidePlan.length });
+
+        flushSync(() => {
+          setPptxCaptureFilters({
+            seller: slide.sellerFilter,
+            team: slide.teamFilter,
+          });
+        });
+
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, 0);
+        });
+
+        const table = tableRef.current;
+        if (!table) {
+          throw new Error("Report matrix table is not available for export.");
+        }
+
+        const capture = await captureReportMatrixTable(table);
+        capturedSlides.push({
+          ...slide,
+          ...capture,
+        });
+      }
+
+      await exportReportMatrixToPptx({
+        areaLabel,
+        brandLabel,
+        categoryFilterLabel: resolveFilterLabel(
+          categoryFilter,
+          categoryOptions,
+        ),
+        categoryLabel,
+        description,
+        exportFileName: resolveExportFileName(),
+        periodSummary,
+        slides: capturedSlides,
+      });
+    } finally {
+      setPptxCaptureFilters(null);
+      setIsPptxExporting(false);
+      setPptxExportProgress(null);
+    }
+  }
+
+  function handlePptxExportClick() {
+    if (isExporting || !filteredRows.length) return;
+    void performPptxExport();
   }
 
   function renderLeadingCellContent(
@@ -1246,7 +1353,7 @@ export function ReportMatrixTable({
             row.cellTones?.[column.key] ?? column.cellTone ?? "default";
           const metricValue = getMatrixMetricDisplayValue(row, column.key, {
             hasGroup3,
-            sellerFilterActive: Boolean(effectiveSellerFilter),
+            sellerFilterActive: Boolean(renderSellerFilter),
           });
           const displayTone =
             metricValue === "" || metricValue == null ? "default" : tone;
@@ -1309,7 +1416,13 @@ export function ReportMatrixTable({
     })),
   );
   return (
-    <section ref={cardRef} className="app-card report-matrix-card">
+    <section
+      ref={cardRef}
+      className={cn(
+        "app-card report-matrix-card",
+        isPptxExporting && "report-matrix-card--export-capture",
+      )}
+    >
       <div className="report-matrix-card__header">
         <div className="report-matrix-card__filters">
           <PowerBiTableHeaderFilter
@@ -1474,15 +1587,40 @@ export function ReportMatrixTable({
               variant="outline"
               size="lg"
               className="h-10 px-3.5 text-sm"
-              disabled={!filteredRows.length || isPdfExporting}
+              disabled={!filteredRows.length || isExporting}
               onClick={handlePdfExportClick}
             >
               <PdfFileIcon className="size-5" size={20} />
               {isPdfExporting ? "PDF…" : "PDF"}
             </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-10 px-3.5 text-sm"
+              disabled={!filteredRows.length || isExporting}
+              onClick={handlePptxExportClick}
+            >
+              <PptFileIcon className="size-5" size={20} />
+              {isPptxExporting ? "PowerPoint…" : "PowerPoint"}
+            </Button>
           </div>
         </div>
       </div>
+      {isPptxExporting && pptxExportProgress ? (
+        <div
+          aria-live="polite"
+          className="report-matrix-card__export-overlay"
+          role="status"
+        >
+          <p className="report-matrix-card__export-overlay-title">
+            Εξαγωγή PowerPoint…
+          </p>
+          <p className="report-matrix-card__export-overlay-progress">
+            {pptxExportProgress.current} / {pptxExportProgress.total}
+          </p>
+        </div>
+      ) : null}
       <ReportMatrixPdfExportDialog
         isExporting={isPdfExporting}
         open={isPdfExportDialogOpen}
@@ -1492,7 +1630,7 @@ export function ReportMatrixTable({
         onOpenChange={setIsPdfExportDialogOpen}
       />
       <div ref={viewportRef} className="report-matrix__viewport">
-        <table className="report-matrix">
+        <table ref={tableRef} className="report-matrix">
           <caption className="sr-only">{brandLabel}</caption>
           <thead>
             <tr>
@@ -1562,7 +1700,7 @@ export function ReportMatrixTable({
             </tr>
           </thead>
           <tbody>{bodyRows.map(renderMatrixRow)}</tbody>
-          {showTotalRows && totalRows.length ? (
+          {displayShowTotalRows && totalRows.length ? (
             <tfoot className="report-matrix__footer">
               {totalRows.map(renderMatrixRow)}
             </tfoot>

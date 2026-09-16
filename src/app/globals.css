@@ -1311,6 +1311,47 @@ html.dark .app-header-user__role {
   gap: 0.65rem;
 }
 
+.report-matrix-card {
+  position: relative;
+}
+
+.report-matrix-card__export-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: inherit;
+  background: color-mix(in oklch, var(--background) 72%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--foreground);
+  pointer-events: all;
+}
+
+.report-matrix-card__export-overlay-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.report-matrix-card__export-overlay-progress {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted-foreground);
+}
+
+.report-matrix-card--export-capture .report-matrix__viewport,
+.report-matrix-card--export-capture .report-matrix {
+  background: #ffffff;
+}
+
+.report-matrix-card--export-capture .report-matrix__category-toggle-icon {
+  display: none;
+}
+
 .report-matrix-card__filters {
   display: flex;
   min-width: 0;

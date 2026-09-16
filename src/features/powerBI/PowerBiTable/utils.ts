@@ -52,6 +52,10 @@ export function getPdfExportFileName(title: string, exportFileName?: string) {
   return getExportFileName(title, exportFileName).replace(/\.xlsx$/i, ".pdf");
 }
 
+export function getPptxExportFileName(title: string, exportFileName?: string) {
+  return getExportFileName(title, exportFileName).replace(/\.xlsx$/i, ".pptx");
+}
+
 export function downloadXlsxWorkbook(
   workbook: XLSX.WorkBook,
   fileName: string,
