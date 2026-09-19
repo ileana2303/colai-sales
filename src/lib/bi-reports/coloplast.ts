@@ -59,6 +59,8 @@ export const COLOPLAST_GROUP2_ORDER = [
   "HOSPITAL",
   "GENADYNE",
   "UNO",
+  "CC SALES",
+  "CC NEW PER",
 ];
 
 export const COLOPLAST_CATEGORY_ORDER = [
